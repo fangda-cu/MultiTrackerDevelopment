@@ -49,6 +49,8 @@ struct T1Transition::InteriorStencil
 
 T1Transition::T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries) :
     m_remesh_boundaries(remesh_boundaries),
+    m_pull_apart_distance(0.1),
+    m_pull_apart_tendency_threshold(0),
     m_velocity_field_callback(vfc),
     m_surf(surf)
 {
@@ -260,8 +262,8 @@ bool T1Transition::pop_edges()
         pull_apart_offset *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
         
         // compute the desired destination positions for the new vertices
-        Vec3d upper_junction_desired_position = original_position + pull_apart_offset * 0.1;
-        Vec3d lower_junction_desired_position = original_position - pull_apart_offset * 0.1;
+        Vec3d upper_junction_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
+        Vec3d lower_junction_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
         
         // enforce constraints
         if (original_constraint)
@@ -801,8 +803,8 @@ bool T1Transition::t1_pass()
         
         Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
         
-        Vec3d a_desired_position = original_position + pull_apart_offset * 0.1;
-        Vec3d b_desired_position = original_position - pull_apart_offset * 0.1;
+        Vec3d a_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
+        Vec3d b_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
         size_t a = static_cast<size_t>(~0);
         size_t b = static_cast<size_t>(~0);
         
@@ -1253,8 +1255,8 @@ bool T1Transition::pop_vertices()
             
             Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
                 
-            Vec3d a_desired_position = original_position + pull_apart_offset * 0.1;
-            Vec3d b_desired_position = original_position - pull_apart_offset * 0.1;
+            Vec3d a_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
+            Vec3d b_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
             size_t a = static_cast<size_t>(~0);
             size_t b = static_cast<size_t>(~0);
 
@@ -1645,6 +1647,7 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
     NonDestructiveTriMesh & mesh = m_surf.m_mesh;
 
     // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
+    // first find the 1-ring neighbors in the cone of region A and those in the cone of region B
     std::vector<Vec3d> vertsA;
     std::vector<Vec3d> vertsB;
     for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
@@ -1681,6 +1684,7 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
     assert(vertsA.size() > 0);
     assert(vertsB.size() > 0);
     
+    // compute the centroids of the two cones
     Vec3d centroidA(0, 0, 0);
     Vec3d centroidB(0, 0, 0);
     for (size_t i = 0; i < vertsA.size(); i++) 
@@ -1690,9 +1694,24 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
         centroidB += vertsB[i];
     centroidB /= vertsB.size();
     
+    // the pull apart direction is along the line between the two centroids
     pull_apart_direction = (centroidA - centroidB);
     pull_apart_direction /= mag(pull_apart_direction);
     
+    // compute the mean edge length around vertex xj
+    double mean_edge_length = 0;
+    int edge_count = 0;
+    for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+    {
+        size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
+        size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
+        mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+        edge_count++;
+    }
+    assert(edge_count > 0);
+    mean_edge_length /= edge_count;
+    
+    // do a trial pull-apart
     Vec3d xxj = m_surf.get_position(xj);
     Vec3d force_a(0);
     Vec3d force_b(0);
@@ -1705,38 +1724,32 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
     size_t b = mesh.nv() + 2;
     triangulate_popped_vertex(xj, A, B, a, b, faces_to_delete, faces_to_create, face_labels_to_create);
     
+    // compute pre-pull-apart surface area
+    double pre_area = 0;
+    for (size_t i = 0; i < faces_to_delete.size(); i++)
+        pre_area += m_surf.get_triangle_area(faces_to_delete[i]);
+    
+    // compute post-pull-apart surface area
+    double post_area = 0;
     for (size_t i = 0; i < faces_to_create.size(); i++)
     {
-        Vec3st t = sort_triangle(faces_to_create[i]);
-        
-        assert(t[0] < mesh.nv());
-        assert(t[2] >= mesh.nv());
-        if (t[1] < mesh.nv())
+        Vec3st & t = faces_to_create[i];
+        Vec3d pos[3];
+        for (int j = 0; j < 3; j++)
         {
-            // a regular triangle containing only either a or b, not both -- this triangle is not degenerate, so we can use the area gradient
-            Vec3d x0 = (t[0] > mesh.nv() ? xxj : m_surf.get_position(t[0]));
-            Vec3d x1 = (t[1] > mesh.nv() ? xxj : m_surf.get_position(t[1]));
-            
-            Vec3d foot = dot(xxj - x0, x1 - x0) / dot(x1 - x0, x1 - x0) * (x1 - x0) + x0;
-            Vec3d force = (foot - xxj); // the surface tension force, i.e. area gradient
-            force /= mag(force);
-            force *= mag(x1 - x0);
-            
-            if (t[2] == a)
-                force_a += force;
-            if (t[2] == b)
-                force_b += force;
-        } else
-        {
-            // a triangle that contains both a and b -- this triangle is degenerate. we must pretent a and b are moved apart infinitesimally along pull_apart_direction
-            force_a += -pull_apart_direction * mag(cross(m_surf.get_position(t[0]) - xxj, pull_apart_direction));
-            force_b += pull_apart_direction * mag(cross(m_surf.get_position(t[0]) - xxj, pull_apart_direction));
+            if (t[j] == a)
+                pos[j] = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+            else if (t[j] == b)
+                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+            else
+                pos[j] = m_surf.get_position(t[j]);
         }
+        post_area += 0.5 * mag(cross(pos[1] - pos[0], pos[2] - pos[0]));
     }
     
-    double tensile_force = dot(force_a - force_b, pull_apart_direction);
+    double area_diff = (pre_area - post_area);
     
-    return tensile_force;
+    return area_diff;
 }
     
 // --------------------------------------------------------
@@ -1750,6 +1763,7 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     NonDestructiveTriMesh & mesh = m_surf.m_mesh;
     
     // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
+    // first find the 1-ring neighbors in the cone of region A and those in the cone of region B
     std::vector<Vec3d> vertsA;
     std::vector<Vec3d> vertsB;
     for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
@@ -1786,6 +1800,7 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     assert(vertsA.size() > 0);
     assert(vertsB.size() > 0);
     
+    // compute the centroids of the two cones
     Vec3d centroidA(0, 0, 0);
     Vec3d centroidB(0, 0, 0);
     for (size_t i = 0; i < vertsA.size(); i++) 
@@ -1795,20 +1810,35 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
         centroidB += vertsB[i];
     centroidB /= vertsB.size();
     
+    // the pull apart direction is along the line between the two centroids
     pull_apart_direction = (centroidA - centroidB);
     pull_apart_direction /= mag(pull_apart_direction);
     
+    // compute the mean edge length around vertex xj
+    double mean_edge_length = 0;
+    int edge_count = 0;
+    for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+    {
+        size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
+        size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
+        mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+        edge_count++;
+    }
+    assert(edge_count > 0);
+    mean_edge_length /= edge_count;
+    
     assert(m_velocity_field_callback);
     
+    // decide the final positions
     Vec3d xxj = m_surf.get_position(xj);
-    Vec3d x_a = xxj + pull_apart_direction * m_velocity_field_callback->velocityDifferencingDx();
-    Vec3d x_b = xxj - pull_apart_direction * m_velocity_field_callback->velocityDifferencingDx();
+    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
     
 //    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
     Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
     Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
     
-    double divergence = dot(v_a - v_b, pull_apart_direction);
+    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
     
     return divergence;
 }

@@ -52,8 +52,6 @@ public:
     public:
         virtual Vec3d sampleVelocity(Vec3d & pos) = 0;
         
-        virtual double velocityDifferencingDx() = 0;
-        
     };
     
     
@@ -96,6 +94,14 @@ public:
     ///
     bool m_remesh_boundaries;
   
+    /// Parameters
+    ///
+    double m_pull_apart_distance;
+    
+    ///
+    double m_pull_apart_tendency_threshold;
+    
+
     
 private:
     
