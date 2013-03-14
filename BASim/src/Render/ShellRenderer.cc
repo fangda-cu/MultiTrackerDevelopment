@@ -629,7 +629,7 @@ void ShellRenderer::render()
       Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
       
 //      Scalar distance = (mousepos - (scrv0 + scrv1) / 2).norm();
-      Scalar distance = (mousepos - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
+      Scalar distance = (mousepos - scrv0 - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
       if (distance < mind || mind < 0)
       {
         mind = distance;
