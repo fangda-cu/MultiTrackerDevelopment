@@ -360,6 +360,7 @@ void drawSimpleAxis()
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
     controller.ApplyCamera();
@@ -376,10 +377,15 @@ void display()
     if (g_dsp_sim_tm)
         renderBitmapString(5, (float)window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
 
+    glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+  
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+  
     glutSwapBuffers();
-    glPopMatrix();
 }
 
 void reshape(int w, int h)
