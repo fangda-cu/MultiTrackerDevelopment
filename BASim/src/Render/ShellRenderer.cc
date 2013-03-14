@@ -585,7 +585,7 @@ void ShellRenderer::render()
     DeformableObject& mesh = m_shell.getDefoObj();
     
     // find the vertex/edge/face the mouse cursor is nearest to
-    Vec2d mousepos = ViewController::singleton()->mousePos() * 2 - Vec2d(1, 1);
+    Vec2d mousepos = ViewController::singleton()->mousePos();
     
     Mat4d MV;  
     Mat4d PJ;  
@@ -615,7 +615,7 @@ void ShellRenderer::render()
       {
         mind = distance;
         mind_vertex = *vit;
-      }
+      }      
     }
     
     for (EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit)
@@ -664,6 +664,14 @@ void ShellRenderer::render()
     
     assert(mind >= 0);
     assert(mind_vertex.isValid() || mind_edge.isValid() || mind_face.isValid());
+    
+//    if (mind_vertex.isValid())
+//    {
+//      Vec3d mdv = m_shell.getVertexPosition(mind_vertex);
+//      Vec4d mdvsh = MVP * Vec4d(mdv.x(), mdv.y(), mdv.z(), 1.0);
+//      Vec2d mdvs = Vec2d(mdvsh.x(), mdvsh.y()) / mdvsh.w();
+//      std::cout << "mouse = " << mousepos << " mind vertex = " << mdv << " -> " << mdvs << " distance = " << mind << std::endl;
+//    }
     
     
     glDisable(GL_LIGHTING);
