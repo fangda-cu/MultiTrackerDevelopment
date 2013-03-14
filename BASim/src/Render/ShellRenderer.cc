@@ -704,11 +704,6 @@ void ShellRenderer::render()
         OpenGL::color(Color(0.0,0.0,0.0, 0.2));
       }
         
-      if ((p0 - p1).norm() <= 0.1)
-      {
-        glColor4f(0.0, 0.5, 1.0, 1.0);
-      }
-      
       if (m_mode == DBG_JUNCTION)
       {
         int ne = junction(mesh, eh);
@@ -719,6 +714,9 @@ void ShellRenderer::render()
         else if (ne > 4)
           OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
+      
+      if ((p0 - p1).norm() <= 0.1)
+        glColor4f(0.0, 0.5, 1.0, 1.0);
       
       bool visible = false;
       for (EdgeFaceIterator efit = mesh.ef_iter(*eit); efit; ++efit)
@@ -732,6 +730,9 @@ void ShellRenderer::render()
       
       if (!visible)
         OpenGL::color(Color(0.0, 0.0, 0.0, 0.1));
+      
+      if (*eit == mind_edge)
+        glColor4f(0.0, 0.0, 0.0, 1.0);
       
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      
@@ -871,14 +872,20 @@ void ShellRenderer::render()
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
       if (((regions.x() >= 0 && !m_region_visible[regions.x()]) || regions.x() < 0) &&
           ((regions.y() >= 0 && !m_region_visible[regions.y()]) || regions.y() < 0))
-      {
         OpenGL::color(Color(0.0, 0.0, 0.0, 0.02));
+      
+      Scalar edge_shrink = 0.1;
+      
+      if (sorted_faces[i].first == mind_face)
+      {
+        glColor4f(1.0, 0.0, 0.0, 0.5);
+        edge_shrink = 0.0;
       }
       
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos += (barycentre - pos) * 0.1;
+        pos += (barycentre - pos) * edge_shrink;
         OpenGL::vertex(pos);
       }      
     }
@@ -996,6 +1003,9 @@ void ShellRenderer::render()
       else {
         OpenGL::color(Color(0.0,0.0,0.0,0.1));
       }
+      
+      if (vh == mind_vertex)
+        glColor4f(0.0, 0.0, 0.0, 1.0);
       
       OpenGL::vertex(vertPos);
     }
