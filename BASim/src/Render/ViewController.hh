@@ -5,6 +5,11 @@
 #ifndef VIEWCONTROLLER_HH
 #define VIEWCONTROLLER_HH
 
+#include "BASim/src/Core/TopologicalObject/TopologicalObject.hh"
+#include "TrackBall.hh"
+#include "Translator.hh"
+#include "Zoomer.hh"
+
 namespace BASim {
 
 class ViewController
@@ -73,7 +78,19 @@ public:
   void updateDrag(const Scalar x, const Scalar y);
 
   //@}
-
+    
+  VertexHandle & nearestVertex() { return m_nearest_vertex; }
+  EdgeHandle & nearestEdge() { return m_nearest_edge; }
+  FaceHandle & nearestFace() { return m_nearest_face; }
+  const VertexHandle & nearestVertex() const { return m_nearest_vertex; }
+  const EdgeHandle & nearestEdge() const { return m_nearest_edge; }
+  const FaceHandle & nearestFace() const { return m_nearest_face; }
+  
+  const Vec2d & mousePos() const { return m_mouse_pos; }
+  void updateMousePos(Scalar xx, Scalar yy) { m_mouse_pos.x() = xx; m_mouse_pos.y() = yy; }
+  
+  static ViewController * singleton() { if (!s_singleton) s_singleton = new ViewController(); return s_singleton; }
+  
 private:
 
   /// Smallest amount that can be added to a scalar and cause a difference.
@@ -106,6 +123,13 @@ private:
   Translator m_translator;               ///< User translations.
   Zoomer m_zoomer;                       ///< User zooms.
 
+  VertexHandle m_nearest_vertex;
+  EdgeHandle m_nearest_edge;
+  FaceHandle m_nearest_face;
+  Vec2d m_mouse_pos;
+    
+  static ViewController * s_singleton;
+  
 };
 
 } // namespace BASim

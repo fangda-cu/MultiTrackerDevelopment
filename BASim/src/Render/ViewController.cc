@@ -15,6 +15,8 @@
 namespace BASim {
 
 const Scalar ViewController::eps = std::numeric_limits<Scalar>::epsilon();
+  
+ViewController * ViewController::s_singleton = NULL;
 
 ViewController::ViewController()
   : m_centerMode(CENTER_OBJECT)
