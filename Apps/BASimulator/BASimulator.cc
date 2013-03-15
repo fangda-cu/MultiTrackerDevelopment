@@ -777,6 +777,7 @@ void menu(int id)
         current_problem->BaseAtEachTimestep();
         glutPostRedisplay();
         break;
+        
 
     }
     /*

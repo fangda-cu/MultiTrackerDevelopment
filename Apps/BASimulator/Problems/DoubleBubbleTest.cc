@@ -2808,6 +2808,12 @@ void DoubleBubbleTest::resumeFromfile( std::ifstream& ifs )
   delete (st);
 }
 
+class Vec2iLess
+{
+public:
+  bool operator () (const Vec2i & x, const Vec2i & y) const { return (x.x() < y.x() || (x.x() == y.x() && x.y() < y.y())); }
+};
+
 void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
 {
   if (g_recording.isPlaybackOn())
@@ -2857,6 +2863,60 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     }
     
   }
+    
+  if (k == 'n')
+  {
+    VertexHandle v = ViewController::singleton()->nearestVertex();
+    EdgeHandle e = ViewController::singleton()->nearestEdge();
+    FaceHandle f = ViewController::singleton()->nearestFace();
+    
+    DeformableObject & mesh = shell->getDefoObj();
+    
+    if (v.isValid())
+    {
+      std::cout << "VOI: " << v.idx() << " (" << shell->getVertexPosition(v) << ")" << std::endl;
+      std::cout << "Region graph: " << std::endl;
+
+      std::set<int> regionset;
+      std::map<Vec2i, bool, Vec2iLess> graph;
+      for (VertexFaceIterator vfit = mesh.vf_iter(v); vfit; ++vfit)
+      {
+        Vec2i label = shell->getFaceLabel(*vfit);
+        if (label.y() < label.x()) std::swap(label.x(), label.y());
+        regionset.insert(label.x());
+        regionset.insert(label.y());
+        graph[label] = true;
+      }
+      
+      std::vector<int> regions;
+      regions.assign(regionset.begin(), regionset.end());
+      std::sort(regions.begin(), regions.end());
+      std::cout << "   "; for (size_t i = 0; i < regions.size(); i++) std::cout << std::setfill(' ') << std::setw(2) << regions[i] << " "; std::cout << std::endl;
+      for (size_t i = 0; i < regions.size(); i++)
+      {
+        std::cout << std::setfill(' ') << std::setw(2) << regions[i] << " ";
+        for (size_t j = 0; j < regions.size(); j++)
+        {
+          Vec2i regionpair = (regions[i] < regions[j] ? Vec2i(regions[i], regions[j]) : Vec2i(regions[j], regions[i]));
+          std::cout << " " << (graph[regionpair] ? "*" : " ") << " ";
+        }
+        std::cout << std::endl;
+      }
+    }
+    if (e.isValid())
+    {
+      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ")" << std::endl;
+    }
+    if (f.isValid())
+    {
+      FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
+      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+      std::cout << "FOI: " << f.idx() << ": " << v0.idx() << " (" << shell->getVertexPosition(v0) << "), " << v1.idx() << " (" << shell->getVertexPosition(v1) << "), " << v2.idx() << " (" << shell->getVertexPosition(v2) << ")" << std::endl;
+    }
+  }
+  
 }
 
 std::vector<std::string> explode(const std::string & s, char delim) 
