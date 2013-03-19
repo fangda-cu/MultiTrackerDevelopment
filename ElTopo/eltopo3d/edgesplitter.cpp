@@ -653,6 +653,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // Do the actual splitting
 
   double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
+  if (new_vert_constraint_label)
+    new_vertex_mass = std::numeric_limits<double>::infinity();
+  else
+    new_vertex_mass = 1;
   size_t vertex_e = m_surf.add_vertex( new_vertex_proposed_final_position, new_vertex_mass );
 
   // Update the constraint label of the new vertex
