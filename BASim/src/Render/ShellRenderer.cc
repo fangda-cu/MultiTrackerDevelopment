@@ -759,6 +759,7 @@ void ShellRenderer::render()
       OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
       OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
       glEnd();
+      glLineWidth(2);
     }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
@@ -1160,6 +1161,7 @@ void ShellRenderer::render()
       OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
       OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
       glEnd();
+      glLineWidth(1);
     }
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
