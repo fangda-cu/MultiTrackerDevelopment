@@ -353,10 +353,20 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // Prevent degenerate triangles
-    double old_area0 = m_surf.get_triangle_area( tri0 );
-    double old_area1 = m_surf.get_triangle_area( tri1 );
-    double new_area0 = triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] );
-    double new_area1 = triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] );
+    Vec3st old_tri0 = m_mesh.get_triangle(tri0);
+    Vec3st old_tri1 = m_mesh.get_triangle(tri1);
+    Vec3d old_normal0 = cross(xs[old_tri0[1]] - xs[old_tri0[0]], xs[old_tri0[2]] - xs[old_tri0[0]]);
+    Vec3d old_normal1 = cross(xs[old_tri1[1]] - xs[old_tri1[0]], xs[old_tri1[2]] - xs[old_tri1[0]]); 
+    double old_area0 = mag(old_normal0) / 2;
+    double old_area1 = mag(old_normal1) / 2;
+    normalize(old_normal0);
+    normalize(old_normal1);
+    Vec3d new_normal0 = cross(xs[new_triangle0[1]] - xs[new_triangle0[0]], xs[new_triangle0[2]] - xs[new_triangle0[0]]);
+    Vec3d new_normal1 = cross(xs[new_triangle1[1]] - xs[new_triangle1[0]], xs[new_triangle1[2]] - xs[new_triangle1[0]]);
+    double new_area0 = mag(new_normal0) / 2;
+    double new_area1 = mag(new_normal1) / 2;
+    normalize(new_normal0);
+    normalize(new_normal1);
     
     if ( new_area0 < std::min(m_surf.m_min_triangle_area, std::min(old_area0, old_area0) * 0.5) )
     {
@@ -386,13 +396,22 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // --------------
     
-    // Don't flip unless both vertices are on a smooth patch
-    if ( ( m_surf.vertex_primary_space_rank( edge_vertices[0] ) > 1 ) || ( m_surf.vertex_primary_space_rank( edge_vertices[1] ) > 1 ) )
+//    // Don't flip unless both vertices are on a smooth patch
+//    if ( ( m_surf.vertex_primary_space_rank( edge_vertices[0] ) > 1 ) || ( m_surf.vertex_primary_space_rank( edge_vertices[1] ) > 1 ) )
+//    {
+//        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: vertices not on smooth patch" << std::endl;  }
+//        g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
+//        return false;
+//    }        
+    
+    // Don't flip if the quad is not planar enough
+    if (std::abs(dot(old_normal0, old_normal1)) < 0.985)   // 10 degrees angle
     {
-        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: vertices not on smooth patch" << std::endl;  }
+        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: edge is a feature" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
         return false;
-    }        
+    }
+    
     
     
     // --------------
@@ -425,8 +444,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     MeshUpdateEvent flip(MeshUpdateEvent::EDGE_FLIP);
     flip.m_v0 = edge_vertices[0];
     flip.m_v1 = edge_vertices[1];
-    Vec3st old_tri0 = m_mesh.get_triangle(tri0);
-    Vec3st old_tri1 = m_mesh.get_triangle(tri1);
     
     ////////////////////////////////////////////////////////////
     // FD 20121126
