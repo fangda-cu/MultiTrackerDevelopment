@@ -353,16 +353,21 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // Prevent degenerate triangles
-    if ( triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] ) < m_surf.m_min_triangle_area )
+    double old_area0 = m_surf.get_triangle_area( tri0 );
+    double old_area1 = m_surf.get_triangle_area( tri1 );
+    double new_area0 = triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] );
+    double new_area1 = triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] );
+    
+    if ( new_area0 < std::min(m_surf.m_min_triangle_area, std::min(old_area0, old_area0) * 0.5) )
     {
-        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area too small" << std::endl;    }
+        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area0 too small" << std::endl;    }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
         return false;
     }
     
-    if ( triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] ) < m_surf.m_min_triangle_area )
+    if ( new_area1 < std::min(m_surf.m_min_triangle_area, std::min(old_area0, old_area0) * 0.5) )
     {
-        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area too small" << std::endl; }
+        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area1 too small" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
         return false;
     }
@@ -372,11 +377,7 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // Control change in area
     
-    double old_area = m_surf.get_triangle_area( tri0 ) + m_surf.get_triangle_area( tri1 );
-    double new_area = triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] ) 
-    + triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] );
-    
-    if ( std::fabs( old_area - new_area ) > 0.1 * old_area )
+    if ( std::fabs( old_area0 + old_area1 - new_area0 - new_area1 ) > 0.1 * (old_area0 + old_area1) )
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area change too great" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_area_change_too_large", 1 );  
