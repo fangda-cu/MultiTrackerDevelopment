@@ -427,8 +427,8 @@ bool EdgeFlipper::flip_edge( size_t edge,
     arthreshold = std::max(arthreshold, 1 / (old_area1 * 2 / (old_max_edge_1 * old_max_edge_1)));
     arthreshold = std::max(arthreshold, old_area0 * 2 / (old_min_edge_0 * old_min_edge_0));
     arthreshold = std::max(arthreshold, old_area1 * 2 / (old_min_edge_1 * old_min_edge_1));
-    if ((new_area0 * 2 / (new_max_edge_0 * new_max_edge_0) < 1 / AR_THRESHOLD || new_area0 * 2 / (new_min_edge_0 * new_min_edge_0) > AR_THRESHOLD) ||
-        (new_area1 * 2 / (new_max_edge_1 * new_max_edge_1) < 1 / AR_THRESHOLD || new_area1 * 2 / (new_min_edge_1 * new_min_edge_1) > AR_THRESHOLD))
+    if ((new_area0 * 2 / (new_max_edge_0 * new_max_edge_0) < 1 / arthreshold || new_area0 * 2 / (new_min_edge_0 * new_min_edge_0) > arthreshold) ||
+        (new_area1 * 2 / (new_max_edge_1 * new_max_edge_1) < 1 / arthreshold || new_area1 * 2 / (new_min_edge_1 * new_min_edge_1) > arthreshold))
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: flip will produce triangles with bad aspect ratio" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_bad_triangle", 1 );  
