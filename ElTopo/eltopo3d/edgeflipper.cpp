@@ -412,7 +412,28 @@ bool EdgeFlipper::flip_edge( size_t edge,
         return false;
     }
     
-    
+    // Don't flip if it produces triangles with bad aspect ratio (regardless of area)
+    double old_min_edge_0 = std::min(std::min(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
+    double old_min_edge_1 = std::min(std::min(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
+    double old_max_edge_0 = std::max(std::max(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
+    double old_max_edge_1 = std::max(std::max(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
+    double new_min_edge_0 = std::min(std::min(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
+    double new_min_edge_1 = std::min(std::min(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
+    double new_max_edge_0 = std::max(std::max(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
+    double new_max_edge_1 = std::max(std::max(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
+    double AR_THRESHOLD = 10.0;
+    double arthreshold = AR_THRESHOLD;
+    arthreshold = std::max(arthreshold, 1 / (old_area0 * 2 / (old_max_edge_0 * old_max_edge_0)));
+    arthreshold = std::max(arthreshold, 1 / (old_area1 * 2 / (old_max_edge_1 * old_max_edge_1)));
+    arthreshold = std::max(arthreshold, old_area0 * 2 / (old_min_edge_0 * old_min_edge_0));
+    arthreshold = std::max(arthreshold, old_area1 * 2 / (old_min_edge_1 * old_min_edge_1));
+    if ((new_area0 * 2 / (new_max_edge_0 * new_max_edge_0) < 1 / AR_THRESHOLD || new_area0 * 2 / (new_min_edge_0 * new_min_edge_0) > AR_THRESHOLD) ||
+        (new_area1 * 2 / (new_max_edge_1 * new_max_edge_1) < 1 / AR_THRESHOLD || new_area1 * 2 / (new_min_edge_1 * new_min_edge_1) > AR_THRESHOLD))
+    {
+        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: flip will produce triangles with bad aspect ratio" << std::endl;  }
+        g_stats.add_to_int( "EdgeFlipper:edge_flip_bad_triangle", 1 );  
+        return false;
+    }
     
     // --------------
     
