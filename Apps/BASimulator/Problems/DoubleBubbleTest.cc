@@ -2818,7 +2818,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
 {
   if (g_recording.isPlaybackOn())
   {
-    if (k == '[' || k == '{')
+    if (k == '[')
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f - 1);
@@ -2831,7 +2831,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       setTime(getDt() * (f - 1));
       glutPostRedisplay();
 
-    } else if (k == ']' || k == '}')
+    } else if (k == ']')
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f + 1);
@@ -2840,6 +2840,22 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       g_recording.loadRecording(*st);
       surftrack2mesh(*st);
       delete st;
+      
+      setTime(getDt() * (f + 1));
+      glutPostRedisplay();
+      
+    } else if (k == '{')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f - 1);
+      
+      setTime(getDt() * (f - 1));
+      glutPostRedisplay();
+      
+    } else if (k == '}')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f + 1);
       
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
