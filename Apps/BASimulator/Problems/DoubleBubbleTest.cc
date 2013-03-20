@@ -854,8 +854,12 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
     reverse_trimap[i] = f;
   }
   
+  shellObj->computeDofIndexing();
+  
   for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     shell->getVertexConstraintLabel(*vit) = onBBWall(shell->getVertexPosition(*vit));
+  
+  updateBBWallConstraints();
 
 }
 
