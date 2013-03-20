@@ -832,6 +832,7 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
     ElTopo::Vec3d x = surface_tracker.get_newposition(i);
     shell->setVertexPosition(v, Vec3d(x[0], x[1], x[2]));
     shell->setVertexVelocity(v, Vec3d(0, 0, 0));
+    
     vert_numbers[v] = i;
     reverse_vertmap[i] = v;
   }
@@ -853,6 +854,8 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
     reverse_trimap[i] = f;
   }
   
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    shell->getVertexConstraintLabel(*vit) = onBBWall(shell->getVertexPosition(*vit));
 
 }
 
@@ -988,13 +991,13 @@ void DoubleBubbleTest::AtEachTimestep()
         delete st;
     }
 
-    if (g_recording.isPlaybackOn())
-    {
-      ElTopo::SurfTrack * st = mesh2surftrack();
-      g_recording.loadRecording(*st);
-      surftrack2mesh(*st);
-      delete st;
-    }
+//    if (g_recording.isPlaybackOn())
+//    {
+//      ElTopo::SurfTrack * st = mesh2surftrack();
+//      g_recording.loadRecording(*st);
+//      surftrack2mesh(*st);
+//      delete st;
+//    }
   
 }
 

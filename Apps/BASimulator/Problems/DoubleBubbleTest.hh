@@ -28,7 +28,7 @@ public:
   int currentFrame() const { return m_current_frame; }
   
   void recordSurfTrack(const ElTopo::SurfTrack & st);
-  void loadRecording(ElTopo::SurfTrack & st, int next = 1);
+  void loadRecording(ElTopo::SurfTrack & st, int next = 0);
   
   void turnOnRecording() { m_recording = true; m_playback = false; }
   void turnOffRecording() { m_recording = false; }
