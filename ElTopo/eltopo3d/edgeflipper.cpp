@@ -795,7 +795,30 @@ bool EdgeFlipper::flip_pass( )
             
             int max_v_after = max(max(val_0, val_1), max(val_a, val_b));
             int min_v_after = min(min(val_0, val_1), min(val_a, val_b));
-            bool need_valence_flip = (max_v_after - min_v_after) < (max_v_before - min_v_before);
+          
+            bool nonmanifold = false;
+            std::set<int> regions;
+            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]].size(); j++)
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]][j])[0]),
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]][j])[1]);
+            if (regions.size() > 2) nonmanifold = true;
+            regions.clear();
+            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]].size(); j++)
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]][j])[0]),
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]][j])[1]);
+            if (regions.size() > 2) nonmanifold = true;
+            regions.clear();
+            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[third_vertex_0].size(); j++)
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_0][j])[0]),
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_0][j])[1]);
+            if (regions.size() > 2) nonmanifold = true;
+            regions.clear();
+            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[third_vertex_1].size(); j++)
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_1][j])[0]),
+                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_1][j])[1]);
+            if (regions.size() > 2) nonmanifold = true;
+            regions.clear();
+            bool need_valence_flip = (!nonmanifold && (max_v_after - min_v_after) < (max_v_before - min_v_before));
             
             double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
