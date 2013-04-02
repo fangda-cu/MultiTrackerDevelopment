@@ -67,7 +67,7 @@ m_max_edge_length( UNINITIALIZED_DOUBLE ),     // <-
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   // <-
 m_min_triangle_angle( 2.0 ),
 m_max_triangle_angle( 178.0 ),
-m_large_triangle_angle_to_split(160.0),
+m_large_triangle_angle_to_split(135.0),
 m_use_curvature_when_splitting( false ),
 m_use_curvature_when_collapsing( false ),
 m_min_curvature_multiplier( 1.0 ),

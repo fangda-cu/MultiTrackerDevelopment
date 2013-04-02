@@ -975,7 +975,10 @@ namespace {
         {
             mesh_renderer.render_fill_triangles = !mesh_renderer.render_fill_triangles;
         }
-        
+
+        if ( key == 'a' ) {
+           mesh_renderer.render_transparent_triangles = ! mesh_renderer.render_transparent_triangles;
+        }
         if ( key == 'v' )
         {
             mesh_renderer.render_vertex_rank = !mesh_renderer.render_vertex_rank;
@@ -1450,6 +1453,7 @@ namespace {
                              renderable_edge_manifolds,
                              renderable_labels);
         
+        //mesh_renderer.render(*g_surf);
         //
         // Render the simulation
         //

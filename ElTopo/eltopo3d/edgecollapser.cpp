@@ -1210,12 +1210,12 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[a][i]);
         if (l[0] >= 0)
         {
-            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            if (l[0] >= (int)regions.size()) regions.resize(l[0] + 1, false);
             regions[l[0]] = true;
         }
         if (l[1] >= 0)
         {
-            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            if (l[1] >= (int)regions.size()) regions.resize(l[1] + 1, false);
             regions[l[1]] = true;
         }
     }
@@ -1224,12 +1224,12 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[b][i]);
         if (l[0] >= 0)
         {
-            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            if (l[0] >= (int)regions.size()) regions.resize(l[0] + 1, false);
             regions[l[0]] = true;
         }
         if (l[1] >= 0)
         {
-            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            if (l[1] >= (int)regions.size()) regions.resize(l[1] + 1, false);
             regions[l[1]] = true;
         }
     }

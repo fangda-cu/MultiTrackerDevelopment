@@ -74,7 +74,8 @@ m_collision_pipeline( NULL ),    // allocated and initialized in the constructor
 m_aabb_padding( max( in_proximity_epsilon, 1e-4 ) ),
 pm_positions(vertex_positions), 
 pm_newpositions(vertex_positions),
-m_velocities(0)
+m_velocities(0),
+m_feature_edge_angle_threshold(M_PI/4)
 {
     
     if ( m_verbose )
@@ -508,6 +509,42 @@ unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_
    }
    return rank;
 }
+
+//Return whether the given edge is a feature.
+bool DynamicSurface::edge_is_feature(size_t edge) const {
+   return get_largest_dihedral(edge) > m_feature_edge_angle_threshold;
+}
+
+/// Look at all triangle pairs and get the smallest angle, ignoring regions.
+double DynamicSurface::get_largest_dihedral(size_t edge) const {
+   const std::vector<size_t>& tri_list = m_mesh.m_edge_to_triangle_map[edge];
+
+   //consider all triangle pairs
+   size_t v0 = m_mesh.m_edges[edge][0];
+   size_t v1 = m_mesh.m_edges[edge][1];
+
+   double largest_angle = 0;
+   for(size_t i = 0; i < tri_list.size(); ++i) {
+      size_t tri_id0 = tri_list[i];
+      Vec3d norm0 = get_triangle_normal(tri_id0);
+      for(size_t j = i+1; j < tri_list.size(); ++j) {
+         size_t tri_id1 = tri_list[j];
+         Vec3d norm1 = get_triangle_normal(tri_id1);
+         
+         //possibly flip one normal so the tris are oriented in a matching way, to get the right dihedral angle.
+         if (m_mesh.oriented(v0, v1, m_mesh.get_triangle(tri_id0)) != m_mesh.oriented(v1, v0, m_mesh.get_triangle(tri_id1))) {
+            norm1 = -norm1;
+         }
+
+         double angle = acos(dot(norm0,norm1));
+         largest_angle = std::max(largest_angle,angle);
+      }
+   }
+
+   return largest_angle;
+
+}
+
 
 // ---------------------------------------------------------
 ///

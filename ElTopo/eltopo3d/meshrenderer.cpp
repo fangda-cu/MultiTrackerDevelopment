@@ -28,6 +28,32 @@ namespace ElTopo {
 
 void MeshRenderer::render( const DynamicSurface& surface )
 {
+
+   glDisable(GL_LIGHTING);
+   glDepthFunc(GL_LEQUAL);
+
+   glEnable(GL_POLYGON_OFFSET_FILL);
+   glPolygonOffset(1.0f, 1.0f);      //  allow the wireframe to show through
+   
+   glLineWidth(5);
+   glBegin(GL_LINES);
+
+   for(size_t e = 0; e < surface.m_mesh.m_edges.size(); e++)
+   {
+
+      if(surface.edge_is_feature(e)) {
+         const Vec2st& edge = surface.m_mesh.m_edges[e];
+         const Vec3d& vtx0 = surface.get_position(edge[0]);
+         const Vec3d& vtx1 = surface.get_position(edge[1]);
+         glColor3d(0,1,0);
+         glVertex3d(vtx0[0], vtx0[1], vtx0[2]);
+         glVertex3d(vtx1[0], vtx1[1], vtx1[2]);
+      }
+   }
+
+   glEnd(); 
+
+   /*
     //
     // edges
     //
@@ -65,6 +91,8 @@ void MeshRenderer::render( const DynamicSurface& surface )
     // vertices
     //
     
+  
+
     if ( render_vertex_rank )
     {
         glPointSize(10);
@@ -113,11 +141,11 @@ void MeshRenderer::render( const DynamicSurface& surface )
         Gluvi::set_generic_material(1.0f, 1.0f, 1.0f, GL_FRONT);   // exterior surface colour
         Gluvi::set_generic_material(1.0f, 1.0f, 1.0f, GL_BACK);
         
-        /* if ( !smooth_shading )
-        {
-        glDisable(GL_LIGHTING);
-        glColor3d(1,1,1);
-        }*/
+        //if ( !smooth_shading )
+        //{
+        //glDisable(GL_LIGHTING);
+        //glColor3d(1,1,1);
+        //}
         
         if ( render_edges || render_nonmanifold_curve)
         {
@@ -186,7 +214,9 @@ void MeshRenderer::render( const DynamicSurface& surface )
         
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
-    }
+    }*/
+    
+
     
 }
 
@@ -211,6 +241,14 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
     // edges
     //
     
+   std::vector<int> vert_incidences(xs.size(),0);
+   for(unsigned int i = 0; i < triangles.size(); ++i) {
+      Vec3st tri = triangles[i];
+      vert_incidences[tri[0]]++;
+      vert_incidences[tri[1]]++;
+      vert_incidences[tri[2]]++;
+   }
+
     glDisable(GL_LIGHTING);
     glDepthFunc(GL_LEQUAL);
     
@@ -279,7 +317,23 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
     //
     // vertices
     //
-    
+
+    //Vertex valences, sort of.
+    //glPointSize(10);
+    //glBegin(GL_POINTS);
+    //for ( size_t v = 0; v < xs.size(); ++v )
+    //{
+    //   if(vert_incidences[v] < 5) {
+    //      glColor3d(1,0,0);
+    //      glVertex3dv( xs[v].v );     
+    //   }
+    //   else if(vert_incidences[v] > 7){
+    //      glColor3d(0,0,1);
+    //      glVertex3dv( xs[v].v );         
+    //   }
+    //}
+    //glEnd();
+
     if ( render_vertex_rank )
     {
         glPointSize(10);
@@ -379,11 +433,18 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
             glPolygonOffset(1.0f, 1.0f);      //  allow the wireframe to show through
         }
         
-        glEnable(GL_DEPTH_TEST);
-//        glDepthMask(GL_TRUE);
-        glDepthMask(GL_FALSE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
+         if(render_transparent_triangles) {
+            glDisable(GL_DEPTH_TEST);
+            //glDepthMask(GL_TRUE);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_BLEND);
+
+         }
+         else {
+            glEnable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+         }
         
         glBegin(GL_TRIANGLES);
         if(smooth_shading) {

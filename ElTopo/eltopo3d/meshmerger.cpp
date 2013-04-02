@@ -366,14 +366,16 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
    if (m_surf.m_mesh.oriented(v0, v1, m_surf.m_mesh.get_triangle(triangle_a_0)) == m_surf.m_mesh.oriented(v1, v0, m_surf.m_mesh.get_triangle(triangle_a_1)))
    {
       assert(label_a_0 == label_a_1);
-   } else
+   } 
+   else
    {
       assert(label_a_0[0] == label_a_1[1] && label_a_0[1] == label_a_1[0]);
    }    
    if (m_surf.m_mesh.oriented(v2, v3, m_surf.m_mesh.get_triangle(triangle_b_0)) == m_surf.m_mesh.oriented(v3, v2, m_surf.m_mesh.get_triangle(triangle_b_1)))
    {
       assert(label_b_0 == label_b_1);
-   } else
+   } 
+   else
    {
       assert(label_b_0[0] == label_b_1[1] && label_b_0[1] == label_b_1[0]);
    }

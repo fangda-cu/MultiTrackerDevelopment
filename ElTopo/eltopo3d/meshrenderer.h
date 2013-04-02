@@ -55,10 +55,14 @@ public:
     ///
     bool render_edges;
     
-    /// Whether to render opaque triangles
+    /// Whether to render filled triangles
     ///
     bool render_fill_triangles;
     
+    /// Whether to render transparent triangles
+    ///
+    bool render_transparent_triangles;
+
     /// Whether to render the primary-space rank for each vertex
     ///
     bool render_vertex_rank;
@@ -93,7 +97,6 @@ public:
                 const std::vector<int>& ranks,
                 const std::vector<bool>& edge_manifold,
                 const std::vector<Vec2i>& labels);
-    
     
 };
 

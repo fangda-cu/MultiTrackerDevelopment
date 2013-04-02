@@ -737,7 +737,8 @@ bool EdgeFlipper::flip_pass( )
             
             bool flipped = false;
             
-            //valences...
+            //valences... we want to drive the difference between max and min vertex valences
+            //towards zero, i.e. all vertices should ideally have valence 6.
             int val_a, val_b, val_0, val_1;
             val_0 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][0]].size();
             val_1 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][1]].size();
