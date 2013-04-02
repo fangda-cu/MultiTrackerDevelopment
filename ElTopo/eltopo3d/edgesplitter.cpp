@@ -372,10 +372,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     tri_areas.push_back(m_surf.get_triangle_area(incident_tris[i]));
     
     // Splitting degenerate triangles causes problems
-    if(tri_areas[i] < m_surf.m_min_triangle_area) {
-      g_stats.add_to_int( "EdgeSplitter:split_edge_incident_to_tiny_triangle", 1 );
-      return false;
-    }
+//    if(tri_areas[i] < m_surf.m_min_triangle_area) {
+//      g_stats.add_to_int( "EdgeSplitter:split_edge_incident_to_tiny_triangle", 1 );
+//      return false;
+//    }
   }
   
 
