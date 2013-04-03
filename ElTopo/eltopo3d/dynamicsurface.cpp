@@ -1879,6 +1879,15 @@ void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy
     
 }
 
+int DynamicSurface::vertex_feature_edge_count( size_t vertex ) const
+{
+   int count = 0;
+   for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i])? 1 : 0);
+   }
+   return count;
+}
+
 }
 
 
