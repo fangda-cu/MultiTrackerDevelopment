@@ -28,7 +28,7 @@ public:
   int currentFrame() const { return m_current_frame; }
   
   void recordSurfTrack(const ElTopo::SurfTrack & st);
-  void loadRecording(ElTopo::SurfTrack & st, int next = 1);
+  void loadRecording(ElTopo::SurfTrack & st, int next = 0);
   
   void turnOnRecording() { m_recording = true; m_playback = false; }
   void turnOffRecording() { m_recording = false; }
@@ -42,6 +42,9 @@ public:
   static void writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st);
   static void readSurfTrack(std::istream & is, ElTopo::SurfTrack & st);
   
+public:
+  std::ostream & log() { return m_log; }
+  
 protected:
   std::string m_recording_name;
   int m_current_frame;  // frame number
@@ -54,6 +57,8 @@ protected:
   
   std::ofstream m_of;
   std::ifstream m_if;
+  
+  std::stringstream m_log;
 };
 
 extern Recording g_recording;
@@ -103,7 +108,11 @@ protected:
     void split(const ElTopo::SurfTrack & st, size_t e);
     void flip(const ElTopo::SurfTrack & st, size_t e);
     void t1(const ElTopo::SurfTrack & st, size_t v);
-    
+    void facesplit(const ElTopo::SurfTrack & st, size_t f);
+    void snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1);
+    void smoothing(const ElTopo::SurfTrack & st);  
+    std::ostream & log();
+
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
@@ -119,6 +128,8 @@ public:
   void setupScene11();  // MCF example demonstrating pinching
 
   void setupScene12();  // Zalesak disk test
+  void setupScene13();  // Enright test with a sphere, no four-way junctions
+  
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);

@@ -517,6 +517,9 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
 
   m_surf.m_mesh_change_history.push_back(facesplit);
 
+  if (m_surf.m_mesheventcallback)
+    m_surf.m_mesheventcallback->facesplit(m_surf, face);
+
   //return output vertex
   result_vertex = vertex_d;
 

@@ -69,7 +69,7 @@ std::vector<Problem*> problems;
 #include "CreateProblemVector.inl"
 
 Problem* current_problem = NULL;
-ViewController controller;
+ViewController & controller = *(ViewController::singleton());
 
 // Renderable objects include RodRenderers and TriangleMeshRenderers.
 std::vector<RenderBase*> renderable_objects;
@@ -360,6 +360,7 @@ void drawSimpleAxis()
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
     controller.ApplyCamera();
@@ -376,10 +377,15 @@ void display()
     if (g_dsp_sim_tm)
         renderBitmapString(5, (float)window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
 
+    glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+  
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+  
     glutSwapBuffers();
-    glPopMatrix();
 }
 
 void reshape(int w, int h)
@@ -606,7 +612,16 @@ void motion(int x, int y)
     Scalar xx, yy;
     scaleMousePos(x, y, xx, yy);
     controller.updateDrag(xx, yy);
+    controller.updateMousePos(xx, yy);
     glutPostRedisplay();
+}
+
+void passiveMotion(int x, int y)
+{
+  Scalar xx, yy;
+  scaleMousePos(x, y, xx, yy);
+  controller.updateMousePos(xx, yy);
+  glutPostRedisplay();
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -762,6 +777,7 @@ void menu(int id)
         current_problem->BaseAtEachTimestep();
         glutPostRedisplay();
         break;
+        
 
     }
     /*
@@ -964,6 +980,7 @@ void initializeOpenGL(int argc, char** argv)
     glutReshapeFunc(reshape);
     glutMouseFunc(mouse);
     glutMotionFunc(motion);
+    glutPassiveMotionFunc(passiveMotion);
     glutKeyboardFunc(keyboard);
     glutIdleFunc(idle);
 

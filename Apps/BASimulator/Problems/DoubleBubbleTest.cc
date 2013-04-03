@@ -214,6 +214,12 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
   }
   
   m_of.write((char *)&m_current_step, sizeof (m_current_step));
+  
+  size_t loglen = m_log.str().size();
+  m_of.write((char *)&loglen, sizeof (size_t));
+  m_of.write((char *)m_log.str().c_str(), loglen);
+  m_log.str("");
+  
   writeSurfTrack(m_of, st);
   
   m_current_step++;
@@ -246,11 +252,12 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
 //      readSurfTrack(m_if, st);
       /////////
       size_t n;
-      char buffer[100];
-      m_if.read((char *)&n, sizeof (n));
-      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (double) * 3);
-      m_if.read((char *)&n, sizeof (n));
-      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (size_t) * 3 + sizeof (int) * 2);
+      m_if.read((char *)&n, sizeof (n));  // skip log
+      m_if.seekg(n, ios_base::cur);
+      m_if.read((char *)&n, sizeof (n));  // skip vertices
+      m_if.seekg(sizeof (double) * 3 * n, ios_base::cur);
+      m_if.read((char *)&n, sizeof (n));  // skip faces
+      m_if.seekg((sizeof (size_t) * 3 + sizeof (int) * 2) * n, ios_base::cur);
       /////////
       m_if.peek();
       if (!m_if.eof())
@@ -264,8 +271,15 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
   
   assert(m_current_step < m_step_pos.size());
 //  std::cout << "Loading step " << (m_current_step + next) % m_step_pos.size() << std::endl;
-  m_if.seekg(m_step_pos[(m_current_step + next) % m_step_pos.size()]);
+  m_if.seekg(m_step_pos[(m_current_step + m_step_pos.size() + next) % m_step_pos.size()]);
   m_if.read((char *)&m_current_step, sizeof (m_current_step));
+  
+  size_t loglen;
+  m_if.read((char *)&loglen, sizeof (size_t));
+  char * log = new char[loglen + 1];
+  m_if.read((char *)log, loglen);
+  *(log + loglen) = NULL;
+  
   readSurfTrack(m_if, st);
 
   m_if.peek();
@@ -273,6 +287,7 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
     m_if.close();
   
   std::cout << "Loaded recording: step " << m_current_step << "/" << m_step_pos.size() << " of frame " << m_current_frame << std::endl;
+  std::cout << log << std::endl;
 }
 
 DoubleBubbleTest::DoubleBubbleTest() : 
@@ -408,6 +423,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene10,
   &DoubleBubbleTest::setupScene11,
   &DoubleBubbleTest::setupScene12,
+  &DoubleBubbleTest::setupScene13,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -816,6 +832,7 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
     ElTopo::Vec3d x = surface_tracker.get_newposition(i);
     shell->setVertexPosition(v, Vec3d(x[0], x[1], x[2]));
     shell->setVertexVelocity(v, Vec3d(0, 0, 0));
+    
     vert_numbers[v] = i;
     reverse_vertmap[i] = v;
   }
@@ -837,6 +854,12 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
     reverse_trimap[i] = f;
   }
   
+  shellObj->computeDofIndexing();
+  
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    shell->getVertexConstraintLabel(*vit) = onBBWall(shell->getVertexPosition(*vit));
+  
+  updateBBWallConstraints();
 
 }
 
@@ -967,17 +990,18 @@ void DoubleBubbleTest::AtEachTimestep()
     if (g_recording.isRecording())
     {
         ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "Begin time step" << std::endl;
         g_recording.recordSurfTrack(*st);
         delete st;
     }
 
-    if (g_recording.isPlaybackOn())
-    {
-      ElTopo::SurfTrack * st = mesh2surftrack();
-      g_recording.loadRecording(*st);
-      surftrack2mesh(*st);
-      delete st;
-    }
+//    if (g_recording.isPlaybackOn())
+//    {
+//      ElTopo::SurfTrack * st = mesh2surftrack();
+//      g_recording.loadRecording(*st);
+//      surftrack2mesh(*st);
+//      delete st;
+//    }
   
 }
 
@@ -1047,17 +1071,18 @@ void DoubleBubbleTest::updateBBWallConstraints()
 
 void DoubleBubbleTest::beforeEndStep()
 {
-  //
-  //  RK4 integration of the Enright velocity field
-  //  code adapted from El Topo's Enright driver:
-  //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
-  //
-  
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
-  if (m_active_scene == 7)
-  { //Enright test
+  if (m_active_scene == 7 || m_active_scene == 13)
+  {
+    //
+    //  RK4 integration of the Enright velocity field
+    //  code adapted from El Topo's Enright driver:
+    //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
+    //
+    
+    //Enright test
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       Vec3d v;
@@ -1085,9 +1110,10 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } //zalesak disk test
+  }
   else if (m_active_scene == 12)
   {
+    //zalesak disk test
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       Vec3d v;
@@ -1115,9 +1141,10 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } //normal flow examples
+  }
   else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
   {
+    //normal flow examples
     static Scalar speeds_scene9[3][3] = 
     {
       { 0, -1, -1 },
@@ -1193,19 +1220,16 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, velocities[*vit]);
       shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
     }
-  } else if (m_active_scene == 11)
-  {
-    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-    {
-      Vec3d v;
-      if (shell->getVertexPosition(*vit).y() > 0.55 || shell->getVertexPosition(*vit).y() < 0.45)
-        v = Vec3d(-1, 0, 0);
-      else
-        v = Vec3d(0, 0, 0);
-      v *= 0.1;
-      shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + v * dt);
-    }
   }
+  
+  if (g_recording.isRecording())
+  {
+    ElTopo::SurfTrack * st = mesh2surftrack();
+    g_recording.log() << "End time step" << std::endl;
+    g_recording.recordSurfTrack(*st);
+    delete st;
+  }
+
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -1334,7 +1358,7 @@ void DoubleBubbleTest::setupScene1()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1438,7 +1462,7 @@ void DoubleBubbleTest::setupScene2()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1591,7 +1615,7 @@ void DoubleBubbleTest::setupScene5()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1692,7 +1716,7 @@ void DoubleBubbleTest::setupScene6()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -2333,7 +2357,7 @@ void DoubleBubbleTest::setupScene8()
         shellFaces[*fIt] = true;
     
     //now create the physical model to hang on the mesh
-    shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
     shellObj->addModel(shell);
     
     //positions
@@ -2760,7 +2784,7 @@ void DoubleBubbleTest::setupScene11()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -2791,11 +2815,17 @@ void DoubleBubbleTest::resumeFromfile( std::ifstream& ifs )
   delete (st);
 }
 
+class Vec2iLess
+{
+public:
+  bool operator () (const Vec2i & x, const Vec2i & y) const { return (x.x() < y.x() || (x.x() == y.x() && x.y() < y.y())); }
+};
+
 void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
 {
   if (g_recording.isPlaybackOn())
   {
-    if (k == '[' || k == '{')
+    if (k == '[')
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f - 1);
@@ -2808,7 +2838,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       setTime(getDt() * (f - 1));
       glutPostRedisplay();
 
-    } else if (k == ']' || k == '}')
+    } else if (k == ']')
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f + 1);
@@ -2817,6 +2847,22 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       g_recording.loadRecording(*st);
       surftrack2mesh(*st);
       delete st;
+      
+      setTime(getDt() * (f + 1));
+      glutPostRedisplay();
+      
+    } else if (k == '{')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f - 1);
+      
+      setTime(getDt() * (f - 1));
+      glutPostRedisplay();
+      
+    } else if (k == '}')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f + 1);
       
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
@@ -2840,6 +2886,60 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     }
     
   }
+    
+  if (k == 'n')
+  {
+    VertexHandle v = ViewController::singleton()->nearestVertex();
+    EdgeHandle e = ViewController::singleton()->nearestEdge();
+    FaceHandle f = ViewController::singleton()->nearestFace();
+    
+    DeformableObject & mesh = shell->getDefoObj();
+    
+    if (v.isValid())
+    {
+      std::cout << "VOI: " << v.idx() << " (" << shell->getVertexPosition(v) << ")" << std::endl;
+      std::cout << "Region graph: " << std::endl;
+
+      std::set<int> regionset;
+      std::map<Vec2i, bool, Vec2iLess> graph;
+      for (VertexFaceIterator vfit = mesh.vf_iter(v); vfit; ++vfit)
+      {
+        Vec2i label = shell->getFaceLabel(*vfit);
+        if (label.y() < label.x()) std::swap(label.x(), label.y());
+        regionset.insert(label.x());
+        regionset.insert(label.y());
+        graph[label] = true;
+      }
+      
+      std::vector<int> regions;
+      regions.assign(regionset.begin(), regionset.end());
+      std::sort(regions.begin(), regions.end());
+      std::cout << "   "; for (size_t i = 0; i < regions.size(); i++) std::cout << std::setfill(' ') << std::setw(2) << regions[i] << " "; std::cout << std::endl;
+      for (size_t i = 0; i < regions.size(); i++)
+      {
+        std::cout << std::setfill(' ') << std::setw(2) << regions[i] << " ";
+        for (size_t j = 0; j < regions.size(); j++)
+        {
+          Vec2i regionpair = (regions[i] < regions[j] ? Vec2i(regions[i], regions[j]) : Vec2i(regions[j], regions[i]));
+          std::cout << " " << (graph[regionpair] ? "*" : " ") << " ";
+        }
+        std::cout << std::endl;
+      }
+    }
+    if (e.isValid())
+    {
+      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ")" << std::endl;
+    }
+    if (f.isValid())
+    {
+      FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
+      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+      std::cout << "FOI: " << f.idx() << ": " << v0.idx() << " (" << shell->getVertexPosition(v0) << "), " << v1.idx() << " (" << shell->getVertexPosition(v1) << "), " << v2.idx() << " (" << shell->getVertexPosition(v2) << ")" << std::endl;
+    }
+  }
+  
 }
 
 std::vector<std::string> explode(const std::string & s, char delim) 
@@ -3011,26 +3111,188 @@ void DoubleBubbleTest::setupScene12()
   
 }
 
+void DoubleBubbleTest::setupScene13()
+{
+  //vertices
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a sphere
+  std::vector<VertexHandle> vertList;
+  
+  int N = GetIntOpt("shell-x-resolution");
+  Scalar r = 0.1;
+  Vec3d c = Vec3d(0.4, 0.6, 0.6);
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(0, 0, 0));
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(0, 0, r));  
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(0, r * 2 * sqrt(2) / 3, -r / 3));
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(r * sqrt(6) / 3, -r * sqrt(2) / 3, -r / 3));
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(-r * sqrt(6) / 3, -r * sqrt(2) / 3, -r / 3));
+  
+  for (int i = 0; i < shellObj->nv(); ++i)
+  {
+    velocities[vertList[i]] = Vec3d(0, 0, 0);
+    undeformed[vertList[i]] = positions[vertList[i]];
+  }
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));
+  faceLabels[faceList.back()] = Vec2i(1, 2);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[ 3]));
+  faceLabels[faceList.back()] = Vec2i(1, 3);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 3], vertList[ 1]));
+  faceLabels[faceList.back()] = Vec2i(1, 4);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(2, 4);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(3, 2);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 3], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(4, 3);
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 2], vertList[ 3]));
+  faceLabels[faceList.back()] = Vec2i(0, 1);
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 2], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(2, 0);
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 3], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(3, 0);
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 3], vertList[ 4]));
+  faceLabels[faceList.back()] = Vec2i(0, 4);
+  
+  // subdivision
+  for (int i = 0; i < N; i++)
+  {
+    EdgeProperty<VertexHandle> mid(shellObj);
+    for (EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit)
+    {
+      mid[*eit] = shellObj->addVertex();
+      positions[mid[*eit]] = (positions[shellObj->fromVertex(*eit)] + positions[shellObj->toVertex(*eit)]) / 2;
+      positions[mid[*eit]] = c + (positions[mid[*eit]] - c).normalized() * r;
+    }
+    
+    std::vector<FaceHandle> oldfaces;
+    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+      oldfaces.push_back(*fit);
+    
+    for (size_t j = 0; j < oldfaces.size(); j++)
+    {
+      FaceHandle fh = oldfaces[j];
+      FaceVertexIterator fvit = shellObj->fv_iter(fh); assert(fvit);
+      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+      EdgeHandle e01 = findEdge(*shellObj, v0, v1); assert(e01.isValid());
+      EdgeHandle e12 = findEdge(*shellObj, v1, v2); assert(e01.isValid());
+      EdgeHandle e20 = findEdge(*shellObj, v2, v0); assert(e01.isValid());
+      VertexHandle m01 = mid[e01];
+      VertexHandle m12 = mid[e12];
+      VertexHandle m20 = mid[e20];
+      Vec2i label = faceLabels[fh];
+      
+      FaceHandle nf;
+      if (v0 == vertList[0])
+      {
+        nf = shellObj->addFace(v0, v1, m12); faceLabels[nf] = label;
+        nf = shellObj->addFace(v0, m12, v2); faceLabels[nf] = label;
+      } else if (v1 == vertList[0])
+      {
+        nf = shellObj->addFace(v1, v2, m20); faceLabels[nf] = label;
+        nf = shellObj->addFace(v1, m20, v0); faceLabels[nf] = label;
+      } else if (v2 == vertList[0])
+      {
+        nf = shellObj->addFace(v2, v0, m01); faceLabels[nf] = label;
+        nf = shellObj->addFace(v2, m01, v1); faceLabels[nf] = label;
+      } else
+      {
+        nf = shellObj->addFace(v0, m01, m20); faceLabels[nf] = label;
+        nf = shellObj->addFace(m01, v1, m12); faceLabels[nf] = label;
+        nf = shellObj->addFace(m20, m12, v2); faceLabels[nf] = label;
+        nf = shellObj->addFace(m12, m20, m01); faceLabels[nf] = label;
+      }
+      
+      shellObj->deleteFace(fh, true);
+    }
+  }
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  shell->setFaceLabels(faceLabels);
+}
+
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "collapse---" << std::endl;
+    g_recording.log() << "Collapse edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::split(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "split---" << std::endl;
+    g_recording.log() << "Split edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::flip(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "flip---" << std::endl;
+    g_recording.log() << "Flip edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "t1---" << std::endl;
+    g_recording.log() << "T1 pop vertex " << e << std::endl;
     g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::facesplit(const ElTopo::SurfTrack & st, size_t f)
+{
+//    std::cout << "face split---" << std::endl;
+    g_recording.log() << "Split face " << f << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1)
+{
+//    std::cout << "snap---" << std::endl;
+    g_recording.log() << "Snap vertex " << v0 << " to vertex " << v1 << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::smoothing(const ElTopo::SurfTrack & st)
+{
+//    std::cout << "smooth---" << std::endl;
+    g_recording.log() << "Null space smoothing " << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+std::ostream & DoubleBubbleTest::log()
+{
+    return g_recording.log();
 }

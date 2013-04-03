@@ -52,8 +52,6 @@ public:
     public:
         virtual Vec3d sampleVelocity(Vec3d & pos) = 0;
         
-        virtual double velocityDifferencingDx() = 0;
-        
     };
     
     
@@ -62,6 +60,10 @@ public:
     /// Constructor
     ///
     T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries);
+
+    /// Perform a pass of t1 by vertex popping
+    ///
+    bool t1_pass();
     
     /// Perform edge popping (first step of T1 transition)
     ///
@@ -92,6 +94,14 @@ public:
     ///
     bool m_remesh_boundaries;
   
+    /// Parameters
+    ///
+    double m_pull_apart_distance;
+    
+    ///
+    double m_pull_apart_tendency_threshold;
+    
+
     
 private:
     

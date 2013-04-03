@@ -353,16 +353,31 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // Prevent degenerate triangles
-    if ( triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] ) < m_surf.m_min_triangle_area )
+    Vec3st old_tri0 = m_mesh.get_triangle(tri0);
+    Vec3st old_tri1 = m_mesh.get_triangle(tri1);
+    Vec3d old_normal0 = cross(xs[old_tri0[1]] - xs[old_tri0[0]], xs[old_tri0[2]] - xs[old_tri0[0]]);
+    Vec3d old_normal1 = cross(xs[old_tri1[1]] - xs[old_tri1[0]], xs[old_tri1[2]] - xs[old_tri1[0]]); 
+    double old_area0 = mag(old_normal0) / 2;
+    double old_area1 = mag(old_normal1) / 2;
+    normalize(old_normal0);
+    normalize(old_normal1);
+    Vec3d new_normal0 = cross(xs[new_triangle0[1]] - xs[new_triangle0[0]], xs[new_triangle0[2]] - xs[new_triangle0[0]]);
+    Vec3d new_normal1 = cross(xs[new_triangle1[1]] - xs[new_triangle1[0]], xs[new_triangle1[2]] - xs[new_triangle1[0]]);
+    double new_area0 = mag(new_normal0) / 2;
+    double new_area1 = mag(new_normal1) / 2;
+    normalize(new_normal0);
+    normalize(new_normal1);
+    
+    if ( new_area0 < std::min(m_surf.m_min_triangle_area, std::min(old_area0, old_area0) * 0.5) )
     {
-        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area too small" << std::endl;    }
+        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area0 too small" << std::endl;    }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
         return false;
     }
     
-    if ( triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] ) < m_surf.m_min_triangle_area )
+    if ( new_area1 < std::min(m_surf.m_min_triangle_area, std::min(old_area0, old_area0) * 0.5) )
     {
-        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area too small" << std::endl; }
+        if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area1 too small" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
         return false;
     }
@@ -372,11 +387,7 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // Control change in area
     
-    double old_area = m_surf.get_triangle_area( tri0 ) + m_surf.get_triangle_area( tri1 );
-    double new_area = triangle_area( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] ) 
-    + triangle_area( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] );
-    
-    if ( std::fabs( old_area - new_area ) > 0.1 * old_area )
+    if ( std::fabs( old_area0 + old_area1 - new_area0 - new_area1 ) > 0.1 * (old_area0 + old_area1) )
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area change too great" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_area_change_too_large", 1 );  
@@ -385,14 +396,44 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // --------------
     
-    // Don't flip unless both vertices are on a smooth patch
-    if ( ( m_surf.vertex_primary_space_rank( edge_vertices[0] ) > 1 ) || ( m_surf.vertex_primary_space_rank( edge_vertices[1] ) > 1 ) )
+//    // Don't flip unless both vertices are on a smooth patch
+//    if ( ( m_surf.vertex_primary_space_rank( edge_vertices[0] ) > 1 ) || ( m_surf.vertex_primary_space_rank( edge_vertices[1] ) > 1 ) )
+//    {
+//        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: vertices not on smooth patch" << std::endl;  }
+//        g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
+//        return false;
+//    }        
+    
+    // Don't flip if the quad is not planar enough
+    if (std::abs(dot(old_normal0, old_normal1)) < 0.985)   // 10 degrees angle
     {
-        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: vertices not on smooth patch" << std::endl;  }
+        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: edge is a feature" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
         return false;
-    }        
+    }
     
+    // Don't flip if it produces triangles with bad aspect ratio (regardless of area)
+    double old_min_edge_0 = std::min(std::min(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
+    double old_min_edge_1 = std::min(std::min(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
+    double old_max_edge_0 = std::max(std::max(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
+    double old_max_edge_1 = std::max(std::max(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
+    double new_min_edge_0 = std::min(std::min(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
+    double new_min_edge_1 = std::min(std::min(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
+    double new_max_edge_0 = std::max(std::max(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
+    double new_max_edge_1 = std::max(std::max(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
+    double AR_THRESHOLD = 10.0;
+    double arthreshold = AR_THRESHOLD;
+    arthreshold = std::max(arthreshold, 1 / (old_area0 * 2 / (old_max_edge_0 * old_max_edge_0)));
+    arthreshold = std::max(arthreshold, 1 / (old_area1 * 2 / (old_max_edge_1 * old_max_edge_1)));
+    arthreshold = std::max(arthreshold, old_area0 * 2 / (old_min_edge_0 * old_min_edge_0));
+    arthreshold = std::max(arthreshold, old_area1 * 2 / (old_min_edge_1 * old_min_edge_1));
+    if ((new_area0 * 2 / (new_max_edge_0 * new_max_edge_0) < 1 / arthreshold || new_area0 * 2 / (new_min_edge_0 * new_min_edge_0) > arthreshold) ||
+        (new_area1 * 2 / (new_max_edge_1 * new_max_edge_1) < 1 / arthreshold || new_area1 * 2 / (new_min_edge_1 * new_min_edge_1) > arthreshold))
+    {
+        if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: flip will produce triangles with bad aspect ratio" << std::endl;  }
+        g_stats.add_to_int( "EdgeFlipper:edge_flip_bad_triangle", 1 );  
+        return false;
+    }
     
     // --------------
     
@@ -424,8 +465,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     MeshUpdateEvent flip(MeshUpdateEvent::EDGE_FLIP);
     flip.m_v0 = edge_vertices[0];
     flip.m_v1 = edge_vertices[1];
-    Vec3st old_tri0 = m_mesh.get_triangle(tri0);
-    Vec3st old_tri1 = m_mesh.get_triangle(tri1);
     
     ////////////////////////////////////////////////////////////
     // FD 20121126
@@ -491,6 +530,9 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     m_surf.m_mesh_change_history.push_back(flip);
 
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->flip(m_surf, edge);
+  
     return true;
     
 }
@@ -768,7 +810,6 @@ bool EdgeFlipper::flip_pass( )
                
             need_valence_flip = score_before > score_after;
             
-
             double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
             if ( potential_length < current_length - m_edge_flip_min_length_change || need_valence_flip)
@@ -783,13 +824,7 @@ bool EdgeFlipper::flip_pass( )
             //    flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             //}
             
-            flip_occurred |= flipped;
-            
-            if (flipped)
-            {
-                if (m_surf.m_mesheventcallback)
-                    m_surf.m_mesheventcallback->flip(m_surf, i);
-            }
+            flip_occurred |= flipped;            
         }
         
         flip_occurred_ever |= flip_occurred;

@@ -372,7 +372,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     tri_areas.push_back(m_surf.get_triangle_area(incident_tris[i]));
     
     // Splitting degenerate triangles causes problems
-    if(tri_areas[i] < m_surf.m_min_triangle_area) {
+    if(tri_areas[i] < m_surf.m_min_triangle_area && !ignore_bad_angles) {
       g_stats.add_to_int( "EdgeSplitter:split_edge_incident_to_tiny_triangle", 1 );
       return false;
     }
@@ -653,6 +653,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // Do the actual splitting
 
   double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
+  if (new_vert_constraint_label)
+    new_vertex_mass = std::numeric_limits<double>::infinity();
+  else
+    new_vertex_mass = 1;
   size_t vertex_e = m_surf.add_vertex( new_vertex_proposed_final_position, new_vertex_mass );
 
   // Update the constraint label of the new vertex
@@ -722,6 +726,18 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   split.m_created_tri_labels = created_tri_label;
   
   m_surf.m_mesh_change_history.push_back(split);
+  
+  if (m_surf.m_mesheventcallback)
+  {
+    if (ignore_bad_angles && use_specified_point)
+      m_surf.m_mesheventcallback->log() << "Edge split: large angle split" << std::endl;
+    else if (!ignore_bad_angles && use_specified_point) 
+      m_surf.m_mesheventcallback->log() << "Edge split: snap" << std::endl;
+    else
+      m_surf.m_mesheventcallback->log() << "Edge split: long edge split" << std::endl;
+      
+    m_surf.m_mesheventcallback->split(m_surf, edge);
+  }
   
   ////////////////////////////////////////////////////////////
 
@@ -882,8 +898,6 @@ bool EdgeSplitter::large_angle_split_pass()
         if ( result )
         {
           g_stats.add_to_int( "EdgeSplitter:large_angle_split_success", 1 );
-          if (m_surf.m_mesheventcallback)
-            m_surf.m_mesheventcallback->split(m_surf, e);
         }
         else
         {
@@ -955,11 +969,6 @@ bool EdgeSplitter::split_pass()
            bool result = split_edge(longest_edge, result_vert);
 
            split_occurred |= result;
-           if (result)
-           {
-              if (m_surf.m_mesheventcallback)
-                 m_surf.m_mesheventcallback->split(m_surf, longest_edge);
-           }
         }
 
     }

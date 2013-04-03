@@ -1561,7 +1561,7 @@ namespace {
 #ifdef _MSC_VER
         _mkdir(g_output_path);
 #else
-        mkdir(g_output_path, 777);
+        mkdir(g_output_path, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif
                 
     }

@@ -5,7 +5,7 @@ frame_dt 0.05
 sim_dt 0.05
 end_sim_t 30.0
 
-region_count 2
+region_count 9
 
 sisc_curl_noise_simulation
 (
@@ -14,12 +14,12 @@ sisc_curl_noise_simulation
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.15
-   max_edge_length 0.45
-   max_volume_change 0.1
+   min_edge_length 0.1
+   max_edge_length 0.3
+   max_volume_change 0.0005
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
-   merge_proximity 0.001
+   merge_proximity 0.00001
    repulsion_proximity 0.0001
    friction_coefficient 0.0
    perform_improvement 1
@@ -31,22 +31,22 @@ surftrack_parameters
 multiphase_objfile0
 ( 
    filepath "/Users/fangda/Studio/Researches/BASim/DoubleBubble/MeanCurvatureFlow/Apps/talpa/multi-scripts/diced_sphere.obj"
-   translate [0 0 0]
-   seed0_pos [ 0.1  0.1  0.1]
+   translate [0.0 1.0 0.0]
+   seed0_pos [ 0.1  1.1  0.1]
    seed0_label 1
-   seed1_pos [-0.1  0.1  0.1]
+   seed1_pos [-0.1  1.1  0.1]
    seed1_label 2
-   seed2_pos [-0.1 -0.1  0.1]
+   seed2_pos [-0.1  0.9  0.1]
    seed2_label 3
-   seed3_pos [ 0.1 -0.1  0.1]
+   seed3_pos [ 0.1  0.9  0.1]
    seed3_label 4
-   seed4_pos [ 0.1  0.1 -0.1]
+   seed4_pos [ 0.1  1.1 -0.1]
    seed4_label 5
-   seed5_pos [-0.1  0.1 -0.1]
+   seed5_pos [-0.1  1.1 -0.1]
    seed5_label 6
-   seed6_pos [-0.1 -0.1 -0.1]
+   seed6_pos [-0.1  0.9 -0.1]
    seed6_label 7
-   seed7_pos [ 0.1 -0.1 -0.1]
+   seed7_pos [ 0.1  0.9 -0.1]
    seed7_label 8
    is_solid 0 
 )

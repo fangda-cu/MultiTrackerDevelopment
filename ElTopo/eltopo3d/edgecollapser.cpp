@@ -382,8 +382,8 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     assert(max_tri_angle > min_tri_angle);
     assert(M_PI > max_tri_angle);
     
-    min_tri_angle = std::min(min_tri_angle, m_surf.m_min_triangle_angle);
-    max_tri_angle = std::max(max_tri_angle, m_surf.m_max_triangle_angle);
+    min_tri_angle = std::min(min_tri_angle, deg2rad(m_surf.m_min_triangle_angle));
+    max_tri_angle = std::max(max_tri_angle, deg2rad(m_surf.m_max_triangle_angle));
     
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
@@ -431,14 +431,14 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         
         double min_angle = min_triangle_angle( a, b, c );
         
-        if ( rad2deg(min_angle) < min_tri_angle )
+        if ( min_angle < min_tri_angle )
         {
             return true;
         }
         
         double max_angle = max_triangle_angle( a, b, c );
         
-        if ( rad2deg(max_angle) > max_tri_angle )
+        if ( max_angle > max_tri_angle )
         {
             return true;
         }
@@ -1080,6 +1080,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
+  
+  if (m_surf.m_mesheventcallback)
+    m_surf.m_mesheventcallback->collapse(m_surf, edge);
+
   return true;
 }
 
@@ -1227,10 +1231,7 @@ bool EdgeCollapser::collapse_pass()
           if ( result )
           { 
             // clean up degenerate triangles and tets
-            m_surf.trim_degeneracies( m_surf.m_dirty_triangles );            
-            
-              if (m_surf.m_mesheventcallback)
-                  m_surf.m_mesheventcallback->collapse(m_surf, e);
+            m_surf.trim_degeneracies( m_surf.m_dirty_triangles );                        
           }
 
           collapse_occurred |= result;

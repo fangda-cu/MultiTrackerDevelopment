@@ -14,6 +14,7 @@
 //#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Render/Curvature.hh"
+#include "BASim/src/Render/ViewController.hh"
 
 //ElTopo in order to test out the remeshing operations
 #include "surftrack.h"
@@ -293,7 +294,104 @@ void ShellRenderer::keyboard(unsigned char key, int x, int y)
 
 void ShellRenderer::render()
 {
-    glPushMatrix();
+  DeformableObject& mesh = m_shell.getDefoObj();
+
+  // find the vertex/edge/face the mouse cursor is nearest to
+  Vec2d mousepos = ViewController::singleton()->mousePos();
+  
+  Mat4d MV;  
+  Mat4d PJ;  
+  {
+    float mv[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+    float pj[16];
+    glGetFloatv(GL_PROJECTION_MATRIX, pj);
+    MV << mv[0], mv[4], mv[8], mv[12], mv[1], mv[5], mv[9], mv[13], mv[2], mv[6], mv[10], mv[14], mv[3], mv[7], mv[11], mv[15];
+    PJ << pj[0], pj[4], pj[8], pj[12], pj[1], pj[5], pj[9], pj[13], pj[2], pj[6], pj[10], pj[14], pj[3], pj[7], pj[11], pj[15];    
+  }
+  Mat4d MVP = PJ * MV;
+  
+  double mind = -1;
+  VertexHandle mind_vertex;
+  EdgeHandle mind_edge;
+  FaceHandle mind_face;
+  
+  for (VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit)
+  {
+    Vec3d pos = m_shell.getVertexPosition(*vit);
+    Vec4d scrpos_h = MVP * Vec4d(pos.x(), pos.y(), pos.z(), 1.0);
+    Vec2d scrpos = Vec2d(scrpos_h.x(), scrpos_h.y()) / scrpos_h.w();
+    
+    Scalar distance = (scrpos - mousepos).norm();
+    if (distance < mind || mind < 0)
+    {
+      mind = distance;
+      mind_vertex = *vit;
+    }      
+  }
+  
+  for (EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit)
+  {
+    Vec3d v0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
+    Vec3d v1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+    
+    Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
+    Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+    Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
+    Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+    
+    Scalar distance = (mousepos - (scrv0 + scrv1) / 2).norm();
+//    Scalar distance = (mousepos - scrv0 - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
+    if (distance < mind || mind < 0)
+    {
+      mind = distance;
+      mind_vertex = VertexHandle();
+      mind_edge = *eit;
+    }
+  }
+  
+  for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = mesh.fv_iter(*fit); assert(fvit);
+    Vec3d v0 = m_shell.getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d v1 = m_shell.getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d v2 = m_shell.getVertexPosition(*fvit); ++fvit; assert(!fvit);
+    
+    Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
+    Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+    Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
+    Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+    Vec4d scrv2_h = MVP * Vec4d(v2.x(), v2.y(), v2.z(), 1.0);
+    Vec2d scrv2 = Vec2d(scrv2_h.x(), scrv2_h.y()) / scrv2_h.w();
+    
+    Scalar distance = (mousepos - (scrv0 + scrv1 + scrv2) / 3).norm();
+    if (distance < mind || mind < 0)
+    {
+      mind = distance;
+      mind_vertex = VertexHandle();
+      mind_edge = EdgeHandle();
+      mind_face = *fit;
+    }
+  }
+  
+  assert(mind >= 0);
+  assert(mind_vertex.isValid() || mind_edge.isValid() || mind_face.isValid());
+  
+  ViewController::singleton()->nearestVertex() = mind_vertex;
+  ViewController::singleton()->nearestEdge() = mind_edge;
+  ViewController::singleton()->nearestFace() = mind_face;
+  
+//  if (mind_vertex.isValid())
+//  {
+//    Vec3d mdv = m_shell.getVertexPosition(mind_vertex);
+//    Vec4d mdvsh = MVP * Vec4d(mdv.x(), mdv.y(), mdv.z(), 1.0);
+//    Vec2d mdvs = Vec2d(mdvsh.x(), mdvsh.y()) / mdvsh.w();
+//    std::cout << "mouse = " << mousepos << " mind vertex = " << mdv << " -> " << mdvs << " distance = " << mind << std::endl;
+//  }
+  
+  
+
+  glPushMatrix();
 
   if( m_mode == FLAT )
   {
@@ -580,9 +678,10 @@ void ShellRenderer::render()
   else if( m_mode == DBG_BUBBLE || m_mode == DBG_JUNCTION )
   {
 //      renderVelocity();
+      
+    DeformableObject& mesh = m_shell.getDefoObj();
     
     glDisable(GL_LIGHTING);
-    DeformableObject& mesh = m_shell.getDefoObj();
     
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -620,13 +719,6 @@ void ShellRenderer::render()
         OpenGL::color(Color(0.0,0.0,0.0, 0.2));
       }
         
-        if ((p0 - p1).norm() <= 0.1)
-        {
-            glLineWidth(5);
-            glColor4f(0.0, 0.5, 1.0, 1.0);
-            glLineWidth(2);
-        }
-      
       if (m_mode == DBG_JUNCTION)
       {
         int ne = junction(mesh, eh);
@@ -637,6 +729,9 @@ void ShellRenderer::render()
         else if (ne > 4)
           OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
+      
+      if ((p0 - p1).norm() <= 0.1)
+        glColor4f(0.0, 0.5, 1.0, 1.0);
       
       bool visible = false;
       for (EdgeFaceIterator efit = mesh.ef_iter(*eit); efit; ++efit)
@@ -655,6 +750,17 @@ void ShellRenderer::render()
       OpenGL::vertex(p1);      
     }
     glEnd();
+    
+    if (mind_edge.isValid())
+    {
+      glColor4f(0.0, 0.0, 0.0, 1.0);
+      glLineWidth(4);
+      glBegin(GL_LINES);
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
+      glEnd();
+      glLineWidth(2);
+    }
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     
@@ -789,14 +895,20 @@ void ShellRenderer::render()
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
       if (((regions.x() >= 0 && !m_region_visible[regions.x()]) || regions.x() < 0) &&
           ((regions.y() >= 0 && !m_region_visible[regions.y()]) || regions.y() < 0))
-      {
         OpenGL::color(Color(0.0, 0.0, 0.0, 0.02));
+      
+      Scalar edge_shrink = 0.1;
+      
+      if (sorted_faces[i].first == mind_face)
+      {
+        glColor4f(1.0, 0.0, 0.0, 0.5);
+        edge_shrink = 0.0;
       }
       
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos += (barycentre - pos) * 0.1;
+        pos += (barycentre - pos) * edge_shrink;
         OpenGL::vertex(pos);
       }      
     }
@@ -918,6 +1030,15 @@ void ShellRenderer::render()
       OpenGL::vertex(vertPos);
     }
     glEnd();
+    
+    if (mind_vertex.isValid())
+    {
+      glPointSize(8);
+      glColor4f(0, 0, 0, 1);
+      glBegin(GL_POINTS);
+      OpenGL::vertex(m_shell.getVertexPosition(mind_vertex));
+      glEnd();
+    }
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
 
@@ -995,8 +1116,6 @@ void ShellRenderer::render()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glBegin(GL_LINES);
-    OpenGL::color(Color(0.0, 0.0, 0.0, 0.3));
-    
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
     {
       EdgeHandle eh = *eit;
@@ -1027,10 +1146,23 @@ void ShellRenderer::render()
       if (!visible && !cubeedge)
         continue;
       
+      glColor4f(0.0, 0.0, 0.0, 0.3);
+      
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      
     }
     glEnd();
+    
+    if (mind_edge.isValid())
+    {
+      glColor4f(0.0, 0.0, 0.0, 1.0);
+      glLineWidth(2);
+      glBegin(GL_LINES);
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
+      glEnd();
+      glLineWidth(1);
+    }
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
 
@@ -1159,7 +1291,11 @@ void ShellRenderer::render()
       else
         color_combined /= visible_count;
       
-      OpenGL::color(Color(color_combined.x(), color_combined.y(), color_combined.z() ,alpha));
+      OpenGL::color(Color(color_combined.x(), color_combined.y(), color_combined.z(), alpha));
+      
+      if (sorted_faces[i].first == mind_face)
+        OpenGL::color(Color(color_combined.x(), color_combined.y(), color_combined.z(), 1.0));
+      
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
@@ -1248,6 +1384,15 @@ void ShellRenderer::render()
       OpenGL::vertex(vertPos);
     }
     glEnd();
+    
+    if (mind_vertex.isValid())
+    {
+      glPointSize(4);
+      glColor4f(0, 0, 0, 1);
+      glBegin(GL_POINTS);
+      OpenGL::vertex(m_shell.getVertexPosition(mind_vertex));
+      glEnd();
+    }
     
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
