@@ -83,8 +83,7 @@ private:
       const std::vector<size_t>& triangles,
       const std::vector<double>& triangle_areas, 
       const std::vector<Vec3d>& triangle_normals, 
-      const std::vector<Vec3d>& triangle_centroids, 
-      unsigned int& rank) const;
+      const std::vector<Vec3d>& triangle_centroids) const;
 
     /// The mesh this object operates on
     /// 

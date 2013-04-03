@@ -234,8 +234,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     
     if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1 || !found_smoothing_region) {
        //usual case
-       unsigned int rank;
-       displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids, rank);
+       displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids);
     }
     else {
       
@@ -247,8 +246,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
             tri_set.push_back(incident_triangles[i]);
       }
       assert(tri_set.size() > 0);
-      unsigned int rank = 0;
-      displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
+      displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids);
        
     }
 
@@ -259,8 +257,7 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
    const std::vector<size_t>& triangles,
    const std::vector<double>& triangle_areas, 
    const std::vector<Vec3d>& triangle_normals, 
-   const std::vector<Vec3d>& triangle_centroids, 
-   unsigned int& rank) const {
+   const std::vector<Vec3d>& triangle_centroids) const {
       
       std::vector< Vec3d > N;
       std::vector< double > W;
@@ -313,13 +310,11 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
 
       // compute basis for null space
       std::vector<Vec3d> T;
-      rank = 0;
       for ( unsigned int i = 0; i < 3; ++i )
       {
          if ( eigenvalues[i] < G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
          {
             T.push_back( Vec3d( A(0,i), A(1,i), A(2,i) ) );
-            ++rank;
          }
       }
 
