@@ -464,22 +464,25 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    //Check if we're fairly close to an end vertex; if so just use the vertex directly for snapping.
    //otherwise, do a split to create a new point which will then be snapped.
       
-  m_surf.m_mesheventcallback->log() << "ee snap: edge0 = " << edge0 << ": " << edge_data0[0] << " (" << v0 << ") -> " << edge_data0[1] << " (" << v1 << ") edge1 = " << edge1 << ": " << edge_data1[0] << " (" << v2 << ") -> " << edge_data1[1] << " (" << v3 << ")" << std::endl;
-  m_surf.m_mesheventcallback->log() << "s0 = " << s0 << " s2 = " << s2 << " dist = " << distance << " midpoint0 = " << midpoint0 << " midpoint1 = " << midpoint1 << std::endl;
-  
+   if (m_surf.m_mesheventcallback) {
+     m_surf.m_mesheventcallback->log() << "ee snap: edge0 = " << edge0 << ": " << edge_data0[0] << " (" << v0 << ") -> " << edge_data0[1] << " (" << v1 << ") edge1 = " << edge1 << ": " << edge_data1[0] << " (" << v2 << ") -> " << edge_data1[1] << " (" << v3 << ")" << std::endl;
+     m_surf.m_mesheventcallback->log() << "s0 = " << s0 << " s2 = " << s2 << " dist = " << distance << " midpoint0 = " << midpoint0 << " midpoint1 = " << midpoint1 << std::endl;
+   }
    size_t snapping_vert0;
    if(s0 > 1 - m_edge_threshold) {
       snapping_vert0 = edge_data0[0];
-     m_surf.m_mesheventcallback->log() << "snap to v0" << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "snap to v0" << std::endl;
    }
    else if(s0 < m_edge_threshold) {
       snapping_vert0 = edge_data0[1];
-     m_surf.m_mesheventcallback->log() << "snap to v1" << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "snap to v1" << std::endl;
    }
    else {
       size_t split_result;
-      
-     m_surf.m_mesheventcallback->log() << "attemping to split edge0 at " << midpoint0 << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "attemping to split edge0 at " << midpoint0 << std::endl;
      
       if(!m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, false, true, &midpoint0))
          return false;
@@ -489,16 +492,18 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    size_t snapping_vert1;
    if(s2 > 1 - m_edge_threshold) {
       snapping_vert1 = edge_data1[0];
-     m_surf.m_mesheventcallback->log() << "snap to v2" << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "snap to v2" << std::endl;
    }
    else if(s2 < m_edge_threshold) {
       snapping_vert1 = edge_data1[1];
-     m_surf.m_mesheventcallback->log() << "snap to v3" << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "snap to v3" << std::endl;
    }
    else {
       size_t split_result;
-
-     m_surf.m_mesheventcallback->log() << "attempting to split edge1 at " << midpoint1 << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "attempting to split edge1 at " << midpoint1 << std::endl;
      
       if(!m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, false, true, &midpoint1))
          return false;
@@ -506,12 +511,14 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
       snapping_vert1 = split_result;
    }
    
-  m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vert0 << " to " << snapping_vert1 << std::endl;
+   if (m_surf.m_mesheventcallback)
+      m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vert0 << " to " << snapping_vert1 << std::endl;
   
    //finally, if the splitting succeeds and we have a good vertex pair, try to snap them.
    bool success = vert_pair_is_snappable(snapping_vert0, snapping_vert1) && snap_vertex_pair(snapping_vert0, snapping_vert1);
-
-  m_surf.m_mesheventcallback->log() << "snap " << (success ? "succeeded" : "failed") << std::endl;
+   
+   if (m_surf.m_mesheventcallback)
+      m_surf.m_mesheventcallback->log() << "snap " << (success ? "succeeded" : "failed") << std::endl;
   
    return success;
 }
@@ -547,19 +554,21 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
 
    //Depending on the barycentric coordinates, either snap to one of the face vertices,
    //split an edge and snap to it, or split the face and snap to it.
-  
-  m_surf.m_mesheventcallback->log() << "vf snap: v = " << vertex << " (" << v_pos << ") f = " << face_data[0] << " (" << t0_pos << ") " << face_data[1] << " (" << t1_pos << ") " << face_data[2] << " (" << t2_pos << ")" << std::endl;
-  m_surf.m_mesheventcallback->log() << "s0 = " << s0 << " s1 = " << s1 << " s2 = " << s2 << " dist = " << dist << " nearest = " << (t0_pos * s0 + t1_pos * s1 + t2_pos * s2) << std::endl;
-  
+  if (m_surf.m_mesheventcallback) {
+     m_surf.m_mesheventcallback->log() << "vf snap: v = " << vertex << " (" << v_pos << ") f = " << face_data[0] << " (" << t0_pos << ") " << face_data[1] << " (" << t1_pos << ") " << face_data[2] << " (" << t2_pos << ")" << std::endl;
+     m_surf.m_mesheventcallback->log() << "s0 = " << s0 << " s1 = " << s1 << " s2 = " << s2 << " dist = " << dist << " nearest = " << (t0_pos * s0 + t1_pos * s1 + t2_pos * s2) << std::endl;
+   }
    size_t snapping_vertex;
    if(s0 < m_face_threshold) {
       if(s1 < m_face_threshold) {
          snapping_vertex = face_data[2];
-        m_surf.m_mesheventcallback->log() << "snap to v2" << std::endl;
+         if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap to v2" << std::endl;
       }
       else if(s2 < m_face_threshold) {
          snapping_vertex = face_data[1];
-        m_surf.m_mesheventcallback->log() << "snap to v1" << std::endl;
+         if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap to v1" << std::endl;
       }
       else {
        size_t result_vertex;
@@ -568,7 +577,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
        double edge_frac = s1 / (s1+s2);
        Vec3d split_point = edge_frac * t1_pos + (1-edge_frac) * t2_pos;
        
-        m_surf.m_mesheventcallback->log() << "attempting to snap to e12: " << split_point << std::endl;
+       if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "attempting to snap to e12: " << split_point << std::endl;
         
        if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
          return false;
@@ -579,7 +589,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    else if(s1 < m_face_threshold) {
       if(s2 < m_face_threshold) {
          snapping_vertex = face_data[0];
-        m_surf.m_mesheventcallback->log() << "snap to v0" << std::endl;
+         if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap to v0" << std::endl;
       }
       else {
          size_t result_vertex;
@@ -588,7 +599,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
          double edge_frac = s0 / (s0+s2);
          Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t2_pos;
          
-        m_surf.m_mesheventcallback->log() << "attempting to snap to e02: " << split_point << std::endl;
+         if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "attempting to snap to e02: " << split_point << std::endl;
         
          if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
             return false;
@@ -603,7 +615,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       double edge_frac = s0 / (s0+s1);
       Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t1_pos;
 
-     m_surf.m_mesheventcallback->log() << "attempting to snap to e01: " << split_point << std::endl;
+      if (m_surf.m_mesheventcallback)
+          m_surf.m_mesheventcallback->log() << "attempting to snap to e01: " << split_point << std::endl;
            
       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
          return false;
@@ -613,8 +626,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    else{
       size_t result_vertex;
       Vec3d split_point = s0*t0_pos + s1*t1_pos + s2*t2_pos;
-      
-     m_surf.m_mesheventcallback->log() << "split face: " << split_point << std::endl;
+      if (m_surf.m_mesheventcallback)
+         m_surf.m_mesheventcallback->log() << "split face: " << split_point << std::endl;
      
       if(!m_facesplitter.face_is_splittable(face) || !m_facesplitter.split_face(face, result_vertex, true, &split_point))
          return false;
@@ -622,12 +635,14 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       snapping_vertex = result_vertex;
    }
   
-  m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vertex << " to " << vertex << std::endl;
+   if (m_surf.m_mesheventcallback)
+      m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vertex << " to " << vertex << std::endl;
 
    //finally, if the splitting succeeds and we have a good vertex pair, try to snap them.
    bool success = vert_pair_is_snappable(snapping_vertex, vertex) && snap_vertex_pair(snapping_vertex, vertex);
    
-  m_surf.m_mesheventcallback->log() << "snap " << (success ? "succeeded" : "failed") << std::endl;
+   if (m_surf.m_mesheventcallback)
+      m_surf.m_mesheventcallback->log() << "snap " << (success ? "succeeded" : "failed") << std::endl;
   
    return success;
 }
@@ -948,15 +963,17 @@ bool MeshSnapper::snap_pass()
 
    m_surf.assert_mesh_is_intersection_free(false);
   
-  for (size_t si = 0; si < sortable_pairs_to_try.size(); si++)
-    m_surf.m_mesheventcallback->log() << "Snap pair: " << sortable_pairs_to_try[si].m_length << ", " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << sortable_pairs_to_try[si].m_index0 << " and " << sortable_pairs_to_try[si].m_index1 << std::endl;
+   if(m_surf.m_mesheventcallback)
+      for (size_t si = 0; si < sortable_pairs_to_try.size(); si++)
+         m_surf.m_mesheventcallback->log() << "Snap pair: " << sortable_pairs_to_try[si].m_length << ", " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << sortable_pairs_to_try[si].m_index0 << " and " << sortable_pairs_to_try[si].m_index1 << std::endl;
 
    for ( size_t si = 0; si < sortable_pairs_to_try.size(); ++si )
    {
       size_t ind0 = sortable_pairs_to_try[si].m_index0;
       size_t ind1 = sortable_pairs_to_try[si].m_index1;
       
-     m_surf.m_mesheventcallback->log() << "Snap pair to try: " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << ind0 << " and " << ind1 << " with distance " << sortable_pairs_to_try[si].m_length << std::endl;
+     if(m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->log() << "Snap pair to try: " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << ind0 << " and " << ind1 << " with distance " << sortable_pairs_to_try[si].m_length << std::endl;
      
       bool result = false;
       bool attempted = false;
@@ -986,18 +1003,21 @@ bool MeshSnapper::snap_pass()
       
       if ( result )
       { 
-        m_surf.m_mesheventcallback->log() << "snap successful" << std::endl;
+        if(m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap successful" << std::endl;
         
          // clean up degenerate triangles and tets
          m_surf.trim_degeneracies( m_surf.m_dirty_triangles );          
       }
       else if(attempted) {
-        m_surf.m_mesheventcallback->log() << "snap failed" << std::endl;
+         if(m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap failed" << std::endl;
          //Snapping attempted and failed
          //std::cout << "Snap failed.\n";
       }
       else {
-        m_surf.m_mesheventcallback->log() << "snap not attempted" << std::endl;
+         if(m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->log() << "snap not attempted" << std::endl;
          //std::cout << "Snap not attempted.\n";
          //Snapping not attempted because the situation changed.
       }
