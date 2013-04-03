@@ -807,18 +807,18 @@ void SurfTrack::improve_mesh( )
       i = 0;
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
-        i++;
+         if (m_mesheventcallback)
+            m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
+         i++;
       }
       
       // null-space smoothing
       if ( m_perform_smoothing)
       {
-          //std::cout << "Smooth\n";
-          m_smoother.null_space_smoothing_pass( 1.0 );
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
+         //std::cout << "Smooth\n";
+         m_smoother.null_space_smoothing_pass( 1.0 );
+         if (m_mesheventcallback)
+            m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
 
 
