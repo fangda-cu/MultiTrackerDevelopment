@@ -405,7 +405,7 @@ bool EdgeFlipper::flip_edge( size_t edge,
 //    }        
     
     // Don't flip if the quad is not planar enough
-    if (std::abs(dot(old_normal0, old_normal1)) < 0.985)   // 10 degrees angle
+    if (m_surf.edge_is_feature(edge))
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: edge is a feature" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
