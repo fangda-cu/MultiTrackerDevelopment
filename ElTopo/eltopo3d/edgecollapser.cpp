@@ -514,7 +514,7 @@ bool EdgeCollapser::get_new_vertex_position(Vec3d& vertex_new_position, size_t& 
             if(!keep_vert_is_manifold && delete_vert_is_manifold) {
                vertex_new_position = m_surf.get_position(vertex_to_keep);
             }
-            else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
+            else if(keep_vert_is_manifold && !delete_vert_is_manifold ) {
                std::swap(vertex_to_keep, vertex_to_delete);
                vertex_new_position = m_surf.get_position(vertex_to_keep);
             }
@@ -659,10 +659,10 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
          else
          {
             //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
-            if(keep_vert_is_manifold && !delete_vert_is_manifold) {
+            if(!keep_vert_is_manifold && delete_vert_is_manifold) {
                vertex_new_position = m_surf.get_position(vertex_to_keep);
             }
-            else if(delete_vert_is_manifold && !keep_vert_is_manifold) {
+            else if(keep_vert_is_manifold && !delete_vert_is_manifold) {
                std::swap(vertex_to_keep, vertex_to_delete);
                vertex_new_position = m_surf.get_position(vertex_to_keep);
             }
@@ -906,7 +906,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //Choose the vertex to keep and its new position.
   Vec3d vertex_new_position;
   bool new_vert_constraint_label;
-  bool can_collapse = get_new_vertex_position(vertex_new_position, vertex_to_keep, vertex_to_delete, edge, new_vert_constraint_label);
+  bool can_collapse = get_new_vertex_position_dihedral(vertex_new_position, vertex_to_keep, vertex_to_delete, edge, new_vert_constraint_label);
   if(!can_collapse)
      return false;
 
