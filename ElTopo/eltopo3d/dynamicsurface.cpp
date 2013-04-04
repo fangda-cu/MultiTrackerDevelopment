@@ -75,7 +75,7 @@ m_aabb_padding( max( in_proximity_epsilon, 1e-4 ) ),
 pm_positions(vertex_positions), 
 pm_newpositions(vertex_positions),
 m_velocities(0),
-m_feature_edge_angle_threshold(M_PI/4)
+m_feature_edge_angle_threshold(M_PI/5)
 {
     
     if ( m_verbose )
