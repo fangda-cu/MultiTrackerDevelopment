@@ -142,12 +142,6 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
        std::cout << "Non-manifold curve is set to stationary, as in two-sphere cyclical invasion test.\n";
     std::cout << "NMF: " << nmf_stationary << std::endl;
 
-    int smooth_w_all = 1; //default to null-space smoothing based on all branches at non-manifold
-    faceoff_sim_branch.get_int("smooth_using_all", smooth_w_all);
-    bool smooth_using_all = (smooth_w_all == 1);
-    if(!smooth_using_all)
-       std::cout << "Performing null-space smoothing only on data from the expanding surface at non-manifold vertices.\n";
-
     //check which is the expanding surface for offsetting in the case where the intersection curve is moving
     int expanding_surf = -1;
     either_specified = either_specified || faceoff_sim_branch.get_int("expanding_surface", expanding_surf);
@@ -158,7 +152,7 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
     if(expanding_surf != -1)
        std::cout << "Region " << expanding_surf << " is set to be expanded into.";
 
-    FaceOffMultiDriver* d = new FaceOffMultiDriver( speed_matrix, expanding_surf, nmf_stationary == 1, smooth_using_all );
+    FaceOffMultiDriver* d = new FaceOffMultiDriver( speed_matrix, expanding_surf, nmf_stationary == 1);
     if(do_reverse) d->set_reversing(reverse_time);
 
     //set solution data for the original normal flow tests.

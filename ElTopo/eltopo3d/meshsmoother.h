@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <vector>
+#include "util.h"
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -49,7 +50,7 @@ public:
     ///
     MeshSmoother( SurfTrack& surf ) :
     m_surf( surf ),
-    m_nonmanifold_smoothing_region(-1)
+    m_sharp_fold_regularization_threshold(15*M_PI/180)
     {}
     
     /// NULL-space smoothing of all vertices
@@ -63,7 +64,7 @@ public:
                                                        const std::vector<Vec3d>& displacements, 
                                                        bool verbose );   
     
-    /// Find a new vertex location using NULL-space smoothing
+    /// Find a new vertex location using null-space smoothing
     ///
     void null_space_smooth_vertex( size_t v, 
                                   const std::vector<double>& triangle_areas, 
@@ -71,10 +72,6 @@ public:
                                   const std::vector<Vec3d>& triangle_centroids, 
                                   Vec3d& displacement ) const;      
     
-    /// Set it to smooth only a particular surface at non-manifold joints. 
-    /// This is useful for the normal flow non-manifold offsetting special case of a stationary internal surface.
-    ///
-    void set_nonmanifold_smoothing_region(int region) { m_nonmanifold_smoothing_region = region; }
 
 private:
     
@@ -85,14 +82,18 @@ private:
       const std::vector<Vec3d>& triangle_normals, 
       const std::vector<Vec3d>& triangle_centroids) const;
 
+   Vec3d get_smoothing_displacement_dihedral( size_t v, 
+      const std::vector<size_t>& triangles,
+      const std::vector<double>& triangle_areas, 
+      const std::vector<Vec3d>& triangle_normals, 
+      const std::vector<Vec3d>& triangle_centroids) const;
+
     /// The mesh this object operates on
     /// 
     SurfTrack& m_surf;
     
     ///
-    ///
-    int m_nonmanifold_smoothing_region;
-
+    double m_sharp_fold_regularization_threshold;
 
 };
 

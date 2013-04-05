@@ -576,8 +576,10 @@ inline Vec3d DynamicSurface::get_triangle_normal(size_t tri) const
 inline Vec3d DynamicSurface::get_triangle_normal_by_region(size_t tri, int region) const
 {
    const Vec3st &t = m_mesh.get_triangle( tri ); 
-   Vec3d normal = get_triangle_normal(t[0], t[1], t[2]);
-   return m_mesh.get_triangle_label(tri)[1] == region? normal : -normal;
+   Vec2i label = m_mesh.get_triangle_label(tri);
+   if(label[0] != region && label[1] != region) return Vec3d(0,0,0);
+   Vec3d normal = get_triangle_normal(tri);
+   return label[1] == region? normal : -normal;
 }
 // --------------------------------------------------------
 ///
