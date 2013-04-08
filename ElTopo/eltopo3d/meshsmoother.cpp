@@ -96,7 +96,7 @@ double MeshSmoother::compute_max_timestep_quadratic_solve( const std::vector<Vec
                 // Hmm, what does this mean?
                 if ( verbose )
                 {
-                    std::cout << "triangle " << i << ": descriminant == " << descriminant << std::endl;
+                    std::cout << "triangle " << i << ": discriminant == " << descriminant << std::endl;
                 }
                 
                 beta = 1.0;
@@ -195,6 +195,7 @@ double MeshSmoother::compute_max_timestep_quadratic_solve( const std::vector<Vec
 ///
 // --------------------------------------------------------
 
+
 void MeshSmoother::null_space_smooth_vertex( size_t v, 
                                             const std::vector<double>& triangle_areas, 
                                             const std::vector<Vec3d>& triangle_normals, 
@@ -213,7 +214,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     const std::vector<size_t>& edges = mesh.m_vertex_to_edge_map[v];
     for ( size_t j = 0; j < edges.size(); ++j )
     {
-        if ( mesh.m_edge_to_triangle_map[ edges[j] ].size() == 1 ) //boundary edge
+        if ( mesh.m_edge_to_triangle_map[ edges[j] ].size() == 1 ) //boundary edge //TODO Handle boundary edges more wisely. (Treat as ridge).
         {
             displacement = Vec3d(0,0,0);
             return;
@@ -222,45 +223,106 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     
     const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[v];
     
-    std::set<int> labelset;
-    bool found_smoothing_region = false;
-    for(size_t i = 0; i < incident_triangles.size(); ++i) {
-       Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
-       labelset.insert(label[0]);
-       labelset.insert(label[1]);
-       if(label[0] == m_nonmanifold_smoothing_region || label[1] == m_nonmanifold_smoothing_region)
-          found_smoothing_region = true;
+    //identify vertices that are folded to be near-coplanar. (i.e. fail to be identified by Jiao's quadric)
+    bool regularize_folded_feature = false;
+    for(size_t i = 0; i < mesh.m_vertex_to_edge_map[v].size(); ++i) {
+       size_t edge_id = mesh.m_vertex_to_edge_map[v][i];
+       double angle = m_surf.get_largest_dihedral(edge_id);
+       if(M_PI-angle < m_sharp_fold_regularization_threshold) { //dihedral angle 170 degrees or more, i.e. two planes intersect at 10 degrees or less. consider it a "fold"
+          regularize_folded_feature = true;
+       }
     }
-    
-    if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1 || !found_smoothing_region) {
-       //usual case
-       unsigned int rank;
-       displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids, rank);
-    }
-    else {
+
+    if(regularize_folded_feature) {
+       //Regularize these very sharp features. These situations typically indicate merging or "fold-overs"
+       //so we try to encourage nicer merging by smoothing them in such a way that the sharp angle
+       //becomes less sharp.
+
+       //Figure out which volumetric region is the sharp one.
+       
+       //Collect all the regions
+       std::set<int> incident_regions;
+       for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[v].size(); ++i)  {
+          size_t tri = m_surf.m_mesh.m_vertex_to_triangle_map[v][i];
+          Vec2i region_pair = m_surf.m_mesh.get_triangle_label(tri);
+          incident_regions.insert(region_pair[0]);
+          incident_regions.insert(region_pair[1]);
+       }
       
-      //choose only the specific region/surface to smooth in the non-manifold case.
-      std::vector<size_t> tri_set;
-      for(size_t i = 0; i < incident_triangles.size(); ++i) {
-         Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
-         if(label[0] == m_nonmanifold_smoothing_region || label[1] == m_nonmanifold_smoothing_region)
-            tri_set.push_back(incident_triangles[i]);
-      }
-      assert(tri_set.size() > 0);
-      unsigned int rank = 0;
-      displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
+       //Find the sharpest one
+       int sharpest_region = -1;
+       double sharp_angle = 0;
+
+       //for each incident edge...
+       for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[v].size(); ++i) {
+          size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[v][i];
+          
+          //let's only consider 3-way junctions, since 4-ways are more complex and unstable anyway
+          if(m_surf.m_mesh.m_edge_to_triangle_map[edge].size() > 3) 
+             continue;
+
+          //for each region...
+          for(std::set<int>::iterator it = incident_regions.begin(); it != incident_regions.end(); ++it) {
+             int region = *it;
+             Vec3d normal_pair[2];
+             //find the relevant dihedral angle between the two triangle normals
+             //loop through the triangles, figure out each triangle's normal
+             //there should only be two triangles on this edge bordering the same region, given that we consider edges with 3 or fewer tris.
+             int next_tri_ind = 0;
+             for(size_t j = 0; j < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); ++j) {
+                size_t tri = m_surf.m_mesh.m_edge_to_triangle_map[edge][j];
+                Vec2i label = m_surf.m_mesh.get_triangle_label(tri);
+                if(label[0] != region && label[1] != region) continue;
+
+                Vec3d normal = m_surf.get_triangle_normal_by_region(tri, region);
+                normal_pair[next_tri_ind] = normal;
+                ++next_tri_ind;
+             }
+
+             //compute dihedral angle between them
+             double dihedral_angle = acos(dot(normal_pair[0], normal_pair[1]));
+             if(dihedral_angle > sharp_angle) {
+                sharpest_region = region;
+                sharp_angle = dihedral_angle;
+             }
+          }
+       }
+
+       if(sharpest_region != -1 && M_PI-sharp_angle < m_sharp_fold_regularization_threshold) {
+          //choose only that specific region/surface to smooth in the non-manifold case.
+          std::vector<size_t> tri_set;
+          for(size_t i = 0; i < incident_triangles.size(); ++i) {
+             Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
+             if(label[0] == sharpest_region || label[1] == sharpest_region)
+                tri_set.push_back(incident_triangles[i]);
+          }
+          assert(tri_set.size() > 0);
+          
+          //This is useful in this case because quadric-based null-space smoothing identifies the tangent plane of the highly folded-triangles, and smooths only in that plane.
+          //The result is that the vertices inside the sharp fold are pulled outward, slightly opens up the angle and regularizes the merge curve.
+          displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids);
+       }
+       else {
+          displacement = get_smoothing_displacement_dihedral(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids);
+       }
        
     }
+    else {
+       displacement = get_smoothing_displacement_dihedral(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids);
+    }
+
+
 
    
 }
 
+
+//The classic null-space approach
 Vec3d MeshSmoother::get_smoothing_displacement( size_t v, 
    const std::vector<size_t>& triangles,
    const std::vector<double>& triangle_areas, 
    const std::vector<Vec3d>& triangle_normals, 
-   const std::vector<Vec3d>& triangle_centroids, 
-   unsigned int& rank) const {
+   const std::vector<Vec3d>& triangle_centroids) const {
       
       std::vector< Vec3d > N;
       std::vector< double > W;
@@ -313,13 +375,11 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
 
       // compute basis for null space
       std::vector<Vec3d> T;
-      rank = 0;
       for ( unsigned int i = 0; i < 3; ++i )
       {
          if ( eigenvalues[i] < G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
          {
             T.push_back( Vec3d( A(0,i), A(1,i), A(2,i) ) );
-            ++rank;
          }
       }
 
@@ -352,6 +412,194 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
 
       return t;
 }
+
+
+//Using dihedral angle to decide feature (edges and corners)
+Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v, 
+                                               const std::vector<size_t>& triangles,
+                                               const std::vector<double>& triangle_areas, 
+                                               const std::vector<Vec3d>& triangle_normals, 
+                                               const std::vector<Vec3d>& triangle_centroids) const 
+{
+   int feature_edge_count = m_surf.vertex_feature_edge_count(v);
+   
+   //Corner, don't smooth it at all.
+   if(feature_edge_count >= 3)
+      return Vec3d(0,0,0);
+
+   //Do an eigen-decomposition to find the medial quadric, a la Jiao
+   std::vector< Vec3d > N;
+   std::vector< double > W;
+
+   for ( size_t i = 0; i < triangles.size(); ++i )
+   {
+      size_t triangle_index = triangles[i];
+      N.push_back( triangle_normals[triangle_index] );
+      W.push_back( triangle_areas[triangle_index] );
+   }
+
+   Mat33d A(0,0,0,0,0,0,0,0,0);
+
+   // Ax = b from N^TWni = N^TWd
+   for ( size_t i = 0; i < N.size(); ++i )
+   {
+      A(0,0) += N[i][0] * W[i] * N[i][0];
+      A(1,0) += N[i][1] * W[i] * N[i][0];
+      A(2,0) += N[i][2] * W[i] * N[i][0];
+
+      A(0,1) += N[i][0] * W[i] * N[i][1];
+      A(1,1) += N[i][1] * W[i] * N[i][1];
+      A(2,1) += N[i][2] * W[i] * N[i][1];
+
+      A(0,2) += N[i][0] * W[i] * N[i][2];
+      A(1,2) += N[i][1] * W[i] * N[i][2];
+      A(2,2) += N[i][2] * W[i] * N[i][2];
+      
+   }
+
+   // get eigen decomposition
+   double eigenvalues[3];
+   double work[9];
+   int info = ~0, n = 3, lwork = 9;
+   LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );      
+
+   if ( info != 0 )
+   {
+      std::cout << "Eigen decomposition failed" << std::endl;
+      std::cout << "number of incident_triangles: " << triangles.size() << std::endl;
+      for ( size_t i = 0; i < triangles.size(); ++i )
+      {
+         size_t triangle_index = triangles[i];
+         std::cout << "triangle: " << m_surf.m_mesh.get_triangle(triangle_index) << std::endl;
+         std::cout << "normal: " << triangle_normals[triangle_index] << std::endl;
+         std::cout << "area: " << triangle_areas[triangle_index] << std::endl;
+      }
+
+      assert(0);
+   }
+
+   if(feature_edge_count == 0) {
+      //do ordinary tangential smoothing (Laplacian smoothing, project out vertical (normal) component
+      
+      //Determine the normal per Jiao's approach 
+      //->using the medial quadric (see Identification of C1 and C2 Discontinuities for Surface Meshes in CAD, equation 2)
+
+      Vec3d Jiao_b(0,0,0);
+      for ( size_t i = 0; i < N.size(); ++i )
+      {
+         Jiao_b += N[i]*W[i];
+      }
+
+      Vec3d Jiao_d(0,0,0);
+      for ( unsigned int i = 0; i < 3; ++i )
+      {
+         if ( eigenvalues[i] > G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
+         {
+            Vec3d eigenvector( A(0,i), A(1,i), A(2,i) );
+            Jiao_d += dot(Jiao_b,eigenvector)*eigenvector / eigenvalues[i];
+         }
+      }
+      
+      Vec3d normal = Jiao_d;
+      normalize(normal); //for good measure.
+
+      Vec3d t(0,0,0);      // displacement
+      double sum_areas = 0;
+
+      for ( size_t i = 0; i < triangles.size(); ++i )
+      {
+         double area = triangle_areas[triangles[i]];
+         sum_areas += area;
+         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         t += area * c;
+      }
+
+      t /= sum_areas;
+      
+      //remove normal component of displacement. t = (I-nn^T)t
+      t = t - normal*dot(normal, t);
+
+      return t;
+   }
+   else  { //feature edge/ridge -> smooth along the ridge
+
+      // compute basis for null space
+      std::vector<Vec3d> T;
+
+      //use only the eigenvector associated with the smallest eigenvalue, since we're assuming we are on a ridge, so there is one degree of freedom
+
+      //Check that the ridge direction is well-conditioned before using it, per Jiao
+      //"Identification of C1 and C2 Discontinuities for Surface Meshes in CAD"
+      //Eigenvalues are sorted in ascending order. (Jiao numbers them in the opposite order from us.)
+      const double epsilon_thresh = sqr(tan(5*M_PI/180));
+      if(eigenvalues[0] / eigenvalues[1] <= 0.7 && eigenvalues[1] / eigenvalues[2] >= 0.00765) {
+         T.push_back( Vec3d( A(0,0), A(1,0), A(2,0) ) ); 
+      }
+      else {
+         //Try to concoct a reasonable alternative ridge/edge vector, when the quadric-based vector is ill-conditioned (e.g. surface seems flat, or actually sharply folded)
+         if(feature_edge_count == 1) {
+            //One feature edge; use its vector as the edge direction.
+            for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[v].size(); ++i) {
+               size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[v][i];
+               if(m_surf.edge_is_feature(edge)) {
+                  Vec3d edgeVec = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]);
+                  normalize(edgeVec);
+                  T.push_back(edgeVec);
+               }
+            }
+         }
+         else if(feature_edge_count == 2) {
+            //Two feature edges. Use the vector between their midpoints.
+            std::vector<Vec3d> edge_midpoints;
+            for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[v].size(); ++i) {
+               size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[v][i];
+               if(m_surf.edge_is_feature(edge)) {
+                  Vec3d midpoint = 0.5*(m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) + m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]));
+                  edge_midpoints.push_back(midpoint);
+               }
+            }
+            T.push_back(normalized(edge_midpoints[0] - edge_midpoints[1]));
+         }
+         else {
+            std::cout <<"Error: Should not get here.\n";
+            assert(false);
+         }
+         
+      }
+         
+      Mat33d null_space_projection(0,0,0,0,0,0,0,0,0);
+      for ( unsigned int row = 0; row < 3; ++row )
+      {
+         for ( unsigned int col = 0; col < 3; ++col )
+         {
+            for ( size_t i = 0; i < T.size(); ++i )
+            {
+               null_space_projection(row, col) += T[i][row] * T[i][col];
+            }
+         }  
+      }
+
+      Vec3d t(0,0,0);      // displacement
+      double sum_areas = 0;
+
+      for ( size_t i = 0; i < triangles.size(); ++i )
+      {
+         double area = triangle_areas[triangles[i]];
+         sum_areas += area;
+         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         t += area * c;
+      }
+
+      t = null_space_projection * t;
+      t /= sum_areas;
+
+      return t;
+
+   }
+
+   
+}
+
 
 // --------------------------------------------------------
 ///

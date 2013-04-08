@@ -144,6 +144,10 @@ public:
     ///    
     inline Vec3d get_triangle_normal(size_t v0, size_t v1, size_t v2) const;
     
+    /// Compute the vector normal to the specified triangle's plane
+    ///
+    inline Vec3d get_triangle_normal_by_region(size_t tri, int region) const;
+
     /// Compute the specified triangle's barycenter
     ///    
     inline Vec3d get_triangle_barycenter( size_t triangle_index ) const;
@@ -237,8 +241,17 @@ public:
     //unsigned int vertex_primary_space_rank_nonmanifold( size_t v ) const;
 
     unsigned int compute_rank_from_triangles(const std::vector<size_t>& tris) const;
+    
+    //Return whether the given edge is a feature as determined by dihedral angles.
+    bool edge_is_feature(size_t edge) const;
+    
+    //Return whether the vertex is on a feature, as determined by dihedral angles
+    int vertex_feature_edge_count(size_t vertex) const;
 
-    /// Determine which region the point is inside by raycasting and looking at the normal
+    /// Get edge dihedral angle
+    double get_largest_dihedral(size_t edge) const;
+
+    /// Determine which region the point is inside by ray-casting and looking at the normal
     /// of the first intersection, and comparing that with the triangle's labeling
     int get_region_containing_point( const Vec3d& p);
     int test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end);
@@ -408,6 +421,7 @@ public:
     
     inline void set_remesh_velocity( size_t n, const Vec3d & v );
     
+
     ///////////////////////////////////////////////////////////////////////
 
     //
@@ -446,6 +460,10 @@ public:
     ///
     double m_aabb_padding;
     
+    /// Angle threshold for declaring an edge to be a feature
+    ///
+    double m_feature_edge_angle_threshold;
+
 public:
   
     friend class CollisionPipeline;
@@ -549,6 +567,20 @@ inline Vec3d DynamicSurface::get_triangle_normal(size_t tri) const
     return get_triangle_normal(t[0], t[1], t[2]);
 }
 
+// --------------------------------------------------------
+///
+/// Compute the normal of a triangle specified by a triangle index, and the relevant region
+///
+// --------------------------------------------------------
+
+inline Vec3d DynamicSurface::get_triangle_normal_by_region(size_t tri, int region) const
+{
+   const Vec3st &t = m_mesh.get_triangle( tri ); 
+   Vec2i label = m_mesh.get_triangle_label(tri);
+   if(label[0] != region && label[1] != region) return Vec3d(0,0,0);
+   Vec3d normal = get_triangle_normal(tri);
+   return label[1] == region? normal : -normal;
+}
 // --------------------------------------------------------
 ///
 /// Compute the normal of a triangle specified by a triple of vertex indices

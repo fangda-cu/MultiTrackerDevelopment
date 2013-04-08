@@ -30,7 +30,7 @@ surftrack_parameters
    perform_improvement 1
    allow_topology_changes 1
    collision_safety 1
-   subdivision_scheme modified
+   subdivision_scheme midpoint
 )
 
 doublebubble

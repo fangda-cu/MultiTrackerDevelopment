@@ -90,45 +90,6 @@ namespace {
 // Member function definitions
 // ---------------------------------------------------------
 
-void FaceOffMultiDriver::initialize( SurfTrack& s)
-{
-   //tell the smoother only to smooth the specified region in non-manifold cases
-   //value of -1 implies smooth with respect to all regions at once.
-   int choice = -1;
-   if(smooth_based_on_exterior) {
-      choice = expanding_surface; //"expanding"
-   }
-   else {
-      choice = -1;                //"shrinking"
-   }
-   s.m_smoother.set_nonmanifold_smoothing_region(choice);
-   s.m_collapser.m_rank_region = choice;
-
-}
-void FaceOffMultiDriver::update( SurfTrack& s, double current_time)
-{
-   //tell the smoother only to smooth the specified region in non-manifold cases
-   //value of -1 implies smooth with respect to all regions at once.
-   
-   int smoothing_choice;
-   if(smooth_based_on_exterior) {
-       smoothing_choice = expanding_surface; //"expanding"
-   }
-   else {
-      smoothing_choice = -1;  //"shrinking"
-   }
-   
-   //if we're past the reversal time, flip the smoothing choice too.
-   if(do_reverse && current_time > reverse_time) {
-      if(smooth_based_on_exterior)
-         smoothing_choice = -1;
-      else
-         smoothing_choice = expanding_surface;
-   }
-   
-   s.m_smoother.set_nonmanifold_smoothing_region(smoothing_choice);
-   s.m_collapser.m_rank_region = smoothing_choice;
-}
 
 // ---------------------------------------------------------
 ///

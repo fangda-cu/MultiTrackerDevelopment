@@ -85,6 +85,8 @@ private:
     ///
     bool is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 );
 
+    int edge_count_bordering_region_pair(size_t vertex, Vec2i region_pair);
+
 };
 
 }

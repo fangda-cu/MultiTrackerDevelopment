@@ -1146,7 +1146,7 @@ void ShellRenderer::render()
       if (!visible && !cubeedge)
         continue;
       
-      glColor4f(0.0, 0.0, 0.0, 0.3);
+      glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
       
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      

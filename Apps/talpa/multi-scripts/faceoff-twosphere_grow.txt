@@ -20,8 +20,8 @@ faceoff_simulation
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.25
-   max_edge_length 0.75
+   min_edge_length 0.6
+   max_edge_length 1.4
    max_volume_change 0.1
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0

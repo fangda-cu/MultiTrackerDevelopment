@@ -609,7 +609,7 @@ namespace {
                   name << std::setfill('0');
                   name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
 
-                  write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+                  //write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
                   //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
                }
 
@@ -765,15 +765,20 @@ namespace {
     
     void update_renderable_objects()
     {
-        // aquire mutex on fluid sim object
+        // acquire mutex on fluid sim object
 #ifdef RUN_ASYNC
         pthread_mutex_lock( &surf_mutex );   
 #endif
         
         renderable_vertices = g_surf->get_positions();
         renderable_ranks.resize(renderable_vertices.size());
-        for(size_t i = 0; i < renderable_ranks.size(); ++i)
-           renderable_ranks[i] = g_surf->vertex_primary_space_rank(i);
+        for(size_t i = 0; i < renderable_ranks.size(); ++i) {
+           int incident_features = g_surf->vertex_feature_edge_count(i);
+           renderable_ranks[i] = incident_features < 2 ? 1 : (incident_features >= 3 ? 3 : 2);
+           
+           //For now, map these to the existing rank scores
+           //renderable_ranks[i] = g_surf->vertex_primary_space_rank(i);
+        }
 
         const std::vector<Vec3st>& mesh_triangles = g_surf->m_mesh.get_triangles();
         
@@ -975,7 +980,10 @@ namespace {
         {
             mesh_renderer.render_fill_triangles = !mesh_renderer.render_fill_triangles;
         }
-        
+
+        if ( key == 'a' ) {
+           mesh_renderer.render_transparent_triangles = ! mesh_renderer.render_transparent_triangles;
+        }
         if ( key == 'v' )
         {
             mesh_renderer.render_vertex_rank = !mesh_renderer.render_vertex_rank;
@@ -1450,6 +1458,7 @@ namespace {
                              renderable_edge_manifolds,
                              renderable_labels);
         
+        //mesh_renderer.render(*g_surf);
         //
         // Render the simulation
         //

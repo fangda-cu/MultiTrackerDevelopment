@@ -67,7 +67,7 @@ m_max_edge_length( UNINITIALIZED_DOUBLE ),     // <-
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   // <-
 m_min_triangle_angle( 2.0 ),
 m_max_triangle_angle( 178.0 ),
-m_large_triangle_angle_to_split(160.0),
+m_large_triangle_angle_to_split(135.0),
 m_use_curvature_when_splitting( false ),
 m_use_curvature_when_collapsing( false ),
 m_min_curvature_multiplier( 1.0 ),
@@ -807,18 +807,18 @@ void SurfTrack::improve_mesh( )
       i = 0;
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
-        i++;
+         if (m_mesheventcallback)
+            m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
+         i++;
       }
       
       // null-space smoothing
       if ( m_perform_smoothing)
       {
-          //std::cout << "Smooth\n";
-          m_smoother.null_space_smoothing_pass( 1.0 );
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
+         //std::cout << "Smooth\n";
+         m_smoother.null_space_smoothing_pass( 1.0 );
+         if (m_mesheventcallback)
+            m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
 
 

@@ -1,5 +1,5 @@
 
-relative_output_path faceofftwosphere
+relative_output_path faceoffthreeway
 
 frame_dt 0.005
 sim_dt 0.005
@@ -9,20 +9,19 @@ region_count 3
 
 faceoff_simulation
 (
-   speedvector  [0 -1 -1 
-		      1 0 0 
-		      1 0 0]
-   expanding_surface 0
-   reverse_time 1.0
-   smooth_using_all 1
+   speedvector  [0 1 -1 
+		      -1 0 1 
+                       1 -1 0]
+   nmf_stationary 1
+   
 )
 
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.6
-   max_edge_length 1.4
-   max_volume_change 0.1
+   min_edge_length 0.3
+   max_edge_length 0.8
+   max_volume_change 100.0
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
    merge_proximity 0.001

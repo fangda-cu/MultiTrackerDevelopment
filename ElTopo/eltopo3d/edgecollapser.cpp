@@ -449,6 +449,153 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     
 }
 
+
+
+
+
+// --------------------------------------------------------
+///
+/// Choose the vertex to keep and delete, and the remaining vertices' position.
+/// Return false if the edge turns out not to be collapsible
+///
+
+// --------------------------------------------------------
+bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position, size_t& vertex_to_keep, size_t& vertex_to_delete, const size_t& edge, bool& new_vert_constraint_label) {
+
+
+   // rank 1, 2, 3 = smooth, ridge, peak
+   // if the vertex ranks don't match, keep the higher rank vertex
+
+   int keep_incident_features = m_surf.vertex_feature_edge_count(vertex_to_keep);
+   int delete_incident_features = m_surf.vertex_feature_edge_count(vertex_to_delete);
+
+   //For now, map these to the existing rank scores
+   unsigned int keep_rank = keep_incident_features < 2 ? 1 : (keep_incident_features >= 3 ? 3 : 2);
+   unsigned int delete_rank = delete_incident_features < 2 ? 1 : (delete_incident_features >= 3 ? 3 : 2);
+   
+   bool edge_is_a_feature = m_surf.edge_is_feature(edge);
+     
+
+   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
+   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
+
+   // boundary vertices have precedence
+   if (keep_vert_is_boundary) keep_rank = 4;
+   if (del_vert_is_boundary) delete_rank = 4;
+
+   // constraint vertices have higher precedence
+   bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep);
+   bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete);
+
+   bool keep_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_keep);
+   bool delete_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_delete);
+
+   new_vert_constraint_label = false;
+   if (keep_vert_is_constrained || delete_vert_is_constrained)
+   {
+      assert(m_surf.m_constrained_vertices_callback);
+      new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
+   }
+
+   if (keep_vert_is_constrained)   keep_rank = 5;
+   if (delete_vert_is_constrained) delete_rank = 5;
+
+   // Handle different cases of constrained, boundary and interior vertices
+   if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_constrained || delete_vert_is_constrained))
+   {
+      //Ranks dominate (i.e. use ranks to decide collapsing first, and if they match then use nonmanifoldness to decide).
+      //-> This is particularly important for outward normal flow: it snaps the non-manifold curve back onto the 
+      //feature curve produced at merge points. (Other scenarios might(?) work better with nonmanifoldness dominating; so I've left
+      //the option in the code for now - Christopher Batty.)
+      bool ranks_dominate = true; 
+      if(ranks_dominate) {
+         if ( keep_rank > delete_rank ) {
+            vertex_new_position = m_surf.get_position(vertex_to_keep);
+         }
+         else if ( delete_rank > keep_rank ) {
+            std::swap(vertex_to_keep, vertex_to_delete);
+            vertex_new_position = m_surf.get_position(vertex_to_keep);
+         }
+         else
+         {
+            //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
+            if(!keep_vert_is_manifold && delete_vert_is_manifold) {
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else if(keep_vert_is_manifold && !delete_vert_is_manifold) {
+               std::swap(vertex_to_keep, vertex_to_delete);
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else {
+               // ranks are equal and manifoldness matches too
+               m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+            }
+         }
+      }
+      else {
+         //Manifoldness dominates
+         if(!keep_vert_is_manifold && delete_vert_is_manifold) {
+            vertex_new_position = m_surf.get_position(vertex_to_keep);
+         }
+         else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
+            std::swap(vertex_to_keep, vertex_to_delete);
+            vertex_new_position = m_surf.get_position(vertex_to_keep);
+         }
+         else {
+            if ( keep_rank > delete_rank ) {
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else if ( delete_rank > keep_rank ) {
+               std::swap(vertex_to_keep, vertex_to_delete);
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else {
+               // ranks are equal and manifoldness matches too
+               m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+            }
+         }
+      }
+
+   } 
+   else if (keep_vert_is_constrained || delete_vert_is_constrained)
+   {
+      assert(m_surf.m_constrained_vertices_callback);
+
+      Vec3d newpos = (m_surf.get_position(vertex_to_keep) + m_surf.get_position(vertex_to_delete)) / 2;
+      if (!m_surf.m_constrained_vertices_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
+      {
+         // the callback decides this edge should not be collapsed
+         if (m_surf.m_verbose)
+            std::cout << "Constraint callback vetoed collapsing." << std::endl;
+         return false;
+      }
+
+      vertex_new_position = newpos;
+   } else if (keep_vert_is_boundary || del_vert_is_boundary)
+   {
+      if (!keep_vert_is_boundary)
+      {
+         std::swap(keep_vert_is_boundary, del_vert_is_boundary);
+         std::swap(vertex_to_keep, vertex_to_delete);
+         std::swap(keep_rank, delete_rank);
+      }
+
+      vertex_new_position = m_surf.get_position(vertex_to_keep);
+   } else  // m_surf.m_allow_vertex_movement_during_collapse == false
+   {
+      if (keep_rank < delete_rank)
+      {
+         std::swap(vertex_to_keep, vertex_to_delete);
+         std::swap(keep_rank, delete_rank);
+      }
+
+      vertex_new_position = m_surf.get_position(vertex_to_keep);
+   }
+
+   return true;
+}
+
+
 // --------------------------------------------------------
 ///
 /// Delete an edge by moving its source vertex to its destination vertex
@@ -616,257 +763,14 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   // --------------
   // decide on new vertex position
 
-  // rank 1, 2, 3 = smooth, ridge, peak
-  // if the vertex ranks don't match, keep the higher rank vertex
-
+  //Choose the vertex to keep and its new position.
   Vec3d vertex_new_position;
-
-#define USE_VERTEX_RANKS
-#ifdef USE_VERTEX_RANKS
-
-  unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep, m_rank_region );
-  unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete, m_rank_region);
-
-  // boundary vertices have precedence
-  if (keep_vert_is_boundary) keep_rank = 4;
-  if (del_vert_is_boundary) delete_rank = 4;
-  
-  // constraint vertices have higher precedence
-  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep);
-  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete);
-
-  bool keep_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_keep);
-  bool delete_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_delete);
-
-  bool new_vert_constraint_label = false;
-  if (keep_vert_is_constrained || delete_vert_is_constrained)
-  {
-    assert(m_surf.m_constrained_vertices_callback);
-    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
-  }
-  
-  if (keep_vert_is_constrained)   keep_rank = 5;
-  if (delete_vert_is_constrained) delete_rank = 5;
-
-  // Handle different cases of constrained, boundary and interior vertices
-  if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_constrained || delete_vert_is_constrained))
-  {
-     //Ranks dominate (i.e. use ranks to decide collapsing first, and if they match then use nonmanifoldness to decide).
-     //-> This is particularly important for outward normal flow: it snaps the non-manifold curve back onto the 
-     //feature curve produced at merge points. (Other scenarios might(?) work better with nonmanifoldness dominating; so I've left
-     //the option in the code for now - Christopher Batty.)
-      bool ranks_dominate = true; 
-      if(ranks_dominate) {
-         if ( keep_rank > delete_rank ) {
-            vertex_new_position = m_surf.get_position(vertex_to_keep);
-         }
-         else if ( delete_rank > keep_rank ) {
-            std::swap(vertex_to_keep, vertex_to_delete);
-            vertex_new_position = m_surf.get_position(vertex_to_keep);
-         }
-         else
-         {
-            //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
-            if(!keep_vert_is_manifold && delete_vert_is_manifold) {
-               vertex_new_position = m_surf.get_position(vertex_to_keep);
-            }
-            else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
-               std::swap(vertex_to_keep, vertex_to_delete);
-               vertex_new_position = m_surf.get_position(vertex_to_keep);
-            }
-            else {
-               // ranks are equal and manifoldness matches too
-               m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
-            }
-         }
-      }
-      else {
-        //Manifoldness dominates
-        if(!keep_vert_is_manifold && delete_vert_is_manifold) {
-           vertex_new_position = m_surf.get_position(vertex_to_keep);
-        }
-        else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
-           std::swap(vertex_to_keep, vertex_to_delete);
-           vertex_new_position = m_surf.get_position(vertex_to_keep);
-        }
-        else {
-           if ( keep_rank > delete_rank ) {
-              vertex_new_position = m_surf.get_position(vertex_to_keep);
-           }
-           else if ( delete_rank > keep_rank ) {
-              std::swap(vertex_to_keep, vertex_to_delete);
-              vertex_new_position = m_surf.get_position(vertex_to_keep);
-           }
-           else {
-              // ranks are equal and manifoldness matches too
-              m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
-           }
-        }
-      }
-     
-  } 
-  else if (keep_vert_is_constrained || delete_vert_is_constrained)
-  {
-    assert(m_surf.m_constrained_vertices_callback);
-
-    Vec3d newpos = (m_surf.get_position(vertex_to_keep) + m_surf.get_position(vertex_to_delete)) / 2;
-    if (!m_surf.m_constrained_vertices_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
-    {
-      // the callback decides this edge should not be collapsed
-      if (m_surf.m_verbose)
-        std::cout << "Constraint callback vetoed collapsing." << std::endl;
-      return false;
-    }
-    
-    vertex_new_position = newpos;
-  } else if (keep_vert_is_boundary || del_vert_is_boundary)
-  {
-    if (!keep_vert_is_boundary)
-    {
-      std::swap(keep_vert_is_boundary, del_vert_is_boundary);
-      std::swap(vertex_to_keep, vertex_to_delete);
-      std::swap(keep_rank, delete_rank);
-    }
-    
-    vertex_new_position = m_surf.get_position(vertex_to_keep);
-  } else  // m_surf.m_allow_vertex_movement_during_collapse == false
-  {
-    if (keep_rank < delete_rank)
-    {
-      std::swap(vertex_to_keep, vertex_to_delete);
-      std::swap(keep_rank, delete_rank);
-    }
-    
-    vertex_new_position = m_surf.get_position(vertex_to_keep);
-  }
-
-  
-//  if ( m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) ) //don't move boundary vertices
-//  {      
-//    if ( keep_rank > delete_rank )
-//    {
-//      vertex_new_position = m_surf.get_position(vertex_to_keep);
-//    }
-//    else if ( delete_rank > keep_rank )
-//    {
-//      size_t tmp = vertex_to_delete;
-//      vertex_to_delete = vertex_to_keep;
-//      vertex_to_keep = tmp;
-//
-//      vertex_new_position = m_surf.get_position(vertex_to_keep);
-//    }
-//    else
-//    {
-//      // ranks are equal
-//      m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
-//    }
-//  }
-//  else
-//  {
-//    // Not allowed to move the vertex tangential to the surface during improve
-//
-//    ///////////////////////////////////////////////////////////////////////
-//    // FD 20121218
-//    //
-//    // This test, combined with the fact that boundary vertices always 
-//    // have rank 4, effectively disables collapsing a boundary edge, 
-//    // regardless of what m_remesh_boundaries is set to.
-//    //
-//    // For our simulation purpose, extremely short edges simply cannot be
-//    // allowed. It still needs to be collapsed even though it means loss
-//    // of feature.
-//    //
-////    if( keep_rank > 1 && del_vert_is_boundary || 
-////      keep_vert_is_boundary && delete_rank > 1) {
-////        //don't do collapses between feature points and boundaries
-////        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
-////        return false;
-////    }
-//    
-//    // TODO: abstract this away from El Topo?
-//    // detect vertices attached to the bounding box walls
-//    int keep_attachment_count = 0;
-//    int delete_attachment_count = 0;
-//    Vec3d keep_pos = m_surf.get_position(vertex_to_keep);
-//    Vec3d delete_pos = m_surf.get_position(vertex_to_delete);
-//    
-//    if (keep_pos[0] < 0 + 1e-6)  keep_attachment_count++;
-//    if (keep_pos[1] < 0 + 1e-6)  keep_attachment_count++;
-//    if (keep_pos[2] < 0 + 1e-6)  keep_attachment_count++;
-//    if (keep_pos[0] > 1 - 1e-6)  keep_attachment_count++;
-//    if (keep_pos[1] > 1 - 1e-6)  keep_attachment_count++;
-//    if (keep_pos[2] > 1 - 1e-6)  keep_attachment_count++;
-//    if (delete_pos[0] < 0 + 1e-6)  delete_attachment_count++;
-//    if (delete_pos[1] < 0 + 1e-6)  delete_attachment_count++;
-//    if (delete_pos[2] < 0 + 1e-6)  delete_attachment_count++;
-//    if (delete_pos[0] > 1 - 1e-6)  delete_attachment_count++;
-//    if (delete_pos[1] > 1 - 1e-6)  delete_attachment_count++;
-//    if (delete_pos[2] > 1 - 1e-6)  delete_attachment_count++;
-//    
-//    if (keep_attachment_count < delete_attachment_count)
-//    {
-//      swap(vertex_to_keep, vertex_to_delete);
-//      swap(keep_attachment_count, delete_attachment_count);
-//      swap(keep_rank, delete_rank);
-//      swap(del_vert_is_boundary, keep_vert_is_boundary);
-//    }
-//    
-//    if (keep_attachment_count == delete_attachment_count)
-//    {
-//      if (keep_rank < delete_rank)
-//      {
-//        swap(vertex_to_keep, vertex_to_delete);
-//        swap(keep_attachment_count, delete_attachment_count);
-//        swap(keep_rank, delete_rank);
-//        swap(del_vert_is_boundary, keep_vert_is_boundary);
-//      }
-//      
-//      if (keep_rank == delete_rank)
-//      {
-//        // same rank, or both boundary: compare max edge valence 
-//        size_t keep_max_edge_valence = 0;
-//        size_t delete_max_edge_valence = 0;
-//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
-//        {
-//          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
-//          if (edge_valence > keep_max_edge_valence)
-//            keep_max_edge_valence = edge_valence;
-//        }
-//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
-//        {
-//          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
-//          if (edge_valence > delete_max_edge_valence)
-//            delete_max_edge_valence = edge_valence;
-//        }
-//        
-//        if (keep_max_edge_valence < delete_max_edge_valence)
-//        {
-//          swap(vertex_to_keep, vertex_to_delete);
-//          swap(keep_max_edge_valence, delete_max_edge_valence);
-//          swap(keep_rank, delete_rank);
-//          swap(del_vert_is_boundary, keep_vert_is_boundary);
-//        }
-//      }
-//    }
-//    
-//    ///////////////////////////////////////////////////////////////////////
-//        
-//    vertex_new_position = m_surf.get_position(vertex_to_keep);
-//
-//  }
-
-  ///////////////////////////////////////////////////////////////////////
-  
-#else
-
-  m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
-
-#endif
-
+  bool new_vert_constraint_label;
+  bool can_collapse = get_new_vertex_position_dihedral(vertex_new_position, vertex_to_keep, vertex_to_delete, edge, new_vert_constraint_label);
+  if(!can_collapse)
+     return false;
 
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
-
-
 
   // --------------
 
@@ -1211,12 +1115,12 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[a][i]);
         if (l[0] >= 0)
         {
-            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            if (l[0] >= (int)regions.size()) regions.resize(l[0] + 1, false);
             regions[l[0]] = true;
         }
         if (l[1] >= 0)
         {
-            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            if (l[1] >= (int)regions.size()) regions.resize(l[1] + 1, false);
             regions[l[1]] = true;
         }
     }
@@ -1225,12 +1129,12 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[b][i]);
         if (l[0] >= 0)
         {
-            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            if (l[0] >= (int)regions.size()) regions.resize(l[0] + 1, false);
             regions[l[0]] = true;
         }
         if (l[1] >= 0)
         {
-            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            if (l[1] >= (int)regions.size()) regions.resize(l[1] + 1, false);
             regions[l[1]] = true;
         }
     }

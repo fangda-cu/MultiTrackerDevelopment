@@ -52,16 +52,13 @@ public:
     
     /// Constructor 
     /// 
-    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, int outer_surf, bool nmf_stationary, bool smooth_w_all ) : 
+    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, int outer_surf, bool nmf_stationary) : 
     speed_matrix(in_speeds) ,
     expanding_surface(outer_surf),
     nonmanifold_stationary(nmf_stationary),
-    do_reverse(false),
-    smooth_based_on_exterior(!smooth_w_all)
+    do_reverse(false)
     {}
     
-    void initialize( ElTopo::SurfTrack& );
-    void update( ElTopo::SurfTrack&, double curr_time );
 
     void set_reversing(double at_time) {
        do_reverse = true;

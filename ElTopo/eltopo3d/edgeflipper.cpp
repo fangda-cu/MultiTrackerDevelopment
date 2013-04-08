@@ -405,7 +405,7 @@ bool EdgeFlipper::flip_edge( size_t edge,
 //    }        
     
     // Don't flip if the quad is not planar enough
-    if (std::abs(dot(old_normal0, old_normal1)) < 0.985)   // 10 degrees angle
+    if (m_surf.edge_is_feature(edge))
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: edge is a feature" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
@@ -779,50 +779,43 @@ bool EdgeFlipper::flip_pass( )
             
             bool flipped = false;
             
-            //valences...
-            int val_a, val_b, val_0, val_1;
-            val_0 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][0]].size();
-            val_1 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][1]].size();
-            val_a = m_mesh.m_vertex_to_edge_map[third_vertex_0].size();
-            val_b = m_mesh.m_vertex_to_edge_map[third_vertex_1].size();
-
-            int max_v_before = max(max(val_0, val_1), max(val_a, val_b));
-            int min_v_before = min(min(val_0, val_1), min(val_a, val_b));
+           
+            bool need_valence_flip = false;
             
+            //Here we treat non-manifold vertices as being on boundaries, and boundaries as boundaries.
+            //so their optimal valence is 4 instead of 6.
+            //See e.g. https://code.google.com/p/stacker/source/browse/trunk/GraphicsLibrary/Remeshing/LaplacianRemesher.h
+            size_t vert_0 = m_mesh.m_edges[i][0];
+            size_t vert_1 = m_mesh.m_edges[i][1];
+            
+            int opt_val_a = m_mesh.is_vertex_nonmanifold(third_vertex_0)?4:(m_mesh.m_is_boundary_vertex[third_vertex_0]?4:6), 
+               opt_val_b = m_mesh.is_vertex_nonmanifold(third_vertex_1)?4:(m_mesh.m_is_boundary_vertex[third_vertex_1]?4:6),
+               opt_val_0 = m_mesh.is_vertex_nonmanifold(vert_0)?4:(m_mesh.m_is_boundary_vertex[vert_0]?4:6), 
+               opt_val_1 = m_mesh.is_vertex_nonmanifold(vert_1)?4:(m_mesh.m_is_boundary_vertex[vert_1]?4:6);
+
+            int val_a, val_b, val_0, val_1;
+            Vec2i region_pair = m_mesh.get_triangle_label(triangle_a); //doesn't matter which triangle we consider.
+            val_0 = edge_count_bordering_region_pair(vert_0, region_pair);
+            val_1 = edge_count_bordering_region_pair(vert_1, region_pair);
+            val_a = edge_count_bordering_region_pair(third_vertex_0, region_pair);
+            val_b = edge_count_bordering_region_pair(third_vertex_1, region_pair);
+
+            int score_before = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
+
             //now work out the valences after
             val_a++; val_b++;
             val_0--; val_1--;
-            
-            int max_v_after = max(max(val_0, val_1), max(val_a, val_b));
-            int min_v_after = min(min(val_0, val_1), min(val_a, val_b));
-          
-            bool nonmanifold = false;
-            std::set<int> regions;
-            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]].size(); j++)
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]][j])[0]),
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][0]][j])[1]);
-            if (regions.size() > 2) nonmanifold = true;
-            regions.clear();
-            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]].size(); j++)
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]][j])[0]),
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[m_mesh.m_edges[i][1]][j])[1]);
-            if (regions.size() > 2) nonmanifold = true;
-            regions.clear();
-            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[third_vertex_0].size(); j++)
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_0][j])[0]),
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_0][j])[1]);
-            if (regions.size() > 2) nonmanifold = true;
-            regions.clear();
-            for (size_t j = 0; j < m_mesh.m_vertex_to_triangle_map[third_vertex_1].size(); j++)
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_1][j])[0]),
-                regions.insert(m_mesh.get_triangle_label(m_mesh.m_vertex_to_triangle_map[third_vertex_1][j])[1]);
-            if (regions.size() > 2) nonmanifold = true;
-            regions.clear();
-            bool need_valence_flip = (!nonmanifold && (max_v_after - min_v_after) < (max_v_before - min_v_before));
+
+            int score_after = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
+               
+            need_valence_flip = score_before > score_after;
             
             double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
-            if ( potential_length < current_length - m_edge_flip_min_length_change || need_valence_flip)
+            
+            //threshold the distance drop to prevent rapid flipping back and forth.
+            //if ( potential_length < 0.9*(current_length - m_edge_flip_min_length_change) || need_valence_flip)
+            if ( need_valence_flip )
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             }
@@ -848,6 +841,30 @@ bool EdgeFlipper::flip_pass( )
     
     return flip_occurred_ever;
     
+}
+
+int EdgeFlipper::edge_count_bordering_region_pair(size_t vertex, Vec2i region_pair) {
+   int count = 0;
+   
+   Vec2i flipped_pair(region_pair[1], region_pair[0]);
+
+   //consider all incident edges
+   for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[vertex][i];
+
+      //consider all triangles on the edge
+      for(size_t j = 0; j < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); ++j) {
+         size_t tri = m_surf.m_mesh.m_edge_to_triangle_map[edge][j];
+         Vec2i labels = m_surf.m_mesh.get_triangle_label(tri);
+         //if one of the triangles matches the requested manifold region (label pair), we're done.
+         if(labels == region_pair || labels == flipped_pair) {
+            ++count;
+            break;
+         }
+      }
+
+   }
+   return count;
 }
 
 }
