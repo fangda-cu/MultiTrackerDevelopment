@@ -423,6 +423,8 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
                 new_point += -1.0/16.0 * surface.get_position(other_vert);
                 found_next_feature = true;
+             } else {
+                found_next_feature = false;
                 break;
              }
           }
@@ -444,6 +446,8 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
              size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
              new_point += -1.0/16.0 * surface.get_position(other_vert);
              found_next_feature = true;
+          } else {
+             found_next_feature = false;
              break;
           }
        }
@@ -476,6 +480,8 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
                 new_point += -1.0/16.0 * surface.get_position(other_vert);
                 found_next_nmf = true;
+             } else {
+                found_next_nmf = false;
                 break;
              }
           }
@@ -497,6 +503,8 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
             size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
             new_point += -1.0/16.0 * surface.get_position(other_vert);
             found_next_nmf = true;
+          } else {
+            found_next_nmf = false;
             break;
           }
        }
