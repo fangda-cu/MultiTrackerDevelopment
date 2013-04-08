@@ -730,7 +730,7 @@ void ShellRenderer::render()
           OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
       
-      if ((p0 - p1).norm() <= 0.1)
+      if ((p0 - p1).norm() <= 0.01)
         glColor4f(0.0, 0.5, 1.0, 1.0);
       
       bool visible = false;
