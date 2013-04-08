@@ -186,34 +186,34 @@ void SetLighting()
 
 void InitMenu()
 {
-    const int centerMenu = glutCreateMenu(menu);
-    glutAddMenuEntry("Object (c)", 'c');
-    glutAddMenuEntry("World origin (C)", 'C');
+//    const int centerMenu = glutCreateMenu(menu);
+//    glutAddMenuEntry("Object (c)", 'c');
+//    glutAddMenuEntry("World origin (C)", 'C');
+//
+//    const int showMenu = glutCreateMenu(menu);
+//    glutAddMenuEntry("Material (1)", '1');
+//    glutAddMenuEntry("Reference (2)", '2');
+//    //glutAddMenuEntry("Bishop (3)", '3');
+//    //glutAddMenuEntry("Show u axis (4)", '4');
+//    //glutAddMenuEntry("Show v axis (5)", '5');
+//    //glutAddMenuEntry("Curvature (6)", '6');
+//    glutAddMenuEntry("Velocity (v)", 'v');
+//    glutAddMenuEntry("Mode (m)", 'm');
+//    glutAddMenuEntry("Draw arrows (a)", 'a');
+//    //glutAddMenuEntry("Force (f)", 'f');
+//    //glutAddMenuEntry("Camera (p)", 'p');
+//    glutAddMenuEntry("Scale to radius (r)", 'r');
+//
+//    glutCreateMenu(menu);
+//    glutAddMenuEntry("Quit (q)", 'q');
+//    glutAddMenuEntry("Save screenshot (s)", 's');
+//
+//    glutAddSubMenu("View center", centerMenu);
+//    glutAddSubMenu("Display", showMenu);
+//    //glutAddMenuEntry("Write to file (w)", 'w');
+//    //glutAddMenuEntry("Print vertex velocities (v)", 'v');
 
-    const int showMenu = glutCreateMenu(menu);
-    glutAddMenuEntry("Material (1)", '1');
-    glutAddMenuEntry("Reference (2)", '2');
-    //glutAddMenuEntry("Bishop (3)", '3');
-    //glutAddMenuEntry("Show u axis (4)", '4');
-    //glutAddMenuEntry("Show v axis (5)", '5');
-    //glutAddMenuEntry("Curvature (6)", '6');
-    glutAddMenuEntry("Velocity (v)", 'v');
-    glutAddMenuEntry("Mode (m)", 'm');
-    glutAddMenuEntry("Draw arrows (a)", 'a');
-    //glutAddMenuEntry("Force (f)", 'f');
-    //glutAddMenuEntry("Camera (p)", 'p');
-    glutAddMenuEntry("Scale to radius (r)", 'r');
-
-    glutCreateMenu(menu);
-    glutAddMenuEntry("Quit (q)", 'q');
-    glutAddMenuEntry("Save screenshot (s)", 's');
-
-    glutAddSubMenu("View center", centerMenu);
-    glutAddSubMenu("Display", showMenu);
-    //glutAddMenuEntry("Write to file (w)", 'w');
-    //glutAddMenuEntry("Print vertex velocities (v)", 'v');
-
-    glutAttachMenu( GLUT_RIGHT_BUTTON);
+//    glutAttachMenu( GLUT_RIGHT_BUTTON);
 }
 
 Vec3d calcSimCenter()
@@ -579,7 +579,7 @@ void scaleMousePos(const int x, const int y, Scalar& xx, Scalar& yy)
 void mouse(int button, int state, int x, int y)
 {
     const bool zooming = (button == GLUT_MIDDLE_BUTTON) || ((button == GLUT_LEFT_BUTTON) && (glutGetModifiers()
-            & GLUT_ACTIVE_CTRL));
+            & GLUT_ACTIVE_CTRL)) || (button == GLUT_RIGHT_BUTTON);
     const bool translating = (button == GLUT_LEFT_BUTTON) && (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
     const bool rotating = (button == GLUT_LEFT_BUTTON) && (glutGetModifiers() == 0);
 
