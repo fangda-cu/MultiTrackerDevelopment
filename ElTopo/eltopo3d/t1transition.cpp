@@ -197,7 +197,7 @@ bool T1Transition::pop_edges()
         bool edge0_oriented = (v == mesh.m_edges[edge0][1]);
         bool edge1_oriented = (v == mesh.m_edges[edge1][0]);
 
-        bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(v);
+        bool original_solid = m_surf.vertex_is_solid(v);
         Vec3d original_position = m_surf.get_position(v);
         
         int upper_region = -1;  // upper means the region is on the top when looking from vertex v0 to vertex v (may or may not be the direction of edge0), with region cut.x() on the left and cut.y() on the right.
@@ -266,10 +266,10 @@ bool T1Transition::pop_edges()
         Vec3d lower_junction_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
         
         // enforce constraints
-        if (original_constraint)
+        if (original_solid)
         {
-            assert(m_surf.m_constrained_vertices_callback);
-            m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, upper_junction_desired_position, lower_junction_desired_position);
+            assert(m_surf.m_solid_vertices_callback);
+            m_surf.m_solid_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, upper_junction_desired_position, lower_junction_desired_position);
         }
         
         // collision test
@@ -426,8 +426,11 @@ bool T1Transition::pop_edges()
         
         m_surf.set_remesh_velocity(nv0, m_surf.get_remesh_velocity(v));
         m_surf.set_remesh_velocity(nv1, m_surf.get_remesh_velocity(v));
-        mesh.set_vertex_constraint_label(nv0, original_constraint);
-        mesh.set_vertex_constraint_label(nv1, original_constraint);
+        if (original_solid)
+        {
+            m_surf.m_masses[nv0] = std::numeric_limits<double>::infinity();
+            m_surf.m_masses[nv1] = std::numeric_limits<double>::infinity();
+        }
         
         std::vector<size_t> verts_to_delete;
         std::vector<Vec3d> verts_to_create;
@@ -786,7 +789,7 @@ bool T1Transition::t1_pass()
         }
         
         // compute the desired destination positions, enforcing constraints
-        bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
+        bool original_solid = m_surf.vertex_is_solid(xj);
         Vec3d original_position = m_surf.get_position(xj);
         
         double mean_edge_length = 0;
@@ -808,10 +811,10 @@ bool T1Transition::t1_pass()
         size_t a = static_cast<size_t>(~0);
         size_t b = static_cast<size_t>(~0);
         
-        if (original_constraint)
+        if (original_solid)
         {
-            assert(m_surf.m_constrained_vertices_callback);            
-            m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
+            assert(m_surf.m_solid_vertices_callback);
+            m_surf.m_solid_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
         }
         
         // collision test
@@ -975,8 +978,11 @@ bool T1Transition::t1_pass()
         
         m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
         m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
-        mesh.set_vertex_constraint_label(a, original_constraint);
-        mesh.set_vertex_constraint_label(b, original_constraint);
+        if (original_solid)
+        {
+            m_surf.m_masses[a] = std::numeric_limits<double>::infinity();
+            m_surf.m_masses[b] = std::numeric_limits<double>::infinity();
+        }
         
         verts_to_delete.push_back(xj);
         verts_to_create.push_back(a_desired_position);
@@ -1238,7 +1244,7 @@ bool T1Transition::pop_vertices()
             }
             
             // compute the desired destination positions, enforcing constraints
-            bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
+            bool original_solid = m_surf.vertex_is_solid(xj);
             Vec3d original_position = m_surf.get_position(xj);
             
             double mean_edge_length = 0;
@@ -1260,10 +1266,10 @@ bool T1Transition::pop_vertices()
             size_t a = static_cast<size_t>(~0);
             size_t b = static_cast<size_t>(~0);
 
-            if (original_constraint)
+            if (original_solid)
             {
-                assert(m_surf.m_constrained_vertices_callback);            
-                m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
+                assert(m_surf.m_solid_vertices_callback);
+                m_surf.m_solid_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
             }
             
             // collision test
@@ -1427,8 +1433,11 @@ bool T1Transition::pop_vertices()
             
             m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
             m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
-            mesh.set_vertex_constraint_label(a, original_constraint);
-            mesh.set_vertex_constraint_label(b, original_constraint);
+            if (original_solid)
+            {
+                m_surf.m_masses[a] = std::numeric_limits<double>::infinity();
+                m_surf.m_masses[b] = std::numeric_limits<double>::infinity();
+            }
             
             verts_to_delete.push_back(xj);
             verts_to_create.push_back(a_desired_position);

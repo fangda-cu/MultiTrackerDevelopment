@@ -25,7 +25,7 @@ class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellStickyRepulsionForce;
 
-class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCallback {
+class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::SolidVerticesCallback {
 
 public:
   class SteppingCallback

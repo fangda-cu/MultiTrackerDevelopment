@@ -682,7 +682,7 @@ public:
     ///////////////////////////////////////////////////////////////////////
     // FD 20121229
     
-    class ConstrainedVerticesCallback
+    class SolidVerticesCallback
     {
     public:
         virtual bool generate_collapsed_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
@@ -699,7 +699,7 @@ public:
         
     };
     
-    ConstrainedVerticesCallback * m_constrained_vertices_callback;
+    SolidVerticesCallback * m_solid_vertices_callback;
 
     ///////////////////////////////////////////////////////////////////////
         
