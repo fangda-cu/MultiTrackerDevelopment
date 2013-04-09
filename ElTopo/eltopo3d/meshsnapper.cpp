@@ -359,13 +359,13 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
    m_surf.set_position( vertex_to_keep, vertex_new_position );
    m_surf.set_newposition( vertex_to_keep, vertex_new_position );
 
-   ///////////////////////////////////////////////////////////////////////
-   // FD 20121229
-   //
-   // update the vertex constraint label
-   //m_surf.m_mesh.set_vertex_constraint_label(vertex_to_keep, new_vert_constraint_label);
-
-   ///////////////////////////////////////////////////////////////////////
+//   ///////////////////////////////////////////////////////////////////////
+//   // FD 20121229
+//   //
+//   // update the vertex constraint label
+//   //m_surf.m_mesh.set_vertex_constraint_label(vertex_to_keep, new_vert_constraint_label);
+//
+//   ///////////////////////////////////////////////////////////////////////
 
   
    // Find anything pointing to the doomed vertex and change it

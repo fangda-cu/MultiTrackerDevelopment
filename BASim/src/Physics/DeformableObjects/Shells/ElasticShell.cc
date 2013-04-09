@@ -1117,7 +1117,6 @@ void ElasticShell::remesh(bool initial)
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<bool> vert_const_labels;
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
@@ -1134,7 +1133,6 @@ void ElasticShell::remesh(bool initial)
   vert_data.reserve(m_obj->nv());
   tri_data.reserve(m_obj->nt());
   tri_labels.reserve(m_obj->nt());
-  vert_const_labels.reserve(m_obj->nv());
   masses.reserve(m_obj->nv());
 
   //walk through vertices, create linear list, store numbering
@@ -1147,11 +1145,11 @@ void ElasticShell::remesh(bool initial)
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+      assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
     if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
-    vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
@@ -1198,7 +1196,6 @@ void ElasticShell::remesh(bool initial)
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesheventcallback = m_mesheventcallback;
-  surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
     
 //    for (size_t i = 0; i < vert_data.size(); i++)
@@ -1495,12 +1492,12 @@ bool ElasticShell::generate_split_position(ElTopo::SurfTrack & st, size_t v0, si
   return true;
 }
 
-bool ElasticShell::generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+bool ElasticShell::generate_collapsed_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
 {
   return (label0 || label1);  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
 }
 
-bool ElasticShell::generate_split_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+bool ElasticShell::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
 {
   ElTopo::Vec3d x0 = st.get_position(v0);
   ElTopo::Vec3d x1 = st.get_position(v1);
