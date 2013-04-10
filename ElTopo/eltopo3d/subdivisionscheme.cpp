@@ -518,29 +518,61 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 
     }
     else if(mesh.m_is_boundary_edge[edge_index]) { //use the 4 point boundary scheme
+        //boundary edge - treat as a curve if possible
+        
         new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
         
+        //find the next and previous boundary edges, fit a curve, and away you go.
+        //if this is not just a single smooth curve (i.e. there are > 2 boundary edges come out of the
+        //adjacent vertex) do midpoint subdivision instead.
+        
         //now need to find the subsequent and preceding vertices along the boundary
+        bool found_next_nmf = false;
         for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p1_index].size(); ++i) {
             size_t nbr_edge = mesh.m_vertex_to_edge_map[p1_index][i];
             if(nbr_edge == edge_index) continue;
             if(mesh.m_is_boundary_edge[nbr_edge]) {
-                //grab the other vertex
-                size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                if(!found_next_nmf) {
+                    //grab the other vertex
+                    size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+                    new_point += -1.0/16.0 * surface.get_position(other_vert);
+                    found_next_nmf = true;
+                } else {
+                    found_next_nmf = false;
+                    break;
+                }
             }
         }
-
+        
+        //TODO Treat it like a straight line if there isn't another one?
+        if(!found_next_nmf) {
+            //couldn't find another nmf-edge, so fail back to midpoint.
+            new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+            return;
+        }
+        
+        //then find the previous one and do the same
+        found_next_nmf = false;
         for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p2_index].size(); ++i) {
             size_t nbr_edge = mesh.m_vertex_to_edge_map[p2_index][i];
             if(nbr_edge == edge_index) continue;
             if(mesh.m_is_boundary_edge[nbr_edge]) {
-                //grab the other vertex
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
                 new_point += -1.0/16.0 * surface.get_position(other_vert);
+                found_next_nmf = true;
+            } else {
+                found_next_nmf = false;
+                break;
             }
         }
-
+        
+        //TODO Treat it like a straight line if there isn't another one?
+        if(!found_next_nmf) {
+            //couldn't find another nmf-edge, so fail back to midpoint.
+            new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+            return;
+        }
+        
     }
    
 
