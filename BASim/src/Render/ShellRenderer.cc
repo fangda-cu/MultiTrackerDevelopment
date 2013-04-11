@@ -1020,7 +1020,7 @@ void ShellRenderer::render()
       } else if (maxangle > 177 * M_PI / 180)
       {
           glColor4f(1.0, 0.0, 1.0, 1.0);
-      } else if(onBBWall(vertPos)) {
+      } else if(m_shell.getVertexConstraintLabel(vh) != 0) {
         OpenGL::color(Color(0.0,1.0,0.0,1.0));
       }
       else {

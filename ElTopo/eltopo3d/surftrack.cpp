@@ -772,11 +772,11 @@ void SurfTrack::improve_mesh( )
       // edge collapsing
       int i;
       i = 0;
-      while ( m_collapser.collapse_pass() ) {
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
-        i++;
-      }
+//      while ( m_collapser.collapse_pass() ) {
+//        if (m_mesheventcallback)
+//          m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
+//        i++;
+//      }
       
       ////////////////////////////////////////////////////////////
       
@@ -789,37 +789,37 @@ void SurfTrack::improve_mesh( )
         i++;
       }
 
-      //std::cout << "Flip\n";
-      // edge flipping
-      m_flipper.flip_pass();		
-      if (m_mesheventcallback)
-        m_mesheventcallback->log() << "Flip pass finished" << std::endl;
-
-      //std::cout << "Collapse\n";
-      // edge collapsing
-      i = 0;
-      while ( m_collapser.collapse_pass() ) {
-        if (m_mesheventcallback)
-          m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
-        i++;
-      }
-        
-      i = 0;
-      while (m_t1_transition_enabled && m_t1transition.t1_pass())
-      {
-         if (m_mesheventcallback)
-            m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
-         i++;
-      }
-      
-      // null-space smoothing
-      if ( m_perform_smoothing)
-      {
-         //std::cout << "Smooth\n";
-         m_smoother.null_space_smoothing_pass( 1.0 );
-         if (m_mesheventcallback)
-            m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
-      }
+//      //std::cout << "Flip\n";
+//      // edge flipping
+//      m_flipper.flip_pass();		
+//      if (m_mesheventcallback)
+//        m_mesheventcallback->log() << "Flip pass finished" << std::endl;
+//
+//      //std::cout << "Collapse\n";
+//      // edge collapsing
+//      i = 0;
+//      while ( m_collapser.collapse_pass() ) {
+//        if (m_mesheventcallback)
+//          m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
+//        i++;
+//      }
+//        
+//      i = 0;
+//      while (m_t1_transition_enabled && m_t1transition.t1_pass())
+//      {
+//         if (m_mesheventcallback)
+//            m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
+//         i++;
+//      }
+//      
+//      // null-space smoothing
+//      if ( m_perform_smoothing)
+//      {
+//         //std::cout << "Smooth\n";
+//         m_smoother.null_space_smoothing_pass( 1.0 );
+//         if (m_mesheventcallback)
+//            m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
+//      }
 
 
       ////////////////////////////////////////////////////////////

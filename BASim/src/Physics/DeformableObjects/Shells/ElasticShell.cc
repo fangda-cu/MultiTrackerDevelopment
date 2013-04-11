@@ -1225,10 +1225,10 @@ void ElasticShell::remesh(bool initial)
         }
     }
   
-  for(int i = 0; i < m_remeshing_iters; ++i) {
-    surface_tracker.topology_changes();
+//  for(int i = 0; i < m_remeshing_iters; ++i) {
+//    surface_tracker.topology_changes();
     surface_tracker.improve_mesh();
-  }
+//  }
   
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
   // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
@@ -1505,8 +1505,8 @@ bool ElasticShell::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0,
   int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
   int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
   
-  assert((constraint0 != 0) == label0);
-  assert((constraint1 != 0) == label1);
+//  assert((constraint0 != 0) == label0);
+//  assert((constraint1 != 0) == label1);
   
   return (constraint0 & constraint1) != 0;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
 }

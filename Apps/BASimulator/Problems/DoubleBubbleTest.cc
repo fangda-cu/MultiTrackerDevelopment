@@ -3287,5 +3287,6 @@ void DoubleBubbleTest::smoothing(const ElTopo::SurfTrack & st)
 
 std::ostream & DoubleBubbleTest::log()
 {
-    return g_recording.log();
+//    return g_recording.log();
+    return std::cout;
 }
