@@ -636,9 +636,9 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
+  updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
   {
-    updateBBWallConstraints();
     shell->remesh(true);
     updateBBWallConstraints();
   }
