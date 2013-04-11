@@ -1135,7 +1135,7 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexPosition(*vit, x + v * dt);
     }  
   }
-  else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
+  else if (m_active_scene == 9 || m_active_scene == 10)
   {
     //normal flow examples
     static Scalar speeds_scene9[3][3] = 
