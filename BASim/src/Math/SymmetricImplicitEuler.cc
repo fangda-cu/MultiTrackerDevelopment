@@ -166,6 +166,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         int dof = m_fixed[i];
         m_deltaX(dof) = m_desired[i] - x0(dof); // set desired position
         v0(dof) = (m_desired[i] - x0(dof)) / m_dt; // reverse engineer desired velocity
+        std::cout << "fixed dof: " << i << " " << dof << " => " << m_desired[i] << std::endl;
     }
 
 #ifndef NDEBUG // check that the desired velocity was correctly computed by taking virtual forward step
@@ -390,7 +391,10 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     VecXd xf(m_diffEq.ndof());
     m_diffEq.getX(xf);
     for (int i = 0; i < (int) m_fixed.size(); ++i)
+    {
       assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
+      std::cout << "fixed dof result: " << i << " " << m_fixed[i] << " => " << xf[m_fixed[i]] << std::endl;
+    }
   }
 #endif
   

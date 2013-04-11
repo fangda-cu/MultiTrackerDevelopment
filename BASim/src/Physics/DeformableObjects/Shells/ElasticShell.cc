@@ -698,12 +698,6 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
     
-//    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
-//    {
-//        assert(getVertexPosition(*v) == getVertexPosition(*v));
-//        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
-//    }
-
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
   
@@ -718,9 +712,21 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
+    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+    {
+        assert(getVertexPosition(*v) == getVertexPosition(*v));
+        std::cout << "$$$$ vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+    }
+    
   if(m_do_eltopo_collisions)
     resolveCollisions(timestep);
   
+    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+    {
+        assert(getVertexPosition(*v) == getVertexPosition(*v));
+        std::cout << "$$$$ vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+    }
+    
   //Ground plane penalty force.
   if(m_ground_collisions) {
 
@@ -799,6 +805,12 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
+    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+    {
+        assert(getVertexPosition(*v) == getVertexPosition(*v));
+        std::cout << "$$$$ vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+    }
+    
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
