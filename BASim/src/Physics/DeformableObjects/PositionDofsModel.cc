@@ -94,6 +94,7 @@ namespace BASim
     {  
       int dofBase = getVertexDofBase(m_constrained_vertices[i]);
       Vec3d pos = m_constraint_positions[i]->operator()(time);
+        std::cout << "scripted: x" << m_constraint_positions[i]->xEnabled << " y" << m_constraint_positions[i]->yEnabled << " z" << m_constraint_positions[i]->zEnabled << " pos = " << pos << std::endl;
       if(m_constraint_positions[i]->xEnabled) {
         dofIndices.push_back(dofBase); 
         dofValues.push_back(pos[0]);

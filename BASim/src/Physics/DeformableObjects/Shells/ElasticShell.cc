@@ -1145,7 +1145,7 @@ void ElasticShell::remesh(bool initial)
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
-      std::cout << "vertec vh = " << vh.idx() << " constraint = " << getDefoObj().isConstrained(vh) << ", " << getVertexConstraintLabel(vh) << " pos = " << vert << std::endl;
+      std::cout << "vertec vh = " << vh.idx() << " constraint = " << getDefoObj().isConstrained(vh) << ", " << ", " << getVertexConstraintLabel(vh) << " pos = " << vert << std::endl;
       assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
     if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
