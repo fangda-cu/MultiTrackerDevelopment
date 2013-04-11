@@ -65,18 +65,6 @@ public:
     ///
     bool t1_pass();
     
-    /// Perform edge popping (first step of T1 transition)
-    ///
-    bool pop_edges();
-    
-    /// Perform vertex popping (second step of T1 transition)
-    ///
-    bool pop_vertices();
-
-    /// Decide the cut direction on an X-junction edge
-    ///
-    Mat2i cut_x_junction_edge(size_t e);
-
     /// Attempt a cut on a junction between two given regions, returning the tensile force (tendency of the two resulting vertices moving apart; positive tensile force indicates the cut can happen)
     ///
     double try_pull_vertex_apart_using_surface_tension(size_t xj, int A, int B, Vec3d & pull_apart_direction);
