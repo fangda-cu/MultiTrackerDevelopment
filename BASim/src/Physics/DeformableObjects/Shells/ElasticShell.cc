@@ -1145,6 +1145,7 @@ void ElasticShell::remesh(bool initial)
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+      std::cout << "vertec vh = " << vh.idx() << " constraint = " << getDefoObj().isConstrained(vh) << ", " << getVertexConstraintLabel(vh) << " pos = " << vert << std::endl;
       assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
     if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
@@ -1155,6 +1156,11 @@ void ElasticShell::remesh(bool initial)
 
     ++id;
   }
+    
+    for (size_t i = 0 ;i < masses.size(); i++)
+    {
+        std::cout << "vertex " << vert_data[i] << " mass = " << masses[i] << std::endl;
+    }
 
   //walk through tris, creating linear list, using the vertex numbering assigned above
   id = 0;
@@ -1505,8 +1511,8 @@ bool ElasticShell::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0,
   int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
   int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
   
-//  assert((constraint0 != 0) == label0);
-//  assert((constraint1 != 0) == label1);
+  assert((constraint0 != 0) == label0);
+  assert((constraint1 != 0) == label1);
   
   return (constraint0 & constraint1) != 0;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
 }

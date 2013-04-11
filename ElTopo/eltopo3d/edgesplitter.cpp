@@ -439,6 +439,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
         if (m_surf.m_verbose) std::cout << "Constraint callback vetoed splitting" << std::endl;
         return false;
      }
+      std::cout << "va = " << m_surf.get_position(vertex_a) << " label = " << m_surf.vertex_is_solid(vertex_a) << std::endl;
      new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid(vertex_a), m_surf.vertex_is_solid(vertex_b));
   }
   else if( incident_tris.size() == 2 || typeid(*m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
@@ -739,6 +740,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 
   //store the resulting vertex as output.
   result_vert = vertex_e;
+    
+    std::cout << "split: at " << split.m_vert_position << " with label " << new_vert_solid_label << std::endl;
 
   return true;
 

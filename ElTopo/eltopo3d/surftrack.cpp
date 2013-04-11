@@ -779,6 +779,10 @@ void SurfTrack::improve_mesh( )
 //      }
       
       ////////////////////////////////////////////////////////////
+        
+        for (size_t i = 0; i < m_mesh.nv(); i++)
+            std::cout << "v " << i << ": " << get_position(i) << ", label = " << vertex_is_solid(i) << std::endl;
+        
       
       // edge splitting
       //std::cout << "Split\n";
