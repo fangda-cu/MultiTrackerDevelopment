@@ -609,6 +609,7 @@ namespace {
                   name << std::setfill('0');
                   name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
 
+                  //Disabled for speed.
                   //write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
                   //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
                }

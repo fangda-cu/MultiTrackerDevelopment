@@ -600,9 +600,12 @@ inline Vec3d DynamicSurface::get_triangle_normal(const Vec3st& tri) const
 
 inline Vec3d DynamicSurface::get_triangle_normal(size_t v0, size_t v1, size_t v2) const
 {
-    Vec3d u = get_position(v1) - get_position(v0);
-    Vec3d v = get_position(v2) - get_position(v0);
-    return normalized(cross(u, v));
+    Vec3d start = get_position(v0);
+    Vec3d u = get_position(v1) - start;
+    Vec3d v = get_position(v2) - start;
+    Vec3d res = cross(u, v);
+    normalize(res);
+    return res;
 }
 
 // --------------------------------------------------------
