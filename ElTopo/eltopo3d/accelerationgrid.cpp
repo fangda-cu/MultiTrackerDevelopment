@@ -54,7 +54,8 @@ m_lastquery(0),
 m_gridxmin(0,0,0),
 m_gridxmax(0,0,0),
 m_cellsize(0,0,0),
-m_invcellsize(0,0,0)
+m_invcellsize(0,0,0),
+m_elementcount(0)
 {
     Vec3st dims(1,1,1);
     Vec3d xmin(0,0,0), xmax(1,1,1);
@@ -77,7 +78,8 @@ m_lastquery(0),
 m_gridxmin(0,0,0),
 m_gridxmax(0,0,0),
 m_cellsize(0,0,0),
-m_invcellsize(0,0,0)
+m_invcellsize(0,0,0),
+m_elementcount(0)
 {
     
     // Call assignment operator
@@ -103,6 +105,7 @@ AccelerationGrid& AccelerationGrid::operator=( const AccelerationGrid& other)
         }
     }
     
+    m_elementcount = other.m_elementcount;
     m_elementidxs = other.m_elementidxs;
     m_elementxmins = other.m_elementxmins;
     m_elementxmaxs = other.m_elementxmaxs;
@@ -200,33 +203,52 @@ void AccelerationGrid::boundstoindices(const Vec3d& xmin, const Vec3d& xmax, Vec
 
 void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
-    if(m_elementidxs.size() <= idx)
+    
+   //if(m_elementxmins.capacity() <= idx) {
+   //   //double the capacities (does resize do this behind the scenes, or only increase by one?)
+   //   m_elementidxs.reserve(m_elementcount*2);
+   //   m_elementxmins.reserve(m_elementcount*2);
+   //   m_elementxmaxs.reserve(m_elementcount*2);
+   //   m_elementquery.reserve(m_elementcount*2);
+   //}
+
+    if(m_elementcount <= idx)
     {
-        m_elementidxs.resize(idx+1);
+        if(m_elementidxs.size() <= idx) {
+           m_elementidxs.resize(idx+1); //only ever grow m_elementidxs. but we won't clear it, since we don't want to have to reallocate its contained vectors.
+           m_elementidxs[idx].reserve(30); //reserve some space in the vector
+        }
+        m_elementidxs[idx].clear(); //make sure the ``new" one is clear, if it already existed.
+
         m_elementxmins.resize(idx+1);
         m_elementxmaxs.resize(idx+1);
         m_elementquery.resize(idx+1);
+        m_elementcount++;
     }
+    
     
     m_elementxmins[idx] = xmin;
     m_elementxmaxs[idx] = xmax;
     m_elementquery[idx] = 0;
-    
+        
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
     
-    for(int i = xmini[0]; i <= xmaxi[0]; i++)
+    Vec3st cur_index;
+    for(cur_index[2] = xmini[2]; cur_index[2] <= xmaxi[2]; cur_index[2]++)
     {
-        for(int j = xmini[1]; j <= xmaxi[1]; j++)
+        for(cur_index[1] = xmini[1]; cur_index[1] <= xmaxi[1]; cur_index[1]++)
         {
-            for(int k = xmini[2]; k <= xmaxi[2]; k++)
-            {
-                std::vector<size_t>*& cell = m_cells(i, j, k);
-                if(!cell)
+           for(cur_index[0] = xmini[0]; cur_index[0] <= xmaxi[0]; cur_index[0]++)
+           {
+                std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                if(!cell) {
                     cell = new std::vector<size_t>();
+                    cell->reserve(10);
+                }
                 
                 cell->push_back(idx);
-                m_elementidxs[idx].push_back(Vec3st(i, j, k));
+                m_elementidxs[idx].push_back(cur_index);
             }
         }
     }
@@ -241,7 +263,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
 void AccelerationGrid::remove_element(size_t idx)
 {
     
-    if ( idx >= m_elementidxs.size() ) { return; }
+    if ( idx >= m_elementcount ) { return; }
     
     for(size_t c = 0; c < m_elementidxs[idx].size(); c++)
     {
@@ -258,6 +280,7 @@ void AccelerationGrid::remove_element(size_t idx)
     }
     
     m_elementidxs[idx].clear();
+    
 }
 
 // --------------------------------------------------------
@@ -285,16 +308,25 @@ void AccelerationGrid::clear()
         std::vector<size_t>*& cell = m_cells.a[i];  
         if(cell)
         {
-            delete cell;
-            cell = 0;
+            //delete cell;
+            //cell = 0;
+           cell->clear(); //don't clear the memory, since we likely want to reuse it.
         }
     }
     
-    m_elementidxs.clear();
+    //clear the entries for each element, but don't clear the overall vector itself, since we
+    //don't want to reallocate memory for the individual vectors.
+    //m_elementidxs.clear();
+    for(int i = 0; i < m_elementidxs.size(); ++i) { 
+       m_elementidxs[i].clear();
+    }
+
     m_elementxmins.clear();
     m_elementxmaxs.clear();
     m_elementquery.clear();
     m_lastquery = 0;
+
+    m_elementcount = 0;
     
 }
 

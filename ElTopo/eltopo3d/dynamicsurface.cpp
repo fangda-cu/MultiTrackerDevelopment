@@ -656,9 +656,9 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
     {
       std::cout << "Checking collisions before integration.\n";
       assert_mesh_is_intersection_free( false );
-      std::cout << "All clear.\n";
+      
     }
-
+    std::cout << "Integrating\n";
     static const bool DEGEN_DOES_NOT_COUNT = false;   
     static const bool USE_NEW_POSITIONS = true;
     
@@ -787,6 +787,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
     static unsigned int step = 0;
     g_stats.add_per_frame_double( "DynamicSurface:integration_time_per_timestep", step, end_time - start_time );
     ++step;
+    std::cout << "Done integrating\n";
     
 }
 
@@ -1641,12 +1642,14 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     //      check_static_broad_phase_is_up_to_date();
     //   }
     
+   static std::vector<size_t> edge_candidates(50); //keep the same one across iterations to save allocations(?)
+   edge_candidates.clear();
+   
     for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
     {
-        std::vector<size_t> edge_candidates;
         
         bool get_solid_edges = !triangle_is_all_solid(i);
-
+        edge_candidates.clear();
         Vec3d low, high;
         triangle_static_bounds( i, low, high );       
         m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );
