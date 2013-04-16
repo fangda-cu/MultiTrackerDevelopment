@@ -253,7 +253,7 @@ void CollisionPipeline::add_triangle_candidates(size_t t,
     Vec3d tmin, tmax;
     m_surface.triangle_continuous_bounds(t, tmin, tmax);
     
-    static std::vector<size_t> candidate_vertices(20);
+    static std::vector<size_t> candidate_vertices(10);
     candidate_vertices.clear();
     m_broadphase.get_potential_vertex_collisions(tmin, tmax, return_solid, return_dynamic, candidate_vertices);
     
@@ -278,7 +278,7 @@ void CollisionPipeline::add_edge_candidates( size_t e,
     Vec3d emin, emax;
     m_surface.edge_continuous_bounds(e, emin, emax);
     
-    static std::vector<size_t> candidate_edges(20);
+    static std::vector<size_t> candidate_edges(10);
     candidate_edges.clear();
     m_broadphase.get_potential_edge_collisions(emin, emax, return_solid, return_dynamic, candidate_edges);
     
@@ -302,7 +302,7 @@ void CollisionPipeline::add_point_candidates( size_t v,
     Vec3d vmin, vmax;
     m_surface.vertex_continuous_bounds(v, vmin, vmax);
     
-    static std::vector<size_t> candidate_triangles(20);
+    static std::vector<size_t> candidate_triangles(10);
     candidate_triangles.clear();
     m_broadphase.get_potential_triangle_collisions(vmin, vmax, return_solid, return_dynamic, candidate_triangles);
     
@@ -364,9 +364,9 @@ void CollisionPipeline::process_proximity_candidates( double dt,
     
     while ( false == candidates.empty() )
     {
-        CollisionCandidateSet::iterator iter = candidates.begin();
-        Vec3st candidate = *iter;
-        candidates.erase(iter);
+
+       Vec3st candidate = candidates.front();
+       candidates.pop_front();
         
         if ( candidate[2] == 1 )
         {
@@ -732,9 +732,9 @@ void CollisionPipeline::process_collision_candidates( double dt,
     
     while ( false == candidates.empty() && i++ < max_iteration )
     {
-        CollisionCandidateSet::iterator iter = candidates.begin();
-        Vec3st candidate = *iter;
-        candidates.erase(iter);
+
+       Vec3st candidate = candidates.front();
+       candidates.pop_front();
         
         if ( candidate[2] == 1 )
         {
@@ -824,9 +824,9 @@ void CollisionPipeline::test_collision_candidates( CollisionCandidateSet& candid
     
     while ( false == candidates.empty() )
     {
-        CollisionCandidateSet::iterator iter = candidates.begin();
-        Vec3st candidate = *iter;
-        candidates.erase(iter);
+
+       Vec3st candidate = candidates.front();
+       candidates.pop_front();
         
         if ( candidate[2] == 1 )
         {

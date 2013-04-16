@@ -1592,7 +1592,8 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
-    std::vector<size_t> overlapping_edges;
+    static std::vector<size_t> overlapping_edges(10);
+    overlapping_edges.clear();
     m_broad_phase->get_potential_edge_collisions( low, high, true, true, overlapping_edges );
     
     for ( size_t i = 0; i < overlapping_edges.size(); ++i )

@@ -353,12 +353,13 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
     
-    for(int i = xmini[0]; i <= xmaxi[0]; ++i)
+    for(int k = xmini[2]; k <= xmaxi[2]; ++k)
     {
-        for(int j = xmini[1]; j <= xmaxi[1]; ++j)
-        {
-            for(int k = xmini[2]; k <= xmaxi[2]; ++k)
-            {
+      for(int j = xmini[1]; j <= xmaxi[1]; ++j)
+      {
+         for(int i = xmini[0]; i <= xmaxi[0]; ++i)
+         {
+
                 std::vector<size_t>* cell = m_cells(i, j, k);
                 
                 if(cell)
