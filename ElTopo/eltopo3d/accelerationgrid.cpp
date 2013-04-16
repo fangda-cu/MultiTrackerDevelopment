@@ -301,7 +301,7 @@ bool boxes_overlap(Vec3i low_0, Vec3i high_0, Vec3i low_1, Vec3i high_1) {
 
 void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
-   //do an add and remove simultaneously (previously we explicitly called add and then remove element)
+   //do an add and remove simultaneously (before we had done them separately, slower)
 
    bool is_new = false;
    if(m_elementcount <= idx)

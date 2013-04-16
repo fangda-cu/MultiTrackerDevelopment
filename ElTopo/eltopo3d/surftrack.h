@@ -488,7 +488,11 @@ public:
     
     /// Remove a triangle from the surface.  Update the underlying TriMesh and acceleration grid. 
     ///
-    void remove_triangle(size_t t);  
+    void remove_triangle(size_t t); 
+
+    /// Efficiently renumber a triangle (replace its verts) for defragging purposes.
+    ///
+    void renumber_triangle(size_t tri, const Vec3st& verts);
     
     /// Add a vertex to the surface.  Update the acceleration grid. 
     ///

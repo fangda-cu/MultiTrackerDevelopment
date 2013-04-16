@@ -131,6 +131,10 @@ public:
     /// Mark a triangle as deleted without actually changing the data structures
     ///
     void nondestructive_remove_triangle(size_t tri);
+
+    /// Efficiently renumber a triangle whose vertex numbers have changed, but the geometry has not. (For defragging.)
+    ///
+    void nondestructive_renumber_triangle(size_t tri, const Vec3st& verts);
     
     /// Add a vertex, update connectivity.  Return index of new vertex.
     ///

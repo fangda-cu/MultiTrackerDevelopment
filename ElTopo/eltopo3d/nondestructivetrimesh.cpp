@@ -195,6 +195,133 @@ size_t NonDestructiveTriMesh::nondestructive_add_triangle( const Vec3st& tri, co
     
 }
 
+/// Efficiently renumber a triangle whose vertex numbers have changed, but the geometry has not. (For defragging.)
+///
+void NonDestructiveTriMesh::nondestructive_renumber_triangle(size_t tri, const Vec3st& verts) {
+
+   assert( verts[0] < m_vertex_to_edge_map.size() );
+   assert( verts[1] < m_vertex_to_edge_map.size() );
+   assert( verts[2] < m_vertex_to_edge_map.size() );
+
+   // Update the vertex->triangle map, m_vertex_to_triangle_map
+   Vec3st old_verts = m_tris[tri];
+   
+   //For any verts of the tri that have changed, update their neighbor relationships
+
+   //Check all old vertices of the triangle
+   for(unsigned int i = 0; i < 3; i++)
+   {
+      //If the vertex isn't in the new triangle, remove the triangle from the vertex's neighbours.
+      size_t cur_old_vert = old_verts[i];
+      
+      //if the old vertex *is* in the new tri, skip it
+      if(cur_old_vert == verts[0] || cur_old_vert == verts[1] || cur_old_vert == verts[2])
+         continue;
+
+      // Get the set of triangles incident on vertex t[i]
+      std::vector<size_t>& vt = m_vertex_to_triangle_map[cur_old_vert];
+
+      // Remove the current triangle from the list.
+      for( int j = 0; j < (int)vt.size(); j++ )
+      {
+         // If a triangle incident on vertex old_verts[i] is tri, delete it
+         if(vt[j] == tri)
+         {  
+            vt.erase( vt.begin() + j );
+            --j;
+         }
+      }
+   }
+   
+
+   // Update the triangle->edge map, m_triangle_to_edge_map
+   // We're going to be dumb about edges for now. Delete them all and then re-add them.
+   Vec3st& te = m_triangle_to_edge_map[tri];
+
+   for(unsigned int i = 0; i < 3; i++)
+   {
+      size_t inc_edge = te[i];
+
+      std::vector<size_t>& et = m_edge_to_triangle_map[inc_edge];
+
+      //remove the triangle from the edge's neighborhood
+      for( int j = 0; j < (int) et.size(); j++)
+      {
+         if(et[j] == tri)
+         {
+            et.erase( et.begin() + j );
+            --j;
+         }
+      }
+
+      if ( et.size() == 1 )
+      {
+         m_is_boundary_edge[inc_edge] = true;
+      }
+      else
+      {
+         m_is_boundary_edge[inc_edge] = false;
+      }
+
+      if ( et.empty() )
+      {
+         // No triangles are incident on this edge.  Delete it.
+         nondestructive_remove_edge( inc_edge );
+      }         
+   }
+
+   // triangle is deleted, clear its auxiliary structures
+   te[0] = te[1] = te[2] = 0;
+
+
+   //Now add the new triangle data back in
+  
+   //assign the new verts to the triangle
+   m_tris[tri] = verts;
+   
+   ////////////////////////////////////////////////////////////
+   
+   //Build the new edges.
+   for(unsigned int i = 0; i < 3; i++)
+   {
+      size_t vtx0 = verts[ i ];
+      size_t vtx1 = verts[ i_plus_one_mod_three[i] ];
+
+      // Find the edge composed of these two vertices
+      size_t e = get_edge_index(vtx0, vtx1);
+      if(e == m_edges.size())
+      {
+         // if the edge doesn't exist, add it
+         e = nondestructive_add_edge(vtx0, vtx1);
+      }
+
+      // Update connectivity
+   
+      m_edge_to_triangle_map[e].push_back(tri);       // edge->triangle
+
+      if ( m_edge_to_triangle_map[e].size() == 1 )
+      {
+         m_is_boundary_edge[e] = true; 
+      }
+      else
+      {
+         m_is_boundary_edge[e] = false;
+      }
+
+      m_triangle_to_edge_map[tri][i] = e;                // triangle->edge
+
+      //if the new vertex *wasn't* in the old tri, add the triangle to the new vertex
+      if(vtx0 != old_verts[0] && vtx0 != old_verts[1] && vtx0 != old_verts[2]) {
+         m_vertex_to_triangle_map[vtx0].push_back(tri);   // vertex->triangle      
+      }
+   }
+
+   update_is_boundary_vertex( verts[0] );
+   update_is_boundary_vertex( verts[1] );
+   update_is_boundary_vertex( verts[2] );
+
+}
+
 // --------------------------------------------------------
 ///
 /// Add a vertex, update connectivity.  Return index of new vertex.
