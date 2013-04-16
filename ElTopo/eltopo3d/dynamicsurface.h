@@ -244,12 +244,15 @@ public:
     
     //Return whether the given edge is a feature as determined by dihedral angles.
     bool edge_is_feature(size_t edge) const;
+    bool edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const;
     
     //Return whether the vertex is on a feature, as determined by dihedral angles
     int vertex_feature_edge_count(size_t vertex) const;
-
+    int vertex_feature_edge_count(size_t vertex, const std::vector<Vec3d>& cached_normals) const;
+    
     /// Get edge dihedral angle
     double get_largest_dihedral(size_t edge) const;
+    double get_largest_dihedral(size_t edge, const std::vector<Vec3d>& cached_normals) const;
 
     /// Determine which region the point is inside by ray-casting and looking at the normal
     /// of the first intersection, and comparing that with the triangle's labeling

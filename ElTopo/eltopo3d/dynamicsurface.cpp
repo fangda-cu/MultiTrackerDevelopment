@@ -514,6 +514,9 @@ unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_
 bool DynamicSurface::edge_is_feature(size_t edge) const {
    return get_largest_dihedral(edge) > m_feature_edge_angle_threshold;
 }
+bool DynamicSurface::edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const {
+   return get_largest_dihedral(edge, cached_normals) > m_feature_edge_angle_threshold;
+}
 
 /// Look at all triangle pairs and get the smallest angle, ignoring regions.
 double DynamicSurface::get_largest_dihedral(size_t edge) const {
@@ -536,6 +539,35 @@ double DynamicSurface::get_largest_dihedral(size_t edge) const {
             norm1 = -norm1;
          }
 
+         double angle = acos(dot(norm0,norm1));
+         largest_angle = std::max(largest_angle,angle);
+      }
+   }
+
+   return largest_angle;
+
+}
+
+/// Look at all triangle pairs and get the smallest angle, ignoring regions.
+double DynamicSurface::get_largest_dihedral(size_t edge, const std::vector<Vec3d> & cached_normals) const {
+   const std::vector<size_t>& tri_list = m_mesh.m_edge_to_triangle_map[edge];
+
+   //consider all triangle pairs
+   size_t v0 = m_mesh.m_edges[edge][0];
+   size_t v1 = m_mesh.m_edges[edge][1];
+
+   double largest_angle = 0;
+   for(size_t i = 0; i < tri_list.size(); ++i) {
+      size_t tri_id0 = tri_list[i];
+      Vec3d norm0 = cached_normals[tri_id0];
+      for(size_t j = i+1; j < tri_list.size(); ++j) {
+         size_t tri_id1 = tri_list[j];
+         Vec3d norm1 = cached_normals[tri_id1];
+
+         //possibly flip one normal so the tris are oriented in a matching way, to get the right dihedral angle.
+         if (m_mesh.oriented(v0, v1, m_mesh.get_triangle(tri_id0)) != m_mesh.oriented(v1, v0, m_mesh.get_triangle(tri_id1))) {
+            norm1 = -norm1;
+         }
          double angle = acos(dot(norm0,norm1));
          largest_angle = std::max(largest_angle,angle);
       }
@@ -1888,6 +1920,15 @@ int DynamicSurface::vertex_feature_edge_count( size_t vertex ) const
    int count = 0;
    for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
       count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i])? 1 : 0);
+   }
+   return count;
+}
+
+int DynamicSurface::vertex_feature_edge_count( size_t vertex, const std::vector<Vec3d>& cached_normals ) const
+{
+   int count = 0;
+   for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i], cached_normals)? 1 : 0);
    }
    return count;
 }
