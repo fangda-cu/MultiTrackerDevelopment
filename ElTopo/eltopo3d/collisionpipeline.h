@@ -24,6 +24,7 @@ struct ImpactZone;
 //  elements 0 and 1 are the indices of the primitives involved.
 //  element 2 specifies if the potential collision is point-triangle or edge-edge
 typedef std::deque<Vec3st> CollisionCandidateSet;
+//typedef std::vector<Vec3st> CollisionCandidateSet;
 
 // --------------------------------------------------------
 ///

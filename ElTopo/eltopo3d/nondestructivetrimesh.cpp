@@ -19,7 +19,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <wallclocktime.h>
-
+#include <algorithm>
 // ---------------------------------------------------------
 // Local constants, typedefs, macros
 // ---------------------------------------------------------
@@ -468,20 +468,18 @@ size_t NonDestructiveTriMesh::get_edge_index(size_t vtx0, size_t vtx1) const
     
     for(size_t e0 = 0; e0 < edges0.size(); e0++)
     {
-        size_t edge0 = edges0[e0];
-        
-        for(size_t e1 = 0; e1 < edges1.size(); e1++)
-        {
-            if( edge0 == edges1[e1] && m_edges[edge0][0] != m_edges[edge0][1] )
-            {
-                assert( ( m_edges[edge0][0] == vtx0 && m_edges[edge0][1] == vtx1 ) ||
-                       ( m_edges[edge0][1] == vtx0 && m_edges[edge0][0] == vtx1 ) );
-                
-                return edge0;
-            }
-        }
+       size_t edge0 = edges0[e0];
+       if(!edge_is_deleted(edge0)) {
+          std::vector<size_t>::const_iterator it = std::find(edges1.begin(), edges1.end(), edge0);
+          if(it != edges1.end()) {
+             assert( ( m_edges[edge0][0] == vtx0 && m_edges[edge0][1] == vtx1 ) ||
+                ( m_edges[edge0][1] == vtx0 && m_edges[edge0][0] == vtx1 ) );
+
+             return edge0;
+          }
+       }
     }
-    
+
     return m_edges.size();
 }
 
