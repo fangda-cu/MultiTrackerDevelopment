@@ -378,12 +378,15 @@ void SurfTrack::defrag_mesh( )
         }
     }    
     
+    //resize/allocate up front rather than via push_backs
+    m_defragged_vertex_map.resize(get_num_vertices());
+
     if ( !any_deleted )
     {
-        for ( size_t i = 0; i < get_num_vertices(); ++i )
-        {
-            m_defragged_vertex_map.push_back( Vec2st(i,i) );
-        }
+       for ( size_t i = 0; i < get_num_vertices(); ++i )
+       {
+         m_defragged_vertex_map[i] = Vec2st(i,i);
+       }
         
         double end_time = get_time_in_seconds();      
         g_stats.add_to_double( "total_clear_deleted_vertices_time", end_time - start_time );
@@ -407,7 +410,7 @@ void SurfTrack::defrag_mesh( )
                 pm_newpositions[j] = pm_newpositions[i];
                 m_masses[j] = m_masses[i];
                 
-                m_defragged_vertex_map.push_back( Vec2st(i,j) );
+                m_defragged_vertex_map[i] = Vec2st(i,j);
                 
                 // Now rewire the triangles containing vertex i
                 
