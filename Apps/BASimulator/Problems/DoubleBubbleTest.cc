@@ -153,9 +153,6 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   st.set_all_positions(pos);
   st.set_all_newpositions(pos);  
   st.set_all_remesh_velocities(std::vector<ElTopo::Vec3d>(n, ElTopo::Vec3d(0)));
-  st.m_mesh.m_vertex_constraint_labels.resize(n);
-  for (size_t i = 0; i < n; i++)
-    st.m_mesh.set_vertex_constraint_label(i, false);
   
 //  std::cout << "nv: " << pos.size() << " " << st.pm_velocities.size() << " " << st.m_mesh.m_vertex_constraint_labels.size() << " " << st.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
 //  std::cout << "nv: " << st.m_mesh.nv() << std::endl;
@@ -188,7 +185,6 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   st.pm_newpositions.resize(nv);
   st.pm_velocities.resize(nv);
   st.m_velocities.resize(nv);
-  st.m_mesh.m_vertex_constraint_labels.resize(nv);
 
 //  std::cout << "nv: " << pos.size() << " " << st.pm_velocities.size() << " " << st.m_mesh.m_vertex_constraint_labels.size() << " " << st.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
 //  std::cout << "nv: " << st.m_mesh.nv() << std::endl;
@@ -640,9 +636,9 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
+  updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
   {
-    updateBBWallConstraints();
     shell->remesh(true);
     updateBBWallConstraints();
   }
@@ -715,7 +711,6 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<bool> vert_const_labels;
   std::vector<Scalar> masses;
   
   DeformableObject& mesh = *shellObj;
@@ -732,7 +727,6 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   vert_data.reserve(shellObj->nv());
   tri_data.reserve(shellObj->nt());
   tri_labels.reserve(shellObj->nt());
-  vert_const_labels.reserve(shellObj->nv());
   masses.reserve(shellObj->nv());
   
   //walk through vertices, create linear list, store numbering
@@ -744,11 +738,11 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = shell->getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+    assert(shellObj->isConstrained(vh) == (shell->getVertexConstraintLabel(vh) != 0));
     if(shellObj->isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
-    vert_const_labels.push_back(shell->getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
     
@@ -792,8 +786,7 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   construction_parameters.m_t1_transition_enabled = false;
   
   ElTopo::SurfTrack * st = new ElTopo::SurfTrack( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
-  st->m_constrained_vertices_callback = shell;
-  st->m_mesh.m_vertex_constraint_labels = vert_const_labels;
+  st->m_solid_vertices_callback = shell;
   st->set_all_remesh_velocities(vert_vel);
   
   return st;
@@ -1142,7 +1135,7 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexPosition(*vit, x + v * dt);
     }  
   }
-  else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
+  else if (m_active_scene == 9 || m_active_scene == 10)
   {
     //normal flow examples
     static Scalar speeds_scene9[3][3] = 

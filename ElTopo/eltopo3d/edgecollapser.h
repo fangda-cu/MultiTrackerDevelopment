@@ -139,10 +139,10 @@ private:
     /// Choose the vertex to keep and delete, and the remaining vertices' position.
     /// Return false if the edge turns out not to be collapsible
     ///
-    bool get_new_vertex_position(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_constraint_label);
+    bool get_new_vertex_position(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
 
     //Experimental edge collapser that decides features based on edge dihedral angles.
-    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_constraint_label);
+    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
 
 };
 

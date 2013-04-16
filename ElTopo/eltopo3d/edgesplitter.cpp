@@ -410,7 +410,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   bool use_average_point;
   bool use_constrained_point;
 
-  bool new_vert_constraint_label = false;
+  bool new_vert_solid_label = false;
 
   // Try to decide what point to use
   if(use_specified_point) { 
@@ -421,10 +421,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      use_constrained_point = false;
      
      new_vertex_proposed_final_position = *pos;
-     if (m_surf.m_constrained_vertices_callback)
-       new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+     if (m_surf.m_solid_vertices_callback)
+       new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid(vertex_a), m_surf.vertex_is_solid(vertex_b));
   }
-  else if (m_surf.m_mesh.get_vertex_constraint_label(vertex_a) || m_surf.m_mesh.get_vertex_constraint_label(vertex_b))
+  else if (m_surf.vertex_is_solid(vertex_a) || m_surf.vertex_is_solid(vertex_b))
   {
      // Use the constraint callbacks if the edge has constraints
      
@@ -433,13 +433,13 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      use_average_point = false;
      use_specified_point = false;
 
-     assert(m_surf.m_constrained_vertices_callback);
-     if (!m_surf.m_constrained_vertices_callback->generate_split_position(m_surf, vertex_a, vertex_b, new_vertex_constrained_position))
+     assert(m_surf.m_solid_vertices_callback);
+     if (!m_surf.m_solid_vertices_callback->generate_split_position(m_surf, vertex_a, vertex_b, new_vertex_constrained_position))
      {
         if (m_surf.m_verbose) std::cout << "Constraint callback vetoed splitting" << std::endl;
         return false;
      }
-     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+     new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid(vertex_a), m_surf.vertex_is_solid(vertex_b));
   }
   else if( incident_tris.size() == 2 || typeid(*m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
      // Use smooth subdivision if the geometry and subd scheme will allow us
@@ -653,16 +653,12 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // Do the actual splitting
 
   double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
-  if (new_vert_constraint_label)
+  if (new_vert_solid_label)
     new_vertex_mass = std::numeric_limits<double>::infinity();
   else
     new_vertex_mass = 1;
   size_t vertex_e = m_surf.add_vertex( new_vertex_proposed_final_position, new_vertex_mass );
 
-  // Update the constraint label of the new vertex
-  
-  mesh.set_vertex_constraint_label(vertex_e, new_vert_constraint_label);
-  
   // Add to change history
   m_surf.m_vertex_change_history.push_back( VertexUpdateEvent( VertexUpdateEvent::VERTEX_ADD, vertex_e, Vec2st( vertex_a, vertex_b) ) );
   
