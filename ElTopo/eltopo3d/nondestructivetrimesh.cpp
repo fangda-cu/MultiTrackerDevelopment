@@ -616,30 +616,43 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
     
     std::vector<Vec3st> new_tris;
     std::vector<Vec2i> new_labels;
-    new_tris.reserve( m_tris.size() );
-    new_labels.reserve( m_triangle_labels.size() );
+
+    //work out the new size first
+    int live_tri_count = 0;
+    for ( size_t i = 0; i < m_tris.size(); ++i )
+       live_tri_count += !triangle_is_deleted(i)?1:0; 
+
+    new_tris.resize( live_tri_count );
+    new_labels.resize( live_tri_count );
 
     if ( defragged_triangle_map != NULL )
     {
-        for ( size_t i = 0; i < m_tris.size(); ++i )
-        {
-            if ( !triangle_is_deleted(i) ) 
-            {
-                new_tris.push_back( m_tris[i] );
-                new_labels.push_back( m_triangle_labels[i] );
-                Vec2st map_entry(i, new_tris.size()-1);
-                defragged_triangle_map->push_back( map_entry );
-            }
-        }
+       defragged_triangle_map->resize(live_tri_count);
+       
+       //then do all the mapping
+       int j_index = 0;
+       for ( size_t i = 0; i < m_tris.size(); ++i )
+       {
+          if ( !triangle_is_deleted(i) ) 
+          {
+             new_tris[j_index] = m_tris[i];
+             new_labels[j_index] = m_triangle_labels[i];
+             Vec2st map_entry(i, j_index);
+             defragged_triangle_map->at(j_index) = map_entry;
+             ++j_index;
+          }
+       }
     }
     else
     {
+        int j_index = 0;
         for ( size_t i = 0; i < m_tris.size(); ++i )
         {
             if ( !triangle_is_deleted(i) ) 
             {
-                new_tris.push_back( m_tris[i] );
-                new_labels.push_back( m_triangle_labels[i] );
+                new_tris[j_index] = m_tris[i];
+                new_labels[j_index] = m_triangle_labels[i];
+                ++j_index;
             }
         }      
     }

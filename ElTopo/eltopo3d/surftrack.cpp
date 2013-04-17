@@ -473,7 +473,7 @@ void SurfTrack::defrag_mesh( )
     // Now clear deleted triangles from the mesh
     // 
     
-    m_mesh.set_num_vertices( get_num_vertices() );    
+    m_mesh.set_num_vertices( get_num_vertices() );   
     m_mesh.clear_deleted_triangles( &m_defragged_triangle_map );
     
     if ( m_collision_safety )
