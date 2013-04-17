@@ -730,7 +730,7 @@ void ShellRenderer::render()
           OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
       
-      if ((p0 - p1).norm() <= 0.1)
+      if ((p0 - p1).norm() <= 0.005)
         glColor4f(0.0, 0.5, 1.0, 1.0);
       
       bool visible = false;
@@ -1011,7 +1011,7 @@ void ShellRenderer::render()
         if (!junctionNeighbor(mesh, vh))
           continue;
       
-      if (minedge < 0.01)
+      if (minedge < 0.001)
       {
           glColor4f(1.0, 1.0, 0.0, 1.0);
       } else if (minangle < 3 * M_PI / 180)
