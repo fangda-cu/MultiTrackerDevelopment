@@ -26,6 +26,8 @@ public:
   
   void setCurrentFrame(int frame) { m_current_frame = frame; m_current_step = 0; m_of.close(); m_if.close(); }
   int currentFrame() const { return m_current_frame; }
+  void setCurrentStep(int step) { m_current_step = step % m_step_pos.size(); }
+  int currentStep() const { return m_current_step; }
   
   void recordSurfTrack(const ElTopo::SurfTrack & st);
   void loadRecording(ElTopo::SurfTrack & st, int next = 0);
