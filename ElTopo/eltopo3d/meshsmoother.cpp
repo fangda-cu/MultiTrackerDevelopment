@@ -227,7 +227,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     bool regularize_folded_feature = false;
     for(size_t i = 0; i < mesh.m_vertex_to_edge_map[v].size(); ++i) {
        size_t edge_id = mesh.m_vertex_to_edge_map[v][i];
-       double angle = m_surf.get_largest_dihedral(edge_id);
+       double angle = m_surf.get_largest_dihedral(edge_id, triangle_normals);
        if(M_PI-angle < m_sharp_fold_regularization_threshold) { //dihedral angle 170 degrees or more, i.e. two planes intersect at 10 degrees or less. consider it a "fold"
           regularize_folded_feature = true;
        }
