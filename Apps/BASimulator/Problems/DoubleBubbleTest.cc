@@ -2860,7 +2860,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
       
-    } else if (k == '>' || k == '.')
+    } else if (k == '.')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st, 1);
@@ -2868,13 +2868,25 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       delete st;
       
       glutPostRedisplay();
-    } else if (k == '<' || k == ',')
+    } else if (k == ',')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st, -1);
       surftrack2mesh(*st);
       delete st;
       
+      glutPostRedisplay();
+    } else if (k == '>')
+    {
+      int f = g_recording.currentStep();
+      g_recording.setCurrentStep(f + 10);
+      std::cout << "current step: " << g_recording.currentStep() << std::endl;
+      glutPostRedisplay();
+    } else if (k == '<')
+    {
+      int f = g_recording.currentStep();
+      g_recording.setCurrentStep(f - 10);
+      std::cout << "current step: " << g_recording.currentStep() << std::endl;
       glutPostRedisplay();
     }
     
