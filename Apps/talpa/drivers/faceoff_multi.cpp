@@ -161,19 +161,24 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
     std::vector< Vec3d > N;
     std::vector< double > W;
     std::vector< double > d;
-    std::vector<size_t> reduced_tris(incident_triangles.size());
+    std::vector<size_t> reduced_tris;
+    
+    reduced_tris.reserve(incident_triangles.size());
+    N.reserve(incident_triangles.size());
+    W.reserve(incident_triangles.size());
+    d.reserve(incident_triangles.size());
 
     for ( size_t i = 0; i < incident_triangles.size(); ++i )
     {
         size_t triangle_index = incident_triangles[i];
-        reduced_tris[i] = triangle_index;
-
+        
         Vec2i label = triangles_labels[i]; //don't process if it's not a growing face
         if(expanding_surface != -1) {
            if(label[0] != expanding_surface && label[1] != expanding_surface)
               continue;
         }
-
+        
+        reduced_tris.push_back(triangle_index);
         N.push_back( triangle_normals[triangle_index] );
         W.push_back( triangle_areas[triangle_index] );
         d.push_back( triangle_plane_distances[triangle_index] );
