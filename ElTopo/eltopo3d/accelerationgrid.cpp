@@ -216,14 +216,14 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
     {
         if(m_elementidxs.size() <= idx) {
            m_elementidxs.resize(idx+1); //only ever grow m_elementidxs. but we won't clear it, since we don't want to have to reallocate its contained vectors.
-           m_elementidxs[idx].reserve(30); //reserve some space in the vector
+           m_elementidxs[idx].reserve(10); //reserve some space in the vector
         }
         m_elementidxs[idx].clear(); //make sure the ``new" one is clear, if it already existed.
 
         m_elementxmins.resize(idx+1);
         m_elementxmaxs.resize(idx+1);
         m_elementquery.resize(idx+1);
-        m_elementcount++;
+        m_elementcount = idx+1;
     }
     
     
@@ -301,6 +301,11 @@ bool boxes_overlap(Vec3i low_0, Vec3i high_0, Vec3i low_1, Vec3i high_1) {
 
 void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
+   
+   remove_element(idx);
+   add_element(idx, xmin, xmax);
+   return;
+   /*
    //do an add and remove simultaneously (before we had done them separately, slower)
 
    bool is_new = false;
@@ -315,7 +320,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
       m_elementxmins.resize(idx+1);
       m_elementxmaxs.resize(idx+1);
       m_elementquery.resize(idx+1);
-      m_elementcount++;
+      m_elementcount = idx+1;
       
       //initialize to nothingness (inverted box)
       m_elementxmins[idx] = Vec3d(-1,-1,-1);
@@ -324,14 +329,19 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
       is_new = true;
    }
    
-   Vec3d xmin_old = m_elementxmins[idx], 
-         xmax_old = m_elementxmaxs[idx];
    
-   //get old and new index bounds
+   Vec3d xmin_old(0,0,0), xmax_old(0,0,0); 
    Vec3i xmini_new, xmaxi_new;
    Vec3i xmini_old, xmaxi_old;
-   boundstoindices(xmin,     xmax,     xmini_new, xmaxi_new);
-   boundstoindices(xmin_old, xmax_old, xmini_old, xmaxi_old);
+
+   if(!is_new) {
+      xmin_old = m_elementxmins[idx];
+      xmax_old = m_elementxmaxs[idx];
+   
+      //get old and new index bounds
+      boundstoindices(xmin,     xmax,     xmini_new, xmaxi_new);
+      boundstoindices(xmin_old, xmax_old, xmini_old, xmaxi_old);
+   }
 
    //try to do something smarter if the element has only moved slightly
    if(!is_new && boxes_overlap(xmini_old, xmaxi_old, xmini_new, xmaxi_new)) {
@@ -397,6 +407,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                   while(*it2 != cur_index) 
                      it2++;
                   m_elementidxs[idx].erase(it2);
+
                }
             }
          }
@@ -409,7 +420,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
          for(size_t c = 0; c < m_elementidxs[idx].size(); c++)
          {
             Vec3st cellcoords = m_elementidxs[idx][c];
-            std::vector<size_t>* cell = m_cells(cellcoords[0], cellcoords[1], cellcoords[2]);
+            std::vector<size_t>*& cell = m_cells(cellcoords[0], cellcoords[1], cellcoords[2]);
 
             std::vector<size_t>::iterator it = cell->begin();
             while(*it != idx)
@@ -450,6 +461,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
          }
       }
    }
+   */
 
 }
 
@@ -466,9 +478,9 @@ void AccelerationGrid::clear()
         std::vector<size_t>*& cell = m_cells.a[i];  
         if(cell)
         {
-            //delete cell;
-            //cell = 0;
-           cell->clear(); //don't clear the memory, since we likely want to reuse it.
+            delete cell;
+            cell = 0;
+           //cell->clear(); //don't clear the memory, since we likely want to reuse it.
         }
     }
     

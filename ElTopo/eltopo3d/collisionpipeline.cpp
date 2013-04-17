@@ -365,8 +365,8 @@ void CollisionPipeline::process_proximity_candidates( double dt,
     while ( false == candidates.empty() )
     {
 
-       Vec3st candidate = candidates.front();
-       candidates.pop_front();
+       Vec3st candidate = candidates.back();
+       candidates.pop_back();
         
         if ( candidate[2] == 1 )
         {
@@ -733,8 +733,8 @@ void CollisionPipeline::process_collision_candidates( double dt,
     while ( false == candidates.empty() && i++ < max_iteration )
     {
 
-       Vec3st candidate = candidates.front();
-       candidates.pop_front();
+       Vec3st candidate = candidates.back();
+       candidates.pop_back();
         
         if ( candidate[2] == 1 )
         {
@@ -825,8 +825,8 @@ void CollisionPipeline::test_collision_candidates( CollisionCandidateSet& candid
     while ( false == candidates.empty() )
     {
 
-       Vec3st candidate = candidates.front();
-       candidates.pop_front();
+       Vec3st candidate = candidates.back();
+       candidates.pop_back();
         
         if ( candidate[2] == 1 )
         {

@@ -23,8 +23,8 @@ struct ImpactZone;
 // A potentially colliding pair of primitives.  Each pair is a triple of size_ts:
 //  elements 0 and 1 are the indices of the primitives involved.
 //  element 2 specifies if the potential collision is point-triangle or edge-edge
-typedef std::deque<Vec3st> CollisionCandidateSet;
-//typedef std::vector<Vec3st> CollisionCandidateSet;
+//typedef std::deque<Vec3st> CollisionCandidateSet;
+typedef std::vector<Vec3st> CollisionCandidateSet;
 
 // --------------------------------------------------------
 ///

@@ -1533,7 +1533,9 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
 {
     bool any_intersection = false;
     
-    std::vector<size_t> overlapping_triangles;
+    static std::vector<size_t> overlapping_triangles(20);
+    overlapping_triangles.clear();
+
     Vec3d low, high;
     
     minmax( get_position(tri[0]), get_position(tri[1]), low, high );
