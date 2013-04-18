@@ -73,7 +73,11 @@ public:
     {
         return (frame_count-1)*frame_length + current_time;
     }
-    
+
+    double dt() const
+    {
+        return frame_length;
+    }
 };
 
 
