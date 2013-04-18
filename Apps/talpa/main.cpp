@@ -654,6 +654,13 @@ namespace {
         {
             sim->m_currently_advancing_simulation = true;
             
+            if (g_recording.isRecording())
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.log() << "Begin time step" << std::endl;
+                g_recording.recordSurfTrack(*st);
+            }
+            
             //
             // Advance frame
             //
@@ -668,13 +675,6 @@ namespace {
             }
             
             std::cout << " --------------- end frame " << frame_stepper->get_frame() << " --------------- \n" << std::endl;
-            
-            if (g_recording.isRecording())
-            {
-                ElTopo::SurfTrack * st = g_surf;
-                g_recording.log() << "Begin time step" << std::endl;
-                g_recording.recordSurfTrack(*st);
-            }
             
             // update frame stepper
             frame_stepper->next_frame();
