@@ -561,7 +561,8 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
                   edge_midpoints.push_back(midpoint);
                }
             }
-            T.push_back(normalized(edge_midpoints[0] - edge_midpoints[1]));
+            Vec3d result = normalized(edge_midpoints[0] - edge_midpoints[1]);
+            T.push_back(result);
          }
          else {
             std::cout <<"Error: Should not get here.\n";
@@ -595,7 +596,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
 
       t = null_space_projection * t;
       t /= sum_areas;
-
+      
       return t;
 
    }
