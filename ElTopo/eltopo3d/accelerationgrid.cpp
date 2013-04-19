@@ -204,7 +204,7 @@ void AccelerationGrid::boundstoindices(const Vec3d& xmin, const Vec3d& xmax, Vec
 void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
     
-    if(m_elementcount <= idx)
+    if(m_elementcount <= (int)idx)
     {
         m_elementidxs.resize(idx+1); //only ever grow m_elementidxs. but we won't clear it, since we don't want to have to reallocate its contained vectors.
         m_elementidxs[idx].reserve(10); //reserve some space in the vector
@@ -221,7 +221,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
     
-    Vec3st cur_index;
+    Vec3i cur_index;
     for(cur_index[2] = xmini[2]; cur_index[2] <= xmaxi[2]; cur_index[2]++)
     {
         for(cur_index[1] = xmini[1]; cur_index[1] <= xmaxi[1]; cur_index[1]++)
@@ -235,7 +235,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
                 }
                 
                 cell->push_back(idx);
-                m_elementidxs[idx].push_back(cur_index);
+                m_elementidxs[idx].push_back(Vec3st(cur_index));
             }
         }
     }
@@ -324,7 +324,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
       Vec3i total_max = max_union(xmaxi_old, xmaxi_new);
 
       //iterate over all the cells, old and new, updating as needed 
-      Vec3st cur_index;
+      Vec3i cur_index;
       for(cur_index[2] = total_min[2]; cur_index[2] <= total_max[2]; cur_index[2]++)
       {
          bool in_new_z = cur_index[2] >= xmini_new[2] && cur_index[2] <= xmaxi_new[2];
@@ -356,7 +356,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                      }
 
                      cell->push_back(idx);
-                     m_elementidxs[idx].push_back(cur_index);
+                     m_elementidxs[idx].push_back(Vec3st(cur_index));
                   }
                   //else: in both new and old, so we don't need to change anything!
                }
@@ -371,7 +371,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
 
                   //erase the index of the *cell* in the *element* -> is this pricy?
                   std::vector<Vec3st>::iterator it2 = m_elementidxs[idx].begin();
-                  while(*it2 != cur_index) 
+                  while(*it2 != Vec3st(cur_index)) 
                      it2++;
                   m_elementidxs[idx].erase(it2);
 
@@ -407,7 +407,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
       Vec3i xmini = xmini_new, xmaxi= xmaxi_new;
 
       //now add the geometry back into the acceleration structure
-      Vec3st cur_index;
+      Vec3i cur_index;
       for(cur_index[2] = xmini[2]; cur_index[2] <= xmaxi[2]; cur_index[2]++)
       {
          for(cur_index[1] = xmini[1]; cur_index[1] <= xmaxi[1]; cur_index[1]++)
@@ -421,7 +421,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                }
 
                cell->push_back(idx);
-               m_elementidxs[idx].push_back(cur_index);
+               m_elementidxs[idx].push_back(Vec3st(cur_index));
             }
          }
       }
@@ -451,7 +451,7 @@ void AccelerationGrid::clear()
     //clear the entries for each element, but don't clear the overall vector itself, since we
     //don't want to reallocate memory for the individual vectors.
     //m_elementidxs.clear();
-    for(int i = 0; i < m_elementidxs.size(); ++i) { 
+    for(size_t i = 0; i < m_elementidxs.size(); ++i) { 
        m_elementidxs[i].clear();
     }
 

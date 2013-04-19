@@ -103,7 +103,7 @@ public:
 
     /// Number of elements being stored.
     ///
-    int m_elementcount;
+    size_t m_elementcount;
 
     
     
