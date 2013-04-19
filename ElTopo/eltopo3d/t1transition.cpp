@@ -49,7 +49,7 @@ struct T1Transition::InteriorStencil
 
 T1Transition::T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries) :
     m_remesh_boundaries(remesh_boundaries),
-    m_pull_apart_distance(0.1),
+    m_pull_apart_distance(0.002),
     m_pull_apart_tendency_threshold(0),
     m_velocity_field_callback(vfc),
     m_surf(surf)
