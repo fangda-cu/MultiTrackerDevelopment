@@ -992,30 +992,30 @@ bool T1Transition::t1_pass()
         
         triangulate_popped_vertex(xj, A, B, a, b, faces_to_delete, faces_to_create, face_labels_to_create);
         
-        // check for big/small angles in the final configuration
-        for (size_t i = 0; i < faces_to_create.size(); i++)
-        {
-            Vec3st & t = faces_to_create[i];
-            Vec3d x0 = (t[0] == a ? a_desired_position : (t[0] == b ? b_desired_position : m_surf.get_position(t[0])));
-            Vec3d x1 = (t[1] == a ? a_desired_position : (t[1] == b ? b_desired_position : m_surf.get_position(t[1])));
-            Vec3d x2 = (t[2] == a ? a_desired_position : (t[2] == b ? b_desired_position : m_surf.get_position(t[2])));
-            
-            double min_angle = min_triangle_angle(x0, x1, x2);
-            if (rad2deg(min_angle) < m_surf.m_min_triangle_angle)
-            {
-                if (m_surf.m_verbose)
-                    std::cout << "Vertex popping: small angle introduced" << std::endl;
-                return false;
-            }
-            
-            double max_angle = max_triangle_angle(x0, x1, x2);
-            if (rad2deg(max_angle) > m_surf.m_max_triangle_angle)
-            {
-                if (m_surf.m_verbose)
-                    std::cout << "Vertex popping: large angle introduced" << std::endl;
-                return false;
-            }
-        }
+//        // check for big/small angles in the final configuration
+//        for (size_t i = 0; i < faces_to_create.size(); i++)
+//        {
+//            Vec3st & t = faces_to_create[i];
+//            Vec3d x0 = (t[0] == a ? a_desired_position : (t[0] == b ? b_desired_position : m_surf.get_position(t[0])));
+//            Vec3d x1 = (t[1] == a ? a_desired_position : (t[1] == b ? b_desired_position : m_surf.get_position(t[1])));
+//            Vec3d x2 = (t[2] == a ? a_desired_position : (t[2] == b ? b_desired_position : m_surf.get_position(t[2])));
+//            
+//            double min_angle = min_triangle_angle(x0, x1, x2);
+//            if (rad2deg(min_angle) < m_surf.m_min_triangle_angle)
+//            {
+//                if (m_surf.m_verbose)
+//                    std::cout << "Vertex popping: small angle introduced" << std::endl;
+//                return false;
+//            }
+//            
+//            double max_angle = max_triangle_angle(x0, x1, x2);
+//            if (rad2deg(max_angle) > m_surf.m_max_triangle_angle)
+//            {
+//                if (m_surf.m_verbose)
+//                    std::cout << "Vertex popping: large angle introduced" << std::endl;
+//                return false;
+//            }
+//        }
         
         if (m_surf.m_verbose)
         {
