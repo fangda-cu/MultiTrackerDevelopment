@@ -189,6 +189,24 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
   Vec3d p1part = m_surface_tension_coeff*mul.cross(-v20);
   Vec3d p0part = -(p1part + p2part);
 
+  bool foi = false;
+  Vec3d poi = Vec3d(0.5, 0.5, 0.5);
+  int mcount = 0;
+  
+  mcount += ((deformed[0] - poi).norm() < 0.1 ? 1 : 0);
+  mcount += ((deformed[1] - poi).norm() < 0.1 ? 1 : 0);
+  mcount += ((deformed[2] - poi).norm() < 0.1 ? 1 : 0);
+  if (mcount >= 2)
+  {
+    foi = true;
+  }
+  
+//  if (foi)
+//  {
+//    std::cout << "v0 = " << deformed[0] << " v1 = " << deformed[1] << " v2 = " << deformed[2] << std::endl;
+//    std::cout << "Ahat = " << mul << " p0part = " << p0part << " p1part = " << p1part << " p2part = " << p2part << std::endl;
+//  }
+
 //  // handle degenerate cases
 //  Scalar mean_edge_length = (v01norm + v12norm + v20norm) / 3;
 //  if (Anorm < 0.01 * mean_edge_length * mean_edge_length)
