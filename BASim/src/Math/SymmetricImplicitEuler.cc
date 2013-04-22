@@ -305,6 +305,8 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
             // Update the differential equation with the current guess
             m_diffEq.set_qdot(m_deltaX / m_dt);
             m_diffEq.set_q(x0 + m_deltaX);
+          VecXd qnow = x0 + m_deltaX;
+          std::cout << "Newton iteration " << curit << " line search iteration " << i << ": v0 = " << qnow.segment<3>(0) << " v3 = " << qnow.segment<3>(9) << std::endl;
 
             // Signal the differential equation that it should recompute cached quantities
             m_diffEq.endIteration();
