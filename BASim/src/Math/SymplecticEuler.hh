@@ -29,6 +29,13 @@ public:
 
   bool execute()
   {
+    std::vector<int> fixed;
+    std::vector<Scalar> desired;
+    std::vector<Scalar> desiredv;
+    m_diffEq.getScriptedDofs(fixed, desired); // fixed are DOF indices, desired are corresponding desired values
+    assert(fixed.size() == desired.size());
+    desiredv.resize(fixed.size());
+    
     m_pDot.resize(m_diffEq.ndof());
     m_pDot.setZero();
     m_diffEq.evaluatePDot(m_pDot);
@@ -41,9 +48,18 @@ public:
 
     m_m.resize(m_diffEq.ndof());
     m_diffEq.getMass(m_m);
+    
+    for (size_t i = 0; i < fixed.size(); i++)
+      desiredv[fixed[i]] = (desired[fixed[i]] - m_x[fixed[i]]) / m_dt;
 
     m_v.array() += m_dt*(m_pDot.array()/m_m.array());
     m_x += m_dt*m_v;
+    
+    for (size_t i = 0 ;i < fixed.size(); i++)
+    {
+      m_x[fixed[i]] = desired[fixed[i]];
+      m_v[fixed[i]] = desiredv[fixed[i]];
+    }
     
     m_diffEq.setV(m_v);
     m_diffEq.setX(m_x);
@@ -55,6 +71,8 @@ public:
 //    }
 
     m_diffEq.endIteration();
+    
+    m_diffEq.endStep();
     
     return true;
   }
