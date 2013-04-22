@@ -213,7 +213,7 @@ void InitMenu()
     //glutAddMenuEntry("Write to file (w)", 'w');
     //glutAddMenuEntry("Print vertex velocities (v)", 'v');
 
-    glutAttachMenu( GLUT_RIGHT_BUTTON);
+//    glutAttachMenu( GLUT_RIGHT_BUTTON);
 }
 
 Vec3d calcSimCenter()
@@ -578,7 +578,7 @@ void scaleMousePos(const int x, const int y, Scalar& xx, Scalar& yy)
 
 void mouse(int button, int state, int x, int y)
 {
-    const bool zooming = (button == GLUT_MIDDLE_BUTTON) || ((button == GLUT_LEFT_BUTTON) && (glutGetModifiers()
+    const bool zooming = (button == GLUT_MIDDLE_BUTTON) || (button == GLUT_RIGHT_BUTTON) || ((button == GLUT_LEFT_BUTTON) && (glutGetModifiers()
             & GLUT_ACTIVE_CTRL));
     const bool translating = (button == GLUT_LEFT_BUTTON) && (glutGetModifiers() & GLUT_ACTIVE_SHIFT);
     const bool rotating = (button == GLUT_LEFT_BUTTON) && (glutGetModifiers() == 0);
