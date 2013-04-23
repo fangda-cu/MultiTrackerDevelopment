@@ -34,6 +34,7 @@ public:
     Scalar dt_left = dt;
     Scalar dt_largest_possible = 0;
 
+    int substep_count = 0;
     while (dt_left > 0)
     {
       m_diffEq.startStep();
@@ -53,7 +54,6 @@ public:
       
       // determine max dt
       dt_largest_possible = m_diffEq.determineMaxDt(m_pDot);
-      std::cout << "dt = " << dt << " left = " << dt_left << " max = " << dt_largest_possible << std::endl;
       if (dt_largest_possible >= dt_left)
         dt_largest_possible = dt_left;
 
@@ -85,7 +85,11 @@ public:
       m_diffEq.endIteration();
       
       m_diffEq.endStep();
+      
+      substep_count++;
     }
+    
+    std::cout << "Symplectic Euler time step finished after " << substep_count << " substeps." << std::endl;
     
     return true;
   }
