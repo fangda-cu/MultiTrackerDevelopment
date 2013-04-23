@@ -56,7 +56,7 @@ public:
     for (size_t i = 0; i < fixed.size(); i++)
       desiredv[i] = (desired[i] - m_x[fixed[i]]) / m_dt;
 
-    m_v.array() += m_dt*(m_pDot.array()/m_m.array());
+    m_v = m_pDot;
     m_x += m_dt*m_v;
     
     for (size_t i = 0 ;i < fixed.size(); i++)
