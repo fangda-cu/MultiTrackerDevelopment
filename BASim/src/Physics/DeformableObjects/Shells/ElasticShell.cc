@@ -467,6 +467,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
     vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
+    std::cout << "vertex " << vh.idx() << " old = " << old_vert << " new = " << vert << std::endl;
     if(getDefoObj().isConstrained(vh)) {
       masses.push_back(numeric_limits<Scalar>::infinity());
     }
@@ -698,11 +699,11 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
     
-//    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
-//    {
-//        assert(getVertexPosition(*v) == getVertexPosition(*v));
-//        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
-//    }
+    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+    {
+        assert(getVertexPosition(*v) == getVertexPosition(*v));
+        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+    }
 
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
