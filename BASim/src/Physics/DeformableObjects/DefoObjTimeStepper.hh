@@ -216,7 +216,7 @@ public:
     Scalar min_edge = std::numeric_limits<Scalar>::max();
     for (EdgeIterator eit = m_obj.edges_begin(); eit != m_obj.edges_end(); ++eit)
     {
-      Scalar l = (m_obj.getVertexPosition(m_obj.fromVertex(*eit)) = m_obj.getVertexPosition(m_obj.toVertex(*eit))).norm();
+      Scalar l = (m_obj.getVertexPosition(m_obj.fromVertex(*eit)) - m_obj.getVertexPosition(m_obj.toVertex(*eit))).norm();
       if (l < min_edge)
         min_edge = l;
     }
