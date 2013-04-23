@@ -983,17 +983,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
     std::cout << "Time: " << this->getTime() << std::endl; 
 
-    updateBBWallConstraints();
   
     g_recording.setCurrentFrame((int)(this->getTime() / this->getDt() + 0.5));
-  
-    if (g_recording.isRecording())
-    {
-        ElTopo::SurfTrack * st = mesh2surftrack();
-        g_recording.log() << "Begin time step" << std::endl;
-        g_recording.recordSurfTrack(*st);
-        delete st;
-    }
 
 //    if (g_recording.isPlaybackOn())
 //    {
@@ -1067,6 +1058,19 @@ void DoubleBubbleTest::updateBBWallConstraints()
         }
     }
     
+}
+
+void DoubleBubbleTest::afterStartStep()
+{
+  updateBBWallConstraints();
+  
+  if (g_recording.isRecording())
+  {
+    ElTopo::SurfTrack * st = mesh2surftrack();
+    g_recording.log() << "Begin time step" << std::endl;
+    g_recording.recordSurfTrack(*st);
+    delete st;
+  }
 }
 
 void DoubleBubbleTest::beforeEndStep()

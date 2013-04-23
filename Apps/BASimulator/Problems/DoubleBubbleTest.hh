@@ -73,6 +73,7 @@ public:
   virtual void resumeFromfile( std::ifstream& ifs );
 
   void beforeEndStep();
+  void afterStartStep();
   
 protected:
   void Setup();
