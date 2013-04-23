@@ -1087,7 +1087,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_merge_proximity_epsilon = 0.2*m_remesh_edge_min_len;
   construction_parameters.m_allow_vertex_movement_during_collapse = true;
   construction_parameters.m_perform_smoothing = false;
-  construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
+  construction_parameters.m_min_edge_length = 0.01 * (m_remesh_edge_min_len + m_remesh_edge_max_len) / 2;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
@@ -1101,7 +1101,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   construction_parameters.m_velocity_field_callback = NULL;
-  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.01) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
+  construction_parameters.m_pull_apart_distance = (initial ? 0.01 : 0.01) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
   
   ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
   ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
