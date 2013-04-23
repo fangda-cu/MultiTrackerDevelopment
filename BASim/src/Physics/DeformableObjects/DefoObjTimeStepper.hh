@@ -228,7 +228,7 @@ public:
     max_force *= sqrt(3); // conservative estimation of the norm of a three component vector
     
     Scalar max_dt = min_edge / max_force / 2.2;
-
+    
     return max_dt;
   }
 

@@ -192,6 +192,8 @@ m_mesheventcallback(NULL)
         m_max_volume_change = initial_parameters.m_max_volume_change;  
     }
     
+    m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+    
     if ( m_verbose )
     {
         std::cout << "m_min_edge_length: " << m_min_edge_length << std::endl;

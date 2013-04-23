@@ -160,6 +160,9 @@ struct SurfTrackInitializationParameters
     /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
     ///
     bool m_remesh_boundaries;
+  
+    /// Pull apart distance, in terms of fraction of average incident edge length
+    double m_pull_apart_distance;
 
     /// Whether to be verbose in outputting data
     ///
