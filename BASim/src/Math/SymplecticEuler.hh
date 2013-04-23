@@ -29,54 +29,63 @@ public:
 
   bool execute()
   {
-    m_diffEq.startStep();
-    
-    m_diffEq.startIteration();
-    
-    std::vector<int> fixed;
-    std::vector<Scalar> desired;
-    std::vector<Scalar> desiredv;
-    m_diffEq.getScriptedDofs(fixed, desired); // fixed are DOF indices, desired are corresponding desired values
-    assert(fixed.size() == desired.size());
-    desiredv.resize(fixed.size());
-    
-    m_pDot.resize(m_diffEq.ndof());
-    m_pDot.setZero();
-    m_diffEq.evaluatePDot(m_pDot);
+    // adaptive time stepping
+    Scalar dt = m_dt;
+    Scalar dt_left = dt;
+    Scalar dt_largest_possible = 0;
 
-    m_x.resize(m_diffEq.ndof());
-    m_diffEq.getX(m_x);
-
-    m_v.resize(m_diffEq.ndof());
-    m_diffEq.getV(m_v);
-
-    m_m.resize(m_diffEq.ndof());
-    m_diffEq.getMass(m_m);
-    
-    for (size_t i = 0; i < fixed.size(); i++)
-      desiredv[i] = (desired[i] - m_x[fixed[i]]) / m_dt;
-
-    m_v = m_pDot;
-    m_x += m_dt*m_v;
-    
-    for (size_t i = 0 ;i < fixed.size(); i++)
+    while (dt_left > 0)
     {
-      m_x[fixed[i]] = desired[i];
-      m_v[fixed[i]] = desiredv[i];
+      m_diffEq.startStep();
+      
+      m_diffEq.startIteration();
+      
+      std::vector<int> fixed;
+      std::vector<Scalar> desired;
+      std::vector<Scalar> desiredv;
+      m_diffEq.getScriptedDofs(fixed, desired); // fixed are DOF indices, desired are corresponding desired values
+      assert(fixed.size() == desired.size());
+      desiredv.resize(fixed.size());
+      
+      m_pDot.resize(m_diffEq.ndof());
+      m_pDot.setZero();
+      m_diffEq.evaluatePDot(m_pDot);
+      
+      // determine max dt
+      dt_largest_possible = m_diffEq.determineMaxDt(m_pDot);
+      std::cout << "dt = " << dt << " left = " << dt_left << " max = " << dt_largest_possible << std::endl;
+      if (dt_largest_possible >= dt_left)
+        dt_largest_possible = dt_left;
+
+      m_x.resize(m_diffEq.ndof());
+      m_diffEq.getX(m_x);
+
+      m_v.resize(m_diffEq.ndof());
+      m_diffEq.getV(m_v);
+
+      m_m.resize(m_diffEq.ndof());
+      m_diffEq.getMass(m_m);
+      
+      for (size_t i = 0; i < fixed.size(); i++)
+        desiredv[i] = (desired[i] - m_x[fixed[i]]) / m_dt;
+
+      m_v = m_pDot;
+      m_x += dt_largest_possible * m_v;
+      dt_left -= dt_largest_possible;
+      
+      for (size_t i = 0 ;i < fixed.size(); i++)
+      {
+        m_x[fixed[i]] = desired[i];
+        m_v[fixed[i]] = desiredv[i];
+      }
+      
+      m_diffEq.set_qdot(m_v);
+      m_diffEq.set_q(m_x);
+
+      m_diffEq.endIteration();
+      
+      m_diffEq.endStep();
     }
-    
-    m_diffEq.set_qdot(m_v);
-    m_diffEq.set_q(m_x);
-
-//    for (int i = 0; i < m_diffEq.ndof(); ++i) {
-//      Scalar v = m_diffEq.getV(i) + m_dt * m_pDot(i) / m_diffEq.getMass(i);
-//      m_diffEq.setV(i, v);
-//      m_diffEq.setX(i, m_diffEq.getX(i) + m_dt * v);
-//    }
-
-    m_diffEq.endIteration();
-    
-    m_diffEq.endStep();
     
     return true;
   }
