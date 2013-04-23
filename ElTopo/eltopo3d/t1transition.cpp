@@ -259,8 +259,8 @@ bool T1Transition::pop_edges()
         
         Vec3d pull_apart_offset = (upper_vertices_mean - lower_vertices_mean);
         pull_apart_offset /= mag(pull_apart_offset);
-        pull_apart_offset *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
-        
+//        pull_apart_offset *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+      
         // compute the desired destination positions for the new vertices
         Vec3d upper_junction_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
         Vec3d lower_junction_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
@@ -801,8 +801,9 @@ bool T1Transition::t1_pass()
         assert(edge_count > 0);
         mean_edge_length /= edge_count;
         
-        Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
-        
+//        Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+        Vec3d pull_apart_offset = pull_apart_direction;
+      
         Vec3d a_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
         Vec3d b_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
         size_t a = static_cast<size_t>(~0);
@@ -1253,8 +1254,9 @@ bool T1Transition::pop_vertices()
             assert(edge_count > 0);
             mean_edge_length /= edge_count;
             
-            Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
-                
+//            Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+            Vec3d pull_apart_offset = pull_apart_direction;
+          
             Vec3d a_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
             Vec3d b_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
             size_t a = static_cast<size_t>(~0);
@@ -1738,9 +1740,11 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
         for (int j = 0; j < 3; j++)
         {
             if (t[j] == a)
-                pos[j] = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//                pos[j] = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+                pos[j] = xxj + pull_apart_direction * m_pull_apart_distance;
             else if (t[j] == b)
-                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+                pos[j] = xxj - pull_apart_direction * m_pull_apart_distance;
             else
                 pos[j] = m_surf.get_position(t[j]);
         }
@@ -1831,15 +1835,18 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     
     // decide the final positions
     Vec3d xxj = m_surf.get_position(xj);
-    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-    
+//    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+    Vec3d x_a = xxj + pull_apart_direction * m_pull_apart_distance;
+    Vec3d x_b = xxj - pull_apart_direction * m_pull_apart_distance;
+  
 //    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
     Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
     Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
     
-    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
-    
+//    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
+    double divergence = dot(v_a - v_b, pull_apart_direction) / (m_pull_apart_distance * 2);
+  
     return divergence;
 }
     

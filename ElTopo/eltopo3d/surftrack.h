@@ -161,7 +161,7 @@ struct SurfTrackInitializationParameters
     ///
     bool m_remesh_boundaries;
   
-    /// Pull apart distance, in terms of fraction of average incident edge length
+    /// Pull apart distance, in terms of absolute length
     double m_pull_apart_distance;
 
     /// Whether to be verbose in outputting data

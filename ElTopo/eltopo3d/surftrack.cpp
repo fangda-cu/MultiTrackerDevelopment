@@ -193,7 +193,8 @@ m_mesheventcallback(NULL)
     }
     
     m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
-    
+    m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+  
     if ( m_verbose )
     {
         std::cout << "m_min_edge_length: " << m_min_edge_length << std::endl;

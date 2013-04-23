@@ -75,6 +75,9 @@ public:
     /// The region label to consider when computing ranks
     /// (default = -1, means consider all regions.)
     int m_rank_region;
+  
+    /// t1 pull apart distance
+    double m_t1_pull_apart_distance;
 
 private:
     
