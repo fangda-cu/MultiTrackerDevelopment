@@ -210,6 +210,26 @@ public:
     assert( velocities.size() == m_obj.ndof() );
     for( int i = 0; i < m_obj.ndof(); ++i ) velocities(i) = m_obj.getVel(i);
   }
+  
+  Scalar determineMaxDt(const VecXd & pdot)
+  {
+    Scalar min_edge = std::numeric_limits<Scalar>::max();
+    for (EdgeIterator eit = m_obj.edges_begin(); eit != m_obj.edges_end(); ++eit)
+    {
+      Scalar l = (m_obj.getVertexPosition(m_obj.fromVertex(*eit)) = m_obj.getVertexPosition(m_obj.toVertex(*eit))).norm();
+      if (l < min_edge)
+        min_edge = l;
+    }
+    
+    Scalar max_force = -1;
+    for (int i = 0; i < pdot.size(); i++)
+      if (fabs(pdot[i]) > max_force)
+        max_force = fabs(pdot[i]);
+    max_force *= sqrt(3); // conservative estimation of the norm of a three component vector
+    
+    Scalar max_dt = min_edge / max_force / 2.2;
+    return max_dt;
+  }
 
   /**
    * This function computes the force on each degree of freedom
