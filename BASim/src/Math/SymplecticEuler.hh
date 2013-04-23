@@ -60,11 +60,9 @@ public:
       m_x[fixed[i]] = desired[fixed[i]];
       m_v[fixed[i]] = desiredv[fixed[i]];
     }
-    std::cout << "v = " << m_v << std::endl;
     
-    
-    m_diffEq.set_qdot(m_v);
-//    m_diffEq.set_q(m_x);
+    m_diffEq.setV(m_v);
+    m_diffEq.setX(m_x);
 
 //    for (int i = 0; i < m_diffEq.ndof(); ++i) {
 //      Scalar v = m_diffEq.getV(i) + m_dt * m_pDot(i) / m_diffEq.getMass(i);

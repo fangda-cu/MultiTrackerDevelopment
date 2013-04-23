@@ -703,7 +703,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 //        assert(getVertexPosition(*v) == getVertexPosition(*v));
 //        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
 //    }
-  
+
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
   
@@ -1154,13 +1154,9 @@ void ElasticShell::remesh(bool initial)
     vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
-    
-    std::cout << "vertex " << id << ": " << vert << " mass = " << masses.back() << std::endl;
 
     ++id;
   }
-  
-  std::cout << "nf = " << mesh.nf() << " " << std::endl;
 
   //walk through tris, creating linear list, using the vertex numbering assigned above
   id = 0;
@@ -1178,7 +1174,6 @@ void ElasticShell::remesh(bool initial)
     face_numbers[fh] = id;
     reverse_trimap.push_back(fh);
     ++id;
-    std::cout << "triangle: " << tri << std::endl;
   }
 
   //constrain all the vertices in faces that are used by collision springs to prevent remeshing there,
@@ -1209,8 +1204,6 @@ void ElasticShell::remesh(bool initial)
 //    for (size_t i = 0; i < vert_data.size(); i++)
 //        std::cout << "vertex " << i << ": " << vert_data[i] << std::endl;
     
-  std::cout << "nf = " << surface_tracker.m_mesh.nt() << " " << std::endl;
-  
     //remove faces that are completely within a BB wall (equivalent to a flap face if BB walls are triangulated). these faces result in collision handling difficulties when they collide within BB walls.
     for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
     {
@@ -1225,25 +1218,21 @@ void ElasticShell::remesh(bool initial)
         Vec3d x0(v0[0], v0[1], v0[2]);
         Vec3d x1(v1[0], v1[1], v1[2]);
         Vec3d x2(v2[0], v2[1], v2[2]);
-      std::cout << "x0 = " << x0 << " x1 = " << x1 << " x2 = " << x2 << std::endl;
-      
+        
         int onwall0 = onBBWall(x0);
         int onwall1 = onBBWall(x1);
         int onwall2 = onBBWall(x2);
         if ((onwall0 & onwall1 & onwall2) != 0)
         {
-//            surface_tracker.remove_triangle(i);
-          std::cout << "remove" << std::endl;
+            surface_tracker.remove_triangle(i);
         }
     }
-  std::cout << "nf = " << surface_tracker.m_mesh.nt() << " " << std::endl;
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
-//    surface_tracker.topology_changes();
-//    surface_tracker.improve_mesh();
+    surface_tracker.topology_changes();
+    surface_tracker.improve_mesh();
   }
   
-  std::cout << "nf = " << surface_tracker.m_mesh.nt() << " " << std::endl;
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
   // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
   
