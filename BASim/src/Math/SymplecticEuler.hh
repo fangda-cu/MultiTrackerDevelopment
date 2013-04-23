@@ -29,6 +29,10 @@ public:
 
   bool execute()
   {
+    m_diffEq.startStep();
+    
+    m_diffEq.startIteration();
+    
     std::vector<int> fixed;
     std::vector<Scalar> desired;
     std::vector<Scalar> desiredv;
