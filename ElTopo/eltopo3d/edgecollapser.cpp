@@ -623,8 +623,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
+  double edge_len = mag(edge_vec);
   
-  if (dot(rel_vel, edge_vec) > 0 && collapse_will_produce_irregular_junction(edge))
+  if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
   {
     if (m_surf.m_verbose)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
