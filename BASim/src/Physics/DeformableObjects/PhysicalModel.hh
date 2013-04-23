@@ -79,8 +79,9 @@ public:
 //  virtual const Scalar getModelVertexMass(const VertexHandle& vh) const = 0;
 
   //For constraining particular DOFs
-  virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};
-
+  virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {}
+  virtual bool isDofScripted(const DofHandle & hnd) const { return false; }
+  
   //Accessor for the deformable object that this model is attached to.
   DeformableObject& getDefoObj() const { return m_obj; }
 
