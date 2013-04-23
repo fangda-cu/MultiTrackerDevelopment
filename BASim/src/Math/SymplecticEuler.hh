@@ -50,19 +50,19 @@ public:
     m_diffEq.getMass(m_m);
     
     for (size_t i = 0; i < fixed.size(); i++)
-      desiredv[fixed[i]] = (desired[fixed[i]] - m_x[fixed[i]]) / m_dt;
+      desiredv[i] = (desired[i] - m_x[fixed[i]]) / m_dt;
 
     m_v.array() += m_dt*(m_pDot.array()/m_m.array());
     m_x += m_dt*m_v;
     
     for (size_t i = 0 ;i < fixed.size(); i++)
     {
-      m_x[fixed[i]] = desired[fixed[i]];
-      m_v[fixed[i]] = desiredv[fixed[i]];
+      m_x[fixed[i]] = desired[i];
+      m_v[fixed[i]] = desiredv[i];
     }
     
-    m_diffEq.setV(m_v);
-    m_diffEq.setX(m_x);
+    m_diffEq.set_qdot(m_v);
+    m_diffEq.set_q(m_x);
 
 //    for (int i = 0; i < m_diffEq.ndof(); ++i) {
 //      Scalar v = m_diffEq.getV(i) + m_dt * m_pDot(i) / m_diffEq.getMass(i);
