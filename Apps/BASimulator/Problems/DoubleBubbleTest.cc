@@ -3036,7 +3036,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     }
     if (e.isValid())
     {
-      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ")" << std::endl;
+      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ") " << " length = " << (shell->getVertexPosition(mesh.fromVertex(e)) - shell->getVertexPosition(mesh.toVertex(e))).norm() << std::endl;
     }
     if (f.isValid())
     {
