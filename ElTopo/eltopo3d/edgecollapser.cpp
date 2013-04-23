@@ -475,7 +475,8 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    
    bool edge_is_a_feature = m_surf.edge_is_feature(edge);
      
-
+   double edge_length = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+  
    bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
    bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
 
@@ -556,7 +557,9 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
          }
       }
 
-   } 
+     if ((keep_rank >= 3 || !keep_vert_is_manifold) && (delete_rank >= 3 || !delete_vert_is_manifold) && edge_length >= m_t1_pull_apart_distance)
+       return false;
+   }
    else if (keep_vert_is_constrained || delete_vert_is_constrained)
    {
       assert(m_surf.m_constrained_vertices_callback);
