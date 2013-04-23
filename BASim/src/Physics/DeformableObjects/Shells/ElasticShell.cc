@@ -438,6 +438,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
     forces[i]->update();
   }
   
+  m_stepping_callback->afterStartStep();
   
 }
 
