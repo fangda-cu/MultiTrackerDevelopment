@@ -221,10 +221,17 @@ public:
         min_edge = l;
     }
     
+    std::vector<int> constraint_multiplier(pdot.size(), 1);
+    std::vector<int> fixed;
+    std::vector<Scalar> desired;
+    m_obj.getScriptedDofs(fixed, desired, 0);
+    for (size_t i = 0; i < fixed.size(); i++)
+      constraint_multiplier[fixed[i]] = 0;
+    
     Scalar max_force = -1;
     for (int i = 0; i < pdot.size(); i++)
-      if (fabs(pdot[i]) > max_force)
-        max_force = fabs(pdot[i]);
+      if (fabs(pdot[i] * constraint_multiplier[i]) > max_force)
+        max_force = fabs(pdot[i] * constraint_multiplier[i]);
     max_force *= sqrt(3); // conservative estimation of the norm of a three component vector
     
     Scalar max_dt = min_edge / max_force / 2.2;

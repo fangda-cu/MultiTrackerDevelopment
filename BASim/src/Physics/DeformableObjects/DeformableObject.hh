@@ -120,7 +120,8 @@ public:
   void setPositionDofBase(const VertexHandle& vh, int dof);
   
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
-
+  bool isDofScripted(int dof) const;
+  
   // scripting on position dofs
   void constrainVertex(const VertexHandle & v, const Vec3d & pos);
   void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
