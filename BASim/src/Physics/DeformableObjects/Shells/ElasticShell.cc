@@ -1101,7 +1101,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   construction_parameters.m_velocity_field_callback = NULL;
-  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.1) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
+  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.01) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
   
   ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
   ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
