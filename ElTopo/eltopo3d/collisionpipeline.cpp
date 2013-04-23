@@ -139,7 +139,22 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
         if (i == std::numeric_limits<double>::infinity())
             return;
     }
-    
+  
+  if (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3 == 0)
+  {
+    std::cout << impulse_magnitude << " " << i << " " << " [" << s0 << " " << s1 << " " << s2 << " " << s3 << "] [" << inv_m0 << " " << inv_m1 << " " << inv_m2 << " " << inv_m3 << "]" << std::endl;
+    std::cout << "v0 = " << v0 << "; v1 = " << v1 << "; v2 = " << v2 << "; v3 = " << v3 << std::endl;
+  }
+  
+  assert(i == i);
+  assert(s0 == s0);
+  assert(s1 == s1);
+  assert(s2 == s2);
+  assert(s3 == s3);
+  assert(normal[0] == normal[0]);
+  assert(normal[1] == normal[1]);
+  assert(normal[2] == normal[2]);
+  
     Vec3d pre_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;
     Vec3d pre_rv_normal = dot( normal, pre_relative_velocity ) * normal;
     Vec3d pre_rv_tangential = pre_relative_velocity - pre_rv_normal;
@@ -169,7 +184,22 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     {
         tan_collision_normal = Vec3d(0);
     }
-    
+  
+  if (!(friction_i == friction_i))
+  {
+    std::cout << post_relative_velocity << "; " << post_rv_normal << "; " << friction_impulse << " " << delta_rv_normal << std::endl;
+  }
+  
+  
+  assert(friction_i == friction_i);
+  assert(inv_m0 == inv_m0);
+  assert(inv_m1 == inv_m1);
+  assert(inv_m2 == inv_m2);
+  assert(inv_m3 == inv_m3);
+  assert(tan_collision_normal[0] == tan_collision_normal[0]);
+  assert(tan_collision_normal[1] == tan_collision_normal[1]);
+  assert(tan_collision_normal[2] == tan_collision_normal[2]);
+  
     v0 += friction_i*s0*inv_m0 * tan_collision_normal;
     v1 += friction_i*s1*inv_m1 * tan_collision_normal;
     v2 += friction_i*s2*inv_m2 * tan_collision_normal;

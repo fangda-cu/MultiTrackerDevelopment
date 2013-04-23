@@ -698,13 +698,17 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
-    
+  
 //    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
 //    {
 //        assert(getVertexPosition(*v) == getVertexPosition(*v));
 //        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
 //    }
 
+  static int count = 0;
+  count++;
+  std::cout << "count = " << count << std::endl;
+  
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
   
@@ -718,6 +722,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 //  return;
   
   //El Topo collision processing.
+  
+//  if (count >= 98)
+//    return;
   
   if(m_do_eltopo_collisions)
     resolveCollisions(timestep);
@@ -1101,7 +1108,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   construction_parameters.m_velocity_field_callback = NULL;
-  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.01) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
+  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.02) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
   
   ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
   ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();

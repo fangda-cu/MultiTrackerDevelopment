@@ -572,6 +572,9 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
             std::cout << "Constraint callback vetoed collapsing." << std::endl;
          return false;
       }
+     
+     if ((keep_rank >= 3 || !keep_vert_is_manifold || keep_vert_is_constrained) && (delete_rank >= 3 || !delete_vert_is_manifold || delete_vert_is_constrained) && edge_length >= m_t1_pull_apart_distance)
+       return false;
 
       vertex_new_position = newpos;
    } else if (keep_vert_is_boundary || del_vert_is_boundary)

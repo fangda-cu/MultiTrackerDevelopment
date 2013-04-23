@@ -673,7 +673,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
     bool success = false;
     
     const std::vector<Vec3d> saved_predicted_positions = get_newpositions();
-    
+  
     while ( !success )
     {
         
