@@ -54,7 +54,8 @@ m_lastquery(0),
 m_gridxmin(0,0,0),
 m_gridxmax(0,0,0),
 m_cellsize(0,0,0),
-m_invcellsize(0,0,0)
+m_invcellsize(0,0,0),
+m_elementcount(0)
 {
     Vec3st dims(1,1,1);
     Vec3d xmin(0,0,0), xmax(1,1,1);
@@ -77,7 +78,8 @@ m_lastquery(0),
 m_gridxmin(0,0,0),
 m_gridxmax(0,0,0),
 m_cellsize(0,0,0),
-m_invcellsize(0,0,0)
+m_invcellsize(0,0,0),
+m_elementcount(0)
 {
     
     // Call assignment operator
@@ -103,6 +105,7 @@ AccelerationGrid& AccelerationGrid::operator=( const AccelerationGrid& other)
         }
     }
     
+    m_elementcount = other.m_elementcount;
     m_elementidxs = other.m_elementidxs;
     m_elementxmins = other.m_elementxmins;
     m_elementxmaxs = other.m_elementxmaxs;
@@ -200,33 +203,39 @@ void AccelerationGrid::boundstoindices(const Vec3d& xmin, const Vec3d& xmax, Vec
 
 void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
-    if(m_elementidxs.size() <= idx)
+    
+    if(m_elementcount <= idx)
     {
-        m_elementidxs.resize(idx+1);
+        m_elementidxs.resize(idx+1); //only ever grow m_elementidxs. but we won't clear it, since we don't want to have to reallocate its contained vectors.
+        m_elementidxs[idx].reserve(10); //reserve some space in the vector
         m_elementxmins.resize(idx+1);
         m_elementxmaxs.resize(idx+1);
         m_elementquery.resize(idx+1);
+        m_elementcount = idx+1;
     }
     
     m_elementxmins[idx] = xmin;
     m_elementxmaxs[idx] = xmax;
     m_elementquery[idx] = 0;
-    
+        
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
     
-    for(int i = xmini[0]; i <= xmaxi[0]; i++)
+    Vec3st cur_index;
+    for(cur_index[2] = xmini[2]; cur_index[2] <= xmaxi[2]; cur_index[2]++)
     {
-        for(int j = xmini[1]; j <= xmaxi[1]; j++)
+        for(cur_index[1] = xmini[1]; cur_index[1] <= xmaxi[1]; cur_index[1]++)
         {
-            for(int k = xmini[2]; k <= xmaxi[2]; k++)
-            {
-                std::vector<size_t>*& cell = m_cells(i, j, k);
-                if(!cell)
+           for(cur_index[0] = xmini[0]; cur_index[0] <= xmaxi[0]; cur_index[0]++)
+           {
+                std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                if(!cell) {
                     cell = new std::vector<size_t>();
+                    cell->reserve(10);
+                }
                 
                 cell->push_back(idx);
-                m_elementidxs[idx].push_back(Vec3st(i, j, k));
+                m_elementidxs[idx].push_back(cur_index);
             }
         }
     }
@@ -241,7 +250,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
 void AccelerationGrid::remove_element(size_t idx)
 {
     
-    if ( idx >= m_elementidxs.size() ) { return; }
+    if ( idx >= m_elementcount ) { return; }
     
     for(size_t c = 0; c < m_elementidxs[idx].size(); c++)
     {
@@ -258,18 +267,166 @@ void AccelerationGrid::remove_element(size_t idx)
     }
     
     m_elementidxs[idx].clear();
+    
 }
+
 
 // --------------------------------------------------------
 ///
 /// Reset the specified object's AABB
 ///
 // --------------------------------------------------------
+bool boxes_overlap(Vec3i low_0, Vec3i high_0, Vec3i low_1, Vec3i high_1) {
+   if (high_0[0] < low_1[0])  return false; // a is left of b
+   if (low_0[0]  > high_1[0]) return false; // a is right of b
+   if (high_0[1] < low_1[1]) return false; // a is above b
+   if (low_0[1]  > high_1[1]) return false; // a is below b
+   if (high_0[2] < low_1[2]) return false; // a is in front of b
+   if (low_0[2]  > high_1[2]) return false; // a is behind b
+   return true; // boxes overlap
+}
 
 void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
-    remove_element(idx);
-    add_element(idx, xmin, xmax);
+
+   //formerly we had a full remove-element and then add-element, which is less efficient.
+
+   assert(idx < m_elementcount);
+
+   //if the list of cells it formerly filled is zero, it's basically a new element, since there can be no overlap
+   bool is_new = m_elementidxs[idx].size() == 0; 
+   
+   Vec3d xmin_old(0,0,0), xmax_old(0,0,0); 
+   Vec3i xmini_new, xmaxi_new;
+   boundstoindices(xmin, xmax, xmini_new, xmaxi_new);
+   
+   //if this entry previously existed look up the old data.
+   Vec3i xmini_old, xmaxi_old;
+   if(!is_new) {
+      //look up the old bounds data
+      xmin_old = m_elementxmins[idx];
+      xmax_old = m_elementxmaxs[idx];
+   
+      //get old and new index bounds
+      boundstoindices(xmin_old, xmax_old, xmini_old, xmaxi_old);
+   }
+
+   //set the new bounds and query data.
+   m_elementxmins[idx] = xmin;
+   m_elementxmaxs[idx] = xmax;
+   m_elementquery[idx] = 0;
+
+   //try to do something smarter if the element has only moved slightly
+   if(!is_new && boxes_overlap(xmini_old, xmaxi_old, xmini_new, xmaxi_new)) {
+      
+      //determine union of the two boxes
+      Vec3i total_min = min_union(xmini_old, xmini_new);
+      Vec3i total_max = max_union(xmaxi_old, xmaxi_new);
+
+      //iterate over all the cells, old and new, updating as needed 
+      Vec3st cur_index;
+      for(cur_index[2] = total_min[2]; cur_index[2] <= total_max[2]; cur_index[2]++)
+      {
+         bool in_new_z = cur_index[2] >= xmini_new[2] && cur_index[2] <= xmaxi_new[2];
+         bool in_old_z = cur_index[2] >= xmini_old[2] && cur_index[2] <= xmaxi_old[2];
+         if(!in_new_z && !in_old_z) continue;
+
+         for(cur_index[1] = total_min[1]; cur_index[1] <= total_max[1]; cur_index[1]++)
+         {
+            bool in_new_y = cur_index[1] >= xmini_new[1] && cur_index[1] <= xmaxi_new[1];
+            bool in_old_y = cur_index[1] >= xmini_old[1] && cur_index[1] <= xmaxi_old[1];
+            if(!in_new_y && !in_old_y) continue;
+
+            for(cur_index[0] = total_min[0]; cur_index[0] <= total_max[0]; cur_index[0]++)
+            {
+               bool in_new_x = cur_index[0] >= xmini_new[0] && cur_index[0] <= xmaxi_new[0];
+               bool in_old_x = cur_index[0] >= xmini_old[0] && cur_index[0] <= xmaxi_old[0];
+               if(!in_new_x && !in_old_x) continue;
+
+               bool in_new = in_new_x && in_new_y && in_new_z;
+               bool in_old = in_old_x && in_old_y && in_old_z;
+
+               if(in_new) //in new set 
+               {
+                  if(!in_old) { //not in old, we need to add it
+                     std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                     if(!cell) {
+                        cell = new std::vector<size_t>();
+                        cell->reserve(10);
+                     }
+
+                     cell->push_back(idx);
+                     m_elementidxs[idx].push_back(cur_index);
+                  }
+                  //else: in both new and old, so we don't need to change anything!
+               }
+               else if(in_old) {//not in new set, but it is in the old set; must delete it
+                  std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+
+                  //erase the index of the element in the cell
+                  std::vector<size_t>::iterator it = cell->begin();
+                  while(*it != idx)
+                     it++;
+                  cell->erase(it);
+
+                  //erase the index of the *cell* in the *element* -> is this pricy?
+                  std::vector<Vec3st>::iterator it2 = m_elementidxs[idx].begin();
+                  while(*it2 != cur_index) 
+                     it2++;
+                  m_elementidxs[idx].erase(it2);
+
+               }
+            }
+         }
+      }
+   }
+   else { 
+      //the old and new regions don't overlap, so do it the easy way - remove and then add.
+      //but still slightly smarter than actually calling remove_elt and add_elt
+
+      if(!is_new) {
+         //erase all the old data
+         for(size_t c = 0; c < m_elementidxs[idx].size(); c++)
+         {
+            Vec3st cellcoords = m_elementidxs[idx][c];
+            std::vector<size_t>*& cell = m_cells(cellcoords[0], cellcoords[1], cellcoords[2]);
+
+            std::vector<size_t>::iterator it = cell->begin();
+            while(*it != idx)
+            {
+               it++;
+            }
+
+            cell->erase(it);
+         }
+      }
+
+      //erase the old data
+      m_elementidxs[idx].clear();
+
+      Vec3i xmini = xmini_new, xmaxi= xmaxi_new;
+
+      //now add the geometry back into the acceleration structure
+      Vec3st cur_index;
+      for(cur_index[2] = xmini[2]; cur_index[2] <= xmaxi[2]; cur_index[2]++)
+      {
+         for(cur_index[1] = xmini[1]; cur_index[1] <= xmaxi[1]; cur_index[1]++)
+         {
+            for(cur_index[0] = xmini[0]; cur_index[0] <= xmaxi[0]; cur_index[0]++)
+            {
+               std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+               if(!cell) {
+                  cell = new std::vector<size_t>();
+                  cell->reserve(10);
+               }
+
+               cell->push_back(idx);
+               m_elementidxs[idx].push_back(cur_index);
+            }
+         }
+      }
+   }
+   
 }
 
 // --------------------------------------------------------
@@ -287,14 +444,23 @@ void AccelerationGrid::clear()
         {
             delete cell;
             cell = 0;
+           //cell->clear(); //don't clear the memory, since we likely want to reuse it.
         }
     }
     
-    m_elementidxs.clear();
+    //clear the entries for each element, but don't clear the overall vector itself, since we
+    //don't want to reallocate memory for the individual vectors.
+    //m_elementidxs.clear();
+    for(int i = 0; i < m_elementidxs.size(); ++i) { 
+       m_elementidxs[i].clear();
+    }
+
     m_elementxmins.clear();
     m_elementxmaxs.clear();
     m_elementquery.clear();
     m_lastquery = 0;
+
+    m_elementcount = 0;
     
 }
 
@@ -321,12 +487,13 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
     
-    for(int i = xmini[0]; i <= xmaxi[0]; ++i)
+    for(int k = xmini[2]; k <= xmaxi[2]; ++k)
     {
-        for(int j = xmini[1]; j <= xmaxi[1]; ++j)
-        {
-            for(int k = xmini[2]; k <= xmaxi[2]; ++k)
-            {
+      for(int j = xmini[1]; j <= xmaxi[1]; ++j)
+      {
+         for(int i = xmini[0]; i <= xmaxi[0]; ++i)
+         {
+
                 std::vector<size_t>* cell = m_cells(i, j, k);
                 
                 if(cell)

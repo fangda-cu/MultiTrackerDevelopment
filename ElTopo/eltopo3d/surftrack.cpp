@@ -277,6 +277,7 @@ size_t SurfTrack::add_triangle( const Vec3st& t, const Vec2i& label )
 }
 
 
+
 // ---------------------------------------------------------
 ///
 /// Remove a triangle from the surface.  Update the underlying TriMesh and acceleration grid. 
@@ -293,6 +294,28 @@ void SurfTrack::remove_triangle(size_t t)
     
     m_triangle_change_history.push_back( TriangleUpdateEvent( TriangleUpdateEvent::TRIANGLE_REMOVE, t, Vec3st(0) ) );
     
+}
+
+// ---------------------------------------------------------
+///
+/// Efficiently renumber a triangle (replace its vertices) for defragging the mesh.
+/// Assume that the underlying geometry doesn't change, so we can keep the same broadphase data unchanged.
+///
+// ---------------------------------------------------------
+
+void SurfTrack::renumber_triangle(size_t tri, const Vec3st& verts) {
+   assert( verts[0] < get_num_vertices() );
+   assert( verts[1] < get_num_vertices() );
+   assert( verts[2] < get_num_vertices() );
+   
+   m_mesh.nondestructive_renumber_triangle( tri, verts );
+   
+   //Assume the geometry doesn't change, so we leave all the broad phase collision data alone...
+
+   //Kind of a hack for the history, for now.
+   m_triangle_change_history.push_back( TriangleUpdateEvent( TriangleUpdateEvent::TRIANGLE_REMOVE, tri, Vec3st(0) ) );
+   m_triangle_change_history.push_back( TriangleUpdateEvent( TriangleUpdateEvent::TRIANGLE_ADD, tri, verts ) );
+
 }
 
 // ---------------------------------------------------------
@@ -378,12 +401,15 @@ void SurfTrack::defrag_mesh( )
         }
     }    
     
+    //resize/allocate up front rather than via push_backs
+    m_defragged_vertex_map.resize(get_num_vertices());
+
     if ( !any_deleted )
     {
-        for ( size_t i = 0; i < get_num_vertices(); ++i )
-        {
-            m_defragged_vertex_map.push_back( Vec2st(i,i) );
-        }
+       for ( size_t i = 0; i < get_num_vertices(); ++i )
+       {
+         m_defragged_vertex_map[i] = Vec2st(i,i);
+       }
         
         double end_time = get_time_in_seconds();      
         g_stats.add_to_double( "total_clear_deleted_vertices_time", end_time - start_time );
@@ -407,7 +433,7 @@ void SurfTrack::defrag_mesh( )
                 pm_newpositions[j] = pm_newpositions[i];
                 m_masses[j] = m_masses[i];
                 
-                m_defragged_vertex_map.push_back( Vec2st(i,j) );
+                m_defragged_vertex_map[i] = Vec2st(i,j);
                 
                 // Now rewire the triangles containing vertex i
                 
@@ -424,8 +450,9 @@ void SurfTrack::defrag_mesh( )
                     if ( triangle[1] == i ) { triangle[1] = j; }
                     if ( triangle[2] == i ) { triangle[2] = j; }        
                     
-                    remove_triangle(inc_tris[t]);       // mark the triangle deleted
-                    add_triangle(triangle, tri_label);  // add the updated triangle
+                    //remove_triangle(inc_tris[t]);       // mark the triangle deleted
+                    //add_triangle(triangle, tri_label);  // add the updated triangle
+                    renumber_triangle(inc_tris[t], triangle);
                 }
                 
                 ++j;
@@ -446,7 +473,7 @@ void SurfTrack::defrag_mesh( )
     // Now clear deleted triangles from the mesh
     // 
     
-    m_mesh.set_num_vertices( get_num_vertices() );    
+    m_mesh.set_num_vertices( get_num_vertices() );   
     m_mesh.clear_deleted_triangles( &m_defragged_triangle_map );
     
     if ( m_collision_safety )

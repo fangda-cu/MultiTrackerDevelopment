@@ -514,6 +514,9 @@ unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_
 bool DynamicSurface::edge_is_feature(size_t edge) const {
    return get_largest_dihedral(edge) > m_feature_edge_angle_threshold;
 }
+bool DynamicSurface::edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const {
+   return get_largest_dihedral(edge, cached_normals) > m_feature_edge_angle_threshold;
+}
 
 /// Look at all triangle pairs and get the smallest angle, ignoring regions.
 double DynamicSurface::get_largest_dihedral(size_t edge) const {
@@ -536,6 +539,35 @@ double DynamicSurface::get_largest_dihedral(size_t edge) const {
             norm1 = -norm1;
          }
 
+         double angle = acos(dot(norm0,norm1));
+         largest_angle = std::max(largest_angle,angle);
+      }
+   }
+
+   return largest_angle;
+
+}
+
+/// Look at all triangle pairs and get the smallest angle, ignoring regions.
+double DynamicSurface::get_largest_dihedral(size_t edge, const std::vector<Vec3d> & cached_normals) const {
+   const std::vector<size_t>& tri_list = m_mesh.m_edge_to_triangle_map[edge];
+
+   //consider all triangle pairs
+   size_t v0 = m_mesh.m_edges[edge][0];
+   size_t v1 = m_mesh.m_edges[edge][1];
+
+   double largest_angle = 0;
+   for(size_t i = 0; i < tri_list.size(); ++i) {
+      size_t tri_id0 = tri_list[i];
+      Vec3d norm0 = cached_normals[tri_id0];
+      for(size_t j = i+1; j < tri_list.size(); ++j) {
+         size_t tri_id1 = tri_list[j];
+         Vec3d norm1 = cached_normals[tri_id1];
+
+         //possibly flip one normal so the tris are oriented in a matching way, to get the right dihedral angle.
+         if (m_mesh.oriented(v0, v1, m_mesh.get_triangle(tri_id0)) != m_mesh.oriented(v1, v0, m_mesh.get_triangle(tri_id1))) {
+            norm1 = -norm1;
+         }
          double angle = acos(dot(norm0,norm1));
          largest_angle = std::max(largest_angle,angle);
       }
@@ -656,9 +688,9 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
     {
       std::cout << "Checking collisions before integration.\n";
       assert_mesh_is_intersection_free( false );
-      std::cout << "All clear.\n";
+      
     }
-
+    std::cout << "Integrating\n";
     static const bool DEGEN_DOES_NOT_COUNT = false;   
     static const bool USE_NEW_POSITIONS = true;
     
@@ -787,6 +819,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
     static unsigned int step = 0;
     g_stats.add_per_frame_double( "DynamicSurface:integration_time_per_timestep", step, end_time - start_time );
     ++step;
+    std::cout << "Done integrating\n";
     
 }
 
@@ -1500,7 +1533,9 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
 {
     bool any_intersection = false;
     
-    std::vector<size_t> overlapping_triangles;
+    static std::vector<size_t> overlapping_triangles(20);
+    overlapping_triangles.clear();
+
     Vec3d low, high;
     
     minmax( get_position(tri[0]), get_position(tri[1]), low, high );
@@ -1591,7 +1626,8 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
-    std::vector<size_t> overlapping_edges;
+    static std::vector<size_t> overlapping_edges(10);
+    overlapping_edges.clear();
     m_broad_phase->get_potential_edge_collisions( low, high, true, true, overlapping_edges );
     
     for ( size_t i = 0; i < overlapping_edges.size(); ++i )
@@ -1641,12 +1677,14 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     //      check_static_broad_phase_is_up_to_date();
     //   }
     
+   static std::vector<size_t> edge_candidates(50); //keep the same one across iterations to save allocations(?)
+   edge_candidates.clear();
+   
     for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
     {
-        std::vector<size_t> edge_candidates;
         
         bool get_solid_edges = !triangle_is_all_solid(i);
-
+        edge_candidates.clear();
         Vec3d low, high;
         triangle_static_bounds( i, low, high );       
         m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );
@@ -1884,6 +1922,15 @@ int DynamicSurface::vertex_feature_edge_count( size_t vertex ) const
    int count = 0;
    for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
       count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i])? 1 : 0);
+   }
+   return count;
+}
+
+int DynamicSurface::vertex_feature_edge_count( size_t vertex, const std::vector<Vec3d>& cached_normals ) const
+{
+   int count = 0;
+   for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i], cached_normals)? 1 : 0);
    }
    return count;
 }

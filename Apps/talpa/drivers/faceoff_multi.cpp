@@ -102,15 +102,14 @@ void FaceOffMultiDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>
                                                   const std::vector<size_t>& incident_triangles,
                                                   Mat33d& quadric_metric_tensor ) 
 {
-    std::vector< Vec3d > N;
-    std::vector< double > W;
-    std::vector< double > d;
+    std::vector< Vec3d > N(incident_triangles.size());
+    std::vector< double > W(incident_triangles.size());
     
     for ( size_t i = 0; i < incident_triangles.size(); ++i )
     {
         size_t triangle_index = incident_triangles[i];
-        N.push_back( triangle_normals[triangle_index] );
-        W.push_back( triangle_areas[triangle_index] );
+        N[i] = triangle_normals[triangle_index];
+        W[i] = triangle_areas[triangle_index];
         
         assert( triangle_areas[triangle_index] > 0.0 );
     }
@@ -133,6 +132,8 @@ void FaceOffMultiDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>
         quadric_metric_tensor(2,2) += N[i][2] * W[i] * N[i][2];
     }
     
+    /*
+    //Can enable this as a debug check if desired. But it's mildly expensive.
     double val[3], vec[9];
     eigen_decomposition_descending( quadric_metric_tensor, val, vec );
     
@@ -141,6 +142,7 @@ void FaceOffMultiDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>
         std::cout << "quadric metric tensor is not positive semi-definite" << std::endl;
         assert(0);
     }
+    */
     
 }
 
@@ -162,18 +164,23 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
     std::vector< double > W;
     std::vector< double > d;
     std::vector<size_t> reduced_tris;
+    
+    reduced_tris.reserve(incident_triangles.size());
+    N.reserve(incident_triangles.size());
+    W.reserve(incident_triangles.size());
+    d.reserve(incident_triangles.size());
 
     for ( size_t i = 0; i < incident_triangles.size(); ++i )
     {
         size_t triangle_index = incident_triangles[i];
-        reduced_tris.push_back(triangle_index);
-
+        
         Vec2i label = triangles_labels[i]; //don't process if it's not a growing face
         if(expanding_surface != -1) {
            if(label[0] != expanding_surface && label[1] != expanding_surface)
               continue;
         }
-
+        
+        reduced_tris.push_back(triangle_index);
         N.push_back( triangle_normals[triangle_index] );
         W.push_back( triangle_areas[triangle_index] );
         d.push_back( triangle_plane_distances[triangle_index] );

@@ -358,7 +358,9 @@ inline void BroadPhaseGrid::get_potential_edge_collisions( const Vec3d& aabb_low
                                                           bool return_dynamic,
                                                           std::vector<size_t>& overlapping_edges )
 {
-    if ( return_solid )
+   
+
+   if ( return_solid )
     {
         m_solid_edge_grid.find_overlapping_elements( aabb_low, aabb_high, overlapping_edges );
     }

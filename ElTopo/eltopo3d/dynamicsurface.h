@@ -244,12 +244,15 @@ public:
     
     //Return whether the given edge is a feature as determined by dihedral angles.
     bool edge_is_feature(size_t edge) const;
+    bool edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const;
     
     //Return whether the vertex is on a feature, as determined by dihedral angles
     int vertex_feature_edge_count(size_t vertex) const;
-
+    int vertex_feature_edge_count(size_t vertex, const std::vector<Vec3d>& cached_normals) const;
+    
     /// Get edge dihedral angle
     double get_largest_dihedral(size_t edge) const;
+    double get_largest_dihedral(size_t edge, const std::vector<Vec3d>& cached_normals) const;
 
     /// Determine which region the point is inside by ray-casting and looking at the normal
     /// of the first intersection, and comparing that with the triangle's labeling
@@ -600,9 +603,12 @@ inline Vec3d DynamicSurface::get_triangle_normal(const Vec3st& tri) const
 
 inline Vec3d DynamicSurface::get_triangle_normal(size_t v0, size_t v1, size_t v2) const
 {
-    Vec3d u = get_position(v1) - get_position(v0);
-    Vec3d v = get_position(v2) - get_position(v0);
-    return normalized(cross(u, v));
+    Vec3d start = get_position(v0);
+    Vec3d u = get_position(v1) - start;
+    Vec3d v = get_position(v2) - start;
+    Vec3d res = cross(u, v);
+    normalize(res);
+    return res;
 }
 
 // --------------------------------------------------------

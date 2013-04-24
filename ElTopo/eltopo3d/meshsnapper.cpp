@@ -961,8 +961,6 @@ bool MeshSnapper::snap_pass()
    // attempt to split and snap each pair in the sorted list
    //
 
-   m_surf.assert_mesh_is_intersection_free(false);
-  
    if(m_surf.m_mesheventcallback)
       for (size_t si = 0; si < sortable_pairs_to_try.size(); si++)
          m_surf.m_mesheventcallback->log() << "Snap pair: " << sortable_pairs_to_try[si].m_length << ", " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << sortable_pairs_to_try[si].m_index0 << " and " << sortable_pairs_to_try[si].m_index1 << std::endl;

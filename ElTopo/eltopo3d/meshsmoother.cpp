@@ -227,7 +227,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     bool regularize_folded_feature = false;
     for(size_t i = 0; i < mesh.m_vertex_to_edge_map[v].size(); ++i) {
        size_t edge_id = mesh.m_vertex_to_edge_map[v][i];
-       double angle = m_surf.get_largest_dihedral(edge_id);
+       double angle = m_surf.get_largest_dihedral(edge_id, triangle_normals);
        if(M_PI-angle < m_sharp_fold_regularization_threshold) { //dihedral angle 170 degrees or more, i.e. two planes intersect at 10 degrees or less. consider it a "fold"
           regularize_folded_feature = true;
        }
@@ -421,21 +421,23 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
                                                const std::vector<Vec3d>& triangle_normals, 
                                                const std::vector<Vec3d>& triangle_centroids) const 
 {
-   int feature_edge_count = m_surf.vertex_feature_edge_count(v);
+   int feature_edge_count = m_surf.vertex_feature_edge_count(v, triangle_normals);
    
    //Corner, don't smooth it at all.
    if(feature_edge_count >= 3)
       return Vec3d(0,0,0);
 
    //Do an eigen-decomposition to find the medial quadric, a la Jiao
-   std::vector< Vec3d > N;
-   std::vector< double > W;
-
+   static std::vector< Vec3d > N;
+   static std::vector< double > W;
+   N.resize(triangles.size());
+   W.resize(triangles.size());
+   
    for ( size_t i = 0; i < triangles.size(); ++i )
    {
       size_t triangle_index = triangles[i];
-      N.push_back( triangle_normals[triangle_index] );
-      W.push_back( triangle_areas[triangle_index] );
+      N[i] = triangle_normals[triangle_index];
+      W[i] = triangle_areas[triangle_index];
    }
 
    Mat33d A(0,0,0,0,0,0,0,0,0);
@@ -505,12 +507,13 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
 
       Vec3d t(0,0,0);      // displacement
       double sum_areas = 0;
-
+      Vec3d main_vert = m_surf.get_position(v);
       for ( size_t i = 0; i < triangles.size(); ++i )
       {
-         double area = triangle_areas[triangles[i]];
+         size_t triangle_index = triangles[i];
+         double area = triangle_areas[triangle_index];
          sum_areas += area;
-         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         Vec3d c = triangle_centroids[triangle_index] - main_vert;
          t += area * c;
       }
 
@@ -558,7 +561,8 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
                   edge_midpoints.push_back(midpoint);
                }
             }
-            T.push_back(normalized(edge_midpoints[0] - edge_midpoints[1]));
+            Vec3d result = normalized(edge_midpoints[0] - edge_midpoints[1]);
+            T.push_back(result);
          }
          else {
             std::cout <<"Error: Should not get here.\n";
@@ -592,7 +596,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
 
       t = null_space_projection * t;
       t /= sum_areas;
-
+      
       return t;
 
    }

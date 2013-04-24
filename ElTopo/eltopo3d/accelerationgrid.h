@@ -100,6 +100,12 @@ public:
     /// Inverse cell dimensions
     ///
     Vec3d m_invcellsize;
+
+    /// Number of elements being stored.
+    ///
+    int m_elementcount;
+
+    
     
 };
 

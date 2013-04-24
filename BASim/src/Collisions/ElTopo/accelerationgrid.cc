@@ -290,7 +290,7 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
    ++m_lastquery;
    
    results.clear();
-      
+
    Vec3i xmini, xmaxi;
    boundstoindices(xmin, xmax, xmini, xmaxi);
    
