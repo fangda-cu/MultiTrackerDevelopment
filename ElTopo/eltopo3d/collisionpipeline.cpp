@@ -158,12 +158,17 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     Vec3d pre_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;
     Vec3d pre_rv_normal = dot( normal, pre_relative_velocity ) * normal;
     Vec3d pre_rv_tangential = pre_relative_velocity - pre_rv_normal;
-    
+  
     v0 += i*s0*inv_m0 * normal;
     v1 += i*s1*inv_m1 * normal;
     v2 += i*s2*inv_m2 * normal;
     v3 += i*s3*inv_m3 * normal;
-    
+  
+  assert(v0[0] == v0[0] && v0[1] == v0[1] && v0[2] == v0[2]);
+  assert(v1[0] == v1[0] && v1[1] == v1[1] && v1[2] == v1[2]);
+  assert(v2[0] == v2[0] && v2[1] == v2[1] && v2[2] == v2[2]);
+  assert(v3[0] == v3[0] && v3[1] == v3[1] && v3[2] == v3[2]);
+  
     //
     // Friction
     //
@@ -205,6 +210,11 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     v2 += friction_i*s2*inv_m2 * tan_collision_normal;
     v3 += friction_i*s3*inv_m3 * tan_collision_normal;
     
+  assert(v0[0] == v0[0] && v0[1] == v0[1] && v0[2] == v0[2]);
+  assert(v1[0] == v1[0] && v1[1] == v1[1] && v1[2] == v1[2]);
+  assert(v2[0] == v2[0] && v2[1] == v2[1] && v2[2] == v2[2]);
+  assert(v3[0] == v3[0] && v3[1] == v3[1] && v3[2] == v3[2]);
+  
     m_surface.set_newposition( e0, m_surface.get_position(e0) + dt * m_surface.m_velocities[e0] );
     m_surface.set_newposition( e1, m_surface.get_position(e1) + dt * m_surface.m_velocities[e1] );
     m_surface.set_newposition( e2, m_surface.get_position(e2) + dt * m_surface.m_velocities[e2] );
