@@ -144,6 +144,7 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
   {
     std::cout << impulse_magnitude << " " << i << " " << " [" << s0 << " " << s1 << " " << s2 << " " << s3 << "] [" << inv_m0 << " " << inv_m1 << " " << inv_m2 << " " << inv_m3 << "]" << std::endl;
     std::cout << "v0 = " << v0 << "; v1 = " << v1 << "; v2 = " << v2 << "; v3 = " << v3 << std::endl;
+      std::cout << "x0 = " << m_surface.get_position(e0) << "; x1 = " << m_surface.get_position(e1) << "; x2 = " << m_surface.get_position(e2) << "; x3 = " << m_surface.get_position(e3) << std::endl;
   }
   
   assert(i == i);
