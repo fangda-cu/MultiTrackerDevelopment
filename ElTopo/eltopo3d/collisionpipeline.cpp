@@ -146,6 +146,20 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     std::cout << "v0 = " << v0 << "; v1 = " << v1 << "; v2 = " << v2 << "; v3 = " << v3 << std::endl;
       std::cout << "x0 = " << m_surface.get_position(e0) << "; x1 = " << m_surface.get_position(e1) << "; x2 = " << m_surface.get_position(e2) << "; x3 = " << m_surface.get_position(e3) << std::endl;
   }
+    
+    if (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3 == 0)
+    {
+        v0 = Vec3d(0,0,0);
+        v1 = Vec3d(0,0,0);
+        v2 = Vec3d(0,0,0);
+        v3 = Vec3d(0,0,0);
+        m_surface.set_newposition( e0, m_surface.get_position(e0) );
+        m_surface.set_newposition( e1, m_surface.get_position(e1) );
+        m_surface.set_newposition( e2, m_surface.get_position(e2) );
+        m_surface.set_newposition( e3, m_surface.get_position(e3) );
+
+    } else
+    {
   
   assert(i == i);
   assert(s0 == s0);
@@ -220,7 +234,7 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     m_surface.set_newposition( e1, m_surface.get_position(e1) + dt * m_surface.m_velocities[e1] );
     m_surface.set_newposition( e2, m_surface.get_position(e2) + dt * m_surface.m_velocities[e2] );
     m_surface.set_newposition( e3, m_surface.get_position(e3) + dt * m_surface.m_velocities[e3] );
-    
+    }
 }
 
 

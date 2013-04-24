@@ -723,9 +723,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
-//  if (count >= 98)
-//    return;
-  
+    if (count >= 103)
+        return;
+    
   if(m_do_eltopo_collisions)
     resolveCollisions(timestep);
   
