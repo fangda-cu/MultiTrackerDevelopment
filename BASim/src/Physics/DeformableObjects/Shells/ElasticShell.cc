@@ -1100,7 +1100,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
   construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
   construction_parameters.m_large_triangle_angle_to_split = 160;
-  construction_parameters.m_min_triangle_area = 0.1*m_remesh_edge_min_len*m_remesh_edge_min_len;
+  construction_parameters.m_min_triangle_area = 0.0002*m_remesh_edge_min_len*m_remesh_edge_min_len;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;
@@ -1108,7 +1108,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   construction_parameters.m_velocity_field_callback = NULL;
-  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.02) * (m_remesh_edge_max_len + m_remesh_edge_min_len) / 2;
+  construction_parameters.m_pull_apart_distance = (initial ? 0.1 : 0.02) * m_remesh_edge_min_len;
   
   ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
   ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
