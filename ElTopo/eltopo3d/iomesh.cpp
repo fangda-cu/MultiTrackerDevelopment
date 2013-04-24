@@ -413,7 +413,7 @@ bool write_objfile(const NonDestructiveTriMesh &mesh, const std::vector<Vec3d> &
 ///
 // ---------------------------------------------------------
 
-bool write_objfile_per_region(const NonDestructiveTriMesh &mesh, const std::vector<Vec3d> &x, int label, const char *filename_format, ...)
+bool write_objfile_per_region(const NonDestructiveTriMesh &mesh, const std::vector<Vec3d> &x, int label, const std::set<int> & excluding_regions, const char *filename_format, ...)
 {
    va_list ap;
    va_start(ap, filename_format);
@@ -466,7 +466,7 @@ bool write_objfile_per_region(const NonDestructiveTriMesh &mesh, const std::vect
 
    for(size_t i = 0; i < mesh.m_tris.size(); ++i) {
       Vec2i cur_label = mesh.get_triangle_label(i);
-      if(cur_label[0] == label || cur_label[1] == label) {
+      if((cur_label[0] == label || cur_label[1] == label) && (excluding_regions.find(cur_label[0]) == excluding_regions.end() && excluding_regions.find(cur_label[1]) == excluding_regions.end())) {
          Vec3st old_tri = mesh.m_tris[i];
          Vec3st new_tri(new_indices[old_tri[0]], new_indices[old_tri[1]], new_indices[old_tri[2]]);
          //swap the orientation depending on which label is on the "front", for good measure.

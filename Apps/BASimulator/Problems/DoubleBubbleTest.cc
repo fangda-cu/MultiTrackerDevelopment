@@ -911,14 +911,17 @@ void DoubleBubbleTest::AtEachTimestep()
         } else if (RENDER_METHOD == 1)
         {
             // dump one OBJ per region
+            std::set<int> excluding_regions;
             for (int i = 0; i < m_nregion; i++)
             {
                 std::stringstream name;
                 name << std::setfill('0');
                 name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
 
-                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, excluding_regions, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                
+                excluding_regions.insert(i);
             }
         } else if (RENDER_METHOD == 2)
         {
@@ -950,14 +953,16 @@ void DoubleBubbleTest::AtEachTimestep()
                     regions.insert(r);
             }
             
+            std::set<int> excluding_regions;
             for (std::set<int>::iterator i = regions.begin(); i != regions.end(); i++)
             {
                 std::stringstream name;
                 name << std::setfill('0');
                 name << outputdirectory << "/" << "region" << std::setw(4) << *i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
                 
-                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, name.str().c_str());
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, excluding_regions, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                excluding_regions.insert(*i);
             }
             
             std::stringstream name;
