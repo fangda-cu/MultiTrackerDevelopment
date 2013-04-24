@@ -53,6 +53,7 @@ public:
       m_diffEq.evaluatePDot(m_pDot);
       
       // determine max dt
+        std::cout << "dt_left = " << dt_left << std::endl;
       dt_largest_possible = m_diffEq.determineMaxDt(m_pDot);
       if (dt_largest_possible >= dt_left)
         dt_largest_possible = dt_left;
