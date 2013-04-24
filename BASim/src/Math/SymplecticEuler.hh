@@ -67,7 +67,7 @@ public:
       m_diffEq.getMass(m_m);
       
       for (size_t i = 0; i < fixed.size(); i++)
-        desiredv[i] = (desired[i] - m_x[fixed[i]]) / m_dt;
+        desiredv[i] = (desired[i] - m_x[fixed[i]]) / dt_largest_possible;
 
       m_v = m_pDot;
       m_x += dt_largest_possible * m_v;
