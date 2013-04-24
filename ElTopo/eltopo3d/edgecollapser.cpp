@@ -629,9 +629,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
   double edge_len = mag(edge_vec);
     
-    if (edge_len < 0.001)
+    double sl = 0.0001;
+    if (edge_len < sl)
     {
-        std::cout << "SE1: " << std::endl;
+        std::cout << "SE1: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
   
   if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
@@ -641,9 +642,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     return false;
   }
   
-    if (edge_len < 0.001)
+    if (edge_len < sl)
     {
-        std::cout << "SE2: " << std::endl;
+        std::cout << "SE2: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
 
   ///////////////////////////////////////////////////////////////////////
@@ -690,9 +691,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       }
     }
 
-      if (edge_len < 0.001)
+      if (edge_len < sl)
       {
-          std::cout << "SE2: " << std::endl;
+          std::cout << "SE3: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
       }
     assert ( !would_be_non_manifold );
 
@@ -749,9 +750,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   }
 
-    if (edge_len < 0.001)
+    if (edge_len < sl)
     {
-        std::cout << "SE3: " << std::endl;
+        std::cout << "SE4: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
 
   // --------------
@@ -784,9 +785,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     }
   }
 
-    if (edge_len < 0.001)
+    if (edge_len < sl)
     {
-        std::cout << "SE4: " << std::endl;
+        std::cout << "SE5: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
 
   // --------------
@@ -799,9 +800,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if(!can_collapse)
      return false;
 
-    if (edge_len < 0.001)
+    if (edge_len < sl)
     {
-        std::cout << "SE5: " << std::endl;
+        std::cout << "SE6: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
 
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
@@ -831,9 +832,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       return false;
     }
 
-      if (edge_len < 0.001)
+      if (edge_len < sl)
       {
-          std::cout << "SE6: " << std::endl;
+          std::cout << "SE7: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
       }
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
@@ -847,9 +848,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       return false;
     }
 
-      if (edge_len < 0.001)
+      if (edge_len < sl)
       {
-          std::cout << "SE7: " << std::endl;
+          std::cout << "SE8: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
       }
     bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position );
 
@@ -866,9 +867,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     }
 
-      if (edge_len < 0.001)
+      if (edge_len < sl)
       {
-          std::cout << "SE8: " << std::endl;
+          std::cout << "SE9: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
       }
     bool collision = false;
 
@@ -892,9 +893,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       // edge collapse would introduce collision or change volume too much or invert triangle normals
       return false;
     }
-      if (edge_len < 0.001)
+      if (edge_len < sl)
       {
-          std::cout << "SE9: " << std::endl;
+          std::cout << "SE10: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
       }
   }
 
@@ -994,9 +995,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
 
-    if (edge_len < 0.001)
+    if (edge_len < sl)
     {
-        std::cout << "SE10: " << std::endl;
+        std::cout << "SE11: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
   return true;
 }
