@@ -40,7 +40,7 @@ public:
   void globalJacobian(Scalar scale, MatrixBase& Jacobian) const;
   
 protected:
-
+public:
   bool gatherDOFs(const FaceHandle& fh, std::vector<Vec3d>& deformed, std::vector<int>& indices) const;
 
   Scalar elementEnergy(const std::vector<Vec3d>& deformed) const;

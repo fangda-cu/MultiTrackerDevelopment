@@ -54,6 +54,7 @@ public:
       
       // determine max dt
       dt_largest_possible = m_diffEq.determineMaxDt(m_pDot);
+      std::cout << "dt_left = " << dt_left << " max dt = " << dt_largest_possible << std::endl;
       if (dt_largest_possible >= dt_left)
         dt_largest_possible = dt_left;
 
