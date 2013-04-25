@@ -597,6 +597,19 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
 
       vertex_new_position = m_surf.get_position(vertex_to_keep);
    }
+    
+    if (!keep_vert_is_manifold && !delete_vert_is_manifold)
+    {
+        if (edge_length >= m_t1_pull_apart_distance)
+            return false;
+    }
+    
+    if (keep_vert_is_constrained && delete_vert_is_constrained)
+    {
+        if (edge_length >= m_t1_pull_apart_distance)
+            return false;
+    }
+    
 
    return true;
 }
