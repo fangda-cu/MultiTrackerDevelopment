@@ -505,7 +505,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   dynamic_surface.set_all_newpositions( vert_new );
     
-    std::cout << "257: before: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_position(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
+    std::cout << "257: before: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_newposition(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
     
 //    for (size_t i = 0; i < vert_old.size(); i++)
 //        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
@@ -519,7 +519,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     std::cout << "XXXXXXXXX Failed to step the full length of the recommended step!XXXXX\n";
   // the dt used may be different than specified (if we cut the time step)
     
-    std::cout << "257: after: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_position(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
+    std::cout << "257: after: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_newposition(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
   
   //figure out what the actual velocities were, and update the mesh data
   for(unsigned int i = 0; i < vert_new.size(); ++i) {
