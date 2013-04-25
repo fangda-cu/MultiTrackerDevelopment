@@ -38,7 +38,7 @@ Scalar DefoObjTimeStepper::determineMaxDt(const VecXd & force)
         Scalar approaching_velocity = -force.dot(edge) / edge.squaredNorm();
         
         Scalar max_dt = 0;
-        if (approaching_velocity >= 0)
+        if (approaching_velocity <= 0)
             max_dt = std::numeric_limits<Scalar>::infinity();
         else
             max_dt = 1 / approaching_velocity * 0.8;    // allow the edge to be shrinked by 80% in one time step at most
