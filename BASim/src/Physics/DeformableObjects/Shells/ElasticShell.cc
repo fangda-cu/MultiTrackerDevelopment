@@ -476,9 +476,11 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     }
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
-
+      
     ++id;
   }
+    
+    std::cout << "-- old = " << getVertexDampingUndeformed(VertexHandle(265)) << " new = " << getVertexPosition(VertexHandle(265)) << std::endl;
 
   //walk through triangles, creating linear list, using the vertex numbering assigned above
   id = 0;
@@ -497,12 +499,13 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     ++id;
   }
 
-
   // build a DynamicSurface
   Scalar friction_coeff = 0;
   ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
+    
+    std::cout << "257: before: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_position(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
     
 //    for (size_t i = 0; i < vert_old.size(); i++)
 //        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
@@ -515,6 +518,8 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   if(actual_dt != timestep)
     std::cout << "XXXXXXXXX Failed to step the full length of the recommended step!XXXXX\n";
   // the dt used may be different than specified (if we cut the time step)
+    
+    std::cout << "257: after: old = " << dynamic_surface.get_position(257) << " new = " << dynamic_surface.get_position(257) << " constraint = " << dynamic_surface.m_mesh.get_vertex_constraint_label(257) << std::endl;
   
   //figure out what the actual velocities were, and update the mesh data
   for(unsigned int i = 0; i < vert_new.size(); ++i) {
@@ -525,7 +530,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     Vec3d new_vel(vel[0], vel[1], vel[2]);
     setVertexPosition(vh, new_pos);
     setVertexVelocity(vh, new_vel);
-
+      
     if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
       std::cout << "ElTopo Failed: NaN vertex\n";
     if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
@@ -699,12 +704,6 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
-//    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
-//    {
-//        assert(getVertexPosition(*v) == getVertexPosition(*v));
-//        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
-//    }
-
   static int count = 0;
   count++;
   std::cout << "count = " << count << std::endl;
@@ -723,8 +722,11 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
-//    if (count >= 103)
-//        return;
+    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+    {
+        assert(getVertexPosition(*v) == getVertexPosition(*v));
+        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << " constrained = " << getDefoObj().isConstrained(*v) << std::endl;
+    }
     
   if(m_do_eltopo_collisions)
     resolveCollisions(timestep);
@@ -1163,6 +1165,8 @@ void ElasticShell::remesh(bool initial)
     vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
+      if (id == 257)
+          std::cout << "id : " << vert_data.back() << std::endl;
 
     ++id;
   }
@@ -1235,6 +1239,12 @@ void ElasticShell::remesh(bool initial)
         {
             surface_tracker.remove_triangle(i);
         }
+    }
+    
+    if (surface_tracker.m_mesh.nv() > 257)
+    {
+        std::cout << "vertex oi: " << surface_tracker.get_position(257) << " label = " << surface_tracker.m_mesh.get_vertex_constraint_label(257) << std::endl;
+        std::cout << "rev map: " << getVertexPosition(VertexHandle(265)) << std::endl;
     }
   
   for(int i = 0; i < m_remeshing_iters; ++i) {

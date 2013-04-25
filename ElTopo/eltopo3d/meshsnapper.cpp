@@ -47,6 +47,24 @@ MeshSnapper::MeshSnapper( SurfTrack& surf ) :
    m_face_threshold(0.25)
 {}
 
+    int onBBWall_3(const Vec3d & pos)
+    {
+        int walls = 0;
+        if (pos[0] < 0 + 1e-6)
+            walls |= (1 << 0);
+        if (pos[1] < 0 + 1e-6)
+            walls |= (1 << 1);
+        if (pos[2] < 0 + 1e-6)
+            walls |= (1 << 2);
+        if (pos[0] > 1 - 1e-6)
+            walls |= (1 << 3);
+        if (pos[1] > 1 - 1e-6)
+            walls |= (1 << 4);
+        if (pos[2] > 1 - 1e-6)
+            walls |= (1 << 5);
+        
+        return walls;
+    }
 
 // --------------------------------------------------------
 ///

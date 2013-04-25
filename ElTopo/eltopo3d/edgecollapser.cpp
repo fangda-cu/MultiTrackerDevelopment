@@ -614,6 +614,24 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    return true;
 }
 
+int onBBWall_1(const Vec3d & pos)
+{
+    int walls = 0;
+    if (pos[0] < 0 + 1e-6)
+        walls |= (1 << 0);
+    if (pos[1] < 0 + 1e-6)
+        walls |= (1 << 1);
+    if (pos[2] < 0 + 1e-6)
+        walls |= (1 << 2);
+    if (pos[0] > 1 - 1e-6)
+        walls |= (1 << 3);
+    if (pos[1] > 1 - 1e-6)
+        walls |= (1 << 4);
+    if (pos[2] > 1 - 1e-6)
+        walls |= (1 << 5);
+    
+    return walls;
+}
 
 // --------------------------------------------------------
 ///
@@ -1012,6 +1030,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     {
         std::cout << "SE11: " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     }
+    
+    int w = onBBWall_1(vertex_new_position);
+    if (new_vert_constraint_label != (w != 0))
+    {
+        std::cout << "collapse of edge " << edge << ": result position = " << vertex_new_position << " constraint = " << new_vert_constraint_label << " on wall = " << w << std::endl;
+    }
+    
   return true;
 }
 

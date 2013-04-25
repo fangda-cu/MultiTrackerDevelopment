@@ -347,7 +347,25 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 
 }
 
-
+    int onBBWall_2(const Vec3d & pos)
+    {
+        int walls = 0;
+        if (pos[0] < 0 + 1e-6)
+            walls |= (1 << 0);
+        if (pos[1] < 0 + 1e-6)
+            walls |= (1 << 1);
+        if (pos[2] < 0 + 1e-6)
+            walls |= (1 << 2);
+        if (pos[0] > 1 - 1e-6)
+            walls |= (1 << 3);
+        if (pos[1] > 1 - 1e-6)
+            walls |= (1 << 4);
+        if (pos[2] > 1 - 1e-6)
+            walls |= (1 << 5);
+        
+        return walls;
+    }
+    
 // --------------------------------------------------------
 ///
 /// Split an edge, using subdivision_scheme to determine the new vertex location, if safe to do so.
@@ -743,6 +761,12 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 
   //store the resulting vertex as output.
   result_vert = vertex_e;
+    
+    int w = onBBWall_2(new_vertex_proposed_final_position);
+    if (new_vert_constraint_label != (w != 0))
+    {
+        std::cout << "split of edge " << edge << ": result position = " << new_vertex_proposed_final_position << " constraint = " << new_vert_constraint_label << " on wall = " << w << std::endl;
+    }
 
   return true;
 
