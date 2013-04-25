@@ -211,35 +211,7 @@ public:
     for( int i = 0; i < m_obj.ndof(); ++i ) velocities(i) = m_obj.getVel(i);
   }
   
-  Scalar determineMaxDt(const VecXd & pdot)
-  {
-    Scalar min_edge = std::numeric_limits<Scalar>::max();
-    for (EdgeIterator eit = m_obj.edges_begin(); eit != m_obj.edges_end(); ++eit)
-    {
-      Scalar l = (m_obj.getVertexPosition(m_obj.fromVertex(*eit)) - m_obj.getVertexPosition(m_obj.toVertex(*eit))).norm();
-      if (l < min_edge)
-        min_edge = l;
-    }
-    
-    std::vector<int> constraint_multiplier(pdot.size(), 1);
-    std::vector<int> fixed;
-    std::vector<Scalar> desired;
-    m_obj.getScriptedDofs(fixed, desired, 0);
-    for (size_t i = 0; i < fixed.size(); i++)
-      constraint_multiplier[fixed[i]] = 0;
-    
-    Scalar max_force = -1;
-    for (int i = 0; i < pdot.size(); i++)
-      if (fabs(pdot[i] * constraint_multiplier[i]) > max_force)
-        max_force = fabs(pdot[i] * constraint_multiplier[i]);
-    max_force *= sqrt(3); // conservative estimation of the norm of a three component vector
-    
-    Scalar max_dt = min_edge / max_force / 2.2;
-    
-    std::cout << "======= min edge = " << min_edge << " max force = " << max_force << " max dt = " << max_dt << std::endl;
-    
-    return max_dt;
-  }
+    Scalar determineMaxDt(const VecXd & pdot);
 
   /**
    * This function computes the force on each degree of freedom
