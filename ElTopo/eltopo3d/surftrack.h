@@ -460,7 +460,7 @@ public:
     SurfTrack(const std::vector<Vec3d>& vs, 
               const std::vector<Vec3st>& ts,
               const std::vector<Vec2i>& labels,
-              const std::vector<double>& masses,
+              const std::vector<Vec3d>& masses,
               const SurfTrackInitializationParameters& initial_parameters );
     
     /// Destructor
@@ -495,7 +495,7 @@ public:
     
     /// Add a vertex to the surface.  Update the acceleration grid. 
     ///
-    size_t add_vertex( const Vec3d& new_vertex_position, double new_vertex_mass );
+    size_t add_vertex( const Vec3d& new_vertex_position, const Vec3d& new_vertex_mass );
     
     /// Remove a vertex from the surface.  Update the acceleration grid. 
     ///

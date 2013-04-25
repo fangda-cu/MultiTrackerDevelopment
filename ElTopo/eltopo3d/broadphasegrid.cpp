@@ -129,7 +129,7 @@ void BroadPhaseGrid::update_broad_phase( const DynamicSurface& surface, bool con
                 surface.vertex_static_bounds( i, xmin, xmax );
             }
             
-            if ( surface.vertex_is_solid( i ) )
+            if ( surface.vertex_is_all_solid( i ) )
             {
                 solid_vertex_xmins.push_back( xmin );
                 solid_vertex_xmaxs.push_back( xmax );

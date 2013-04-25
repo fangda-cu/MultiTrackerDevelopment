@@ -833,7 +833,7 @@ void DynamicSurface::update_static_broad_phase( size_t vertex_index )
     
     Vec3d low, high;
     vertex_static_bounds( vertex_index, low, high );
-    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_solid(vertex_index) );
+    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_all_solid(vertex_index) );
     
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
@@ -865,7 +865,7 @@ void DynamicSurface::update_continuous_broad_phase( size_t vertex_index )
     
     Vec3d low, high;
     vertex_continuous_bounds( vertex_index, low, high );
-    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_solid(vertex_index) );
+    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_all_solid(vertex_index) );
     
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
@@ -1443,7 +1443,7 @@ void DynamicSurface::check_continuous_broad_phase_is_up_to_date() const
                 std::cout << "is deleted: " << m_mesh.vertex_is_deleted( brute_force_overlapping_vertices[k] ) << std::endl;
                 
                 Vec3d lo, hi;
-                bool is_solid = vertex_is_solid( brute_force_overlapping_vertices[k] );
+                bool is_solid = vertex_is_all_solid( brute_force_overlapping_vertices[k] );
                 m_broad_phase->get_vertex_aabb( brute_force_overlapping_vertices[k], is_solid, lo, hi );
                 std::cout << "AABB: " << lo << " - " << hi << std::endl;
                 std::cout << "x: " << pm_positions[brute_force_overlapping_vertices[k]] << ", new_x: " << pm_newpositions[brute_force_overlapping_vertices[k]] << std::endl;

@@ -99,7 +99,7 @@ m_verbose(false)
 SurfTrack::SurfTrack( const std::vector<Vec3d>& vs, 
                      const std::vector<Vec3st>& ts, 
                      const std::vector<Vec2i>& labels,
-                     const std::vector<double>& masses,
+                     const std::vector<Vec3d>& masses,
                      const SurfTrackInitializationParameters& initial_parameters ) :
 
 DynamicSurface( vs, 
@@ -304,7 +304,7 @@ void SurfTrack::remove_triangle(size_t t)
 ///
 // ---------------------------------------------------------
 
-size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_vertex_mass )
+size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, const Vec3d& new_vertex_mass )
 {
     size_t new_vertex_index = m_mesh.nondestructive_add_vertex( );
     
@@ -327,7 +327,7 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_verte
     
     if ( m_collision_safety )
     {
-        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_solid(new_vertex_index) );       
+        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) );
     }
     
     return new_vertex_index;
