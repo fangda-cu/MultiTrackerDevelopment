@@ -59,7 +59,7 @@ extern RunStats g_stats;
 DynamicSurface::DynamicSurface( const std::vector<Vec3d>& vertex_positions, 
                                const std::vector<Vec3st>& triangles,
                                const std::vector<Vec2i>& labels,
-                               const std::vector<double>& masses,
+                               const std::vector<Vec3d>& masses,
                                double in_proximity_epsilon,
                                double in_friction_coefficient,
                                bool in_collision_safety,
@@ -86,7 +86,7 @@ m_feature_edge_angle_threshold(M_PI/5)
     // if masses not provided, set all to 1.0
     if ( m_masses.size() == 0 )
     {
-        m_masses.resize( get_num_vertices(), 1.0 );
+        m_masses.resize( get_num_vertices(), Vec3d(1.0, 1.0, 1.0) );
     }
 
     assert(triangles.size() == labels.size());

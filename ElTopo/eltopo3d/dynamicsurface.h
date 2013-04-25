@@ -82,7 +82,7 @@ public:
     DynamicSurface( const std::vector<Vec3d>& vs, 
        const std::vector<Vec3st>& ts, 
        const std::vector<Vec2i>& labels,
-       const std::vector<double>& masses,
+       const std::vector<Vec3d>& masses,
        double in_proximity_epsilon = 1e-4,
        double in_friction_coefficient = 0.0,
        bool in_collision_safety = true,
@@ -187,16 +187,10 @@ public:
     
     /// Determine if the vertex is on a solid surface (has infinite mass).
     ///
-    inline bool vertex_is_solid( size_t vertex_index ) const;
+    inline bool vertex_is_solid( size_t vertex_index, int dof ) const;
+    inline bool vertex_is_all_solid( size_t vertex_index ) const;
+    inline bool vertex_is_any_solid( size_t vertex_index ) const;
     
-    /*/// Determine if the edge is on a solid surface (has infinite mass).
-    ///
-    inline bool edge_is_solid( size_t eedge_index ) const;
-    
-    /// Determine if the triangle is on a solid surface (has infinite mass).
-    ///    
-    inline bool triangle_is_solid( size_t triangle_index ) const;*/
-
     /// Determine if the edge has any solid vertices
     ///
     inline bool edge_is_any_solid( size_t eedge_index ) const;
@@ -442,7 +436,7 @@ public:
     
     /// Vertex positions, predicted locations, velocities and masses
     ///
-    std::vector<double> m_masses;
+    std::vector<Vec3d> m_masses;
     
     /// The mesh graph
     ///
@@ -921,11 +915,23 @@ inline double DynamicSurface::get_predicted_volume( ) const
 ///
 // --------------------------------------------------------
 
-inline bool DynamicSurface::vertex_is_solid( size_t v ) const
+inline bool DynamicSurface::vertex_is_solid( size_t v, int dof ) const
 {
     assert( v < m_masses.size() );
-    return ( m_masses[v] == std::numeric_limits<double>::infinity() );
+    return ( m_masses[v][dof] == std::numeric_limits<double>::infinity() );
 }
+
+inline bool DynamicSurface::vertex_is_all_solid( size_t v ) const
+{
+    return (vertex_is_solid(v, 0) && vertex_is_solid(v, 1) && vertex_is_solid(v, 2));
+}
+
+inline bool DynamicSurface::vertex_is_any_solid( size_t v ) const
+{
+    return (vertex_is_solid(v, 0) || vertex_is_solid(v, 1) || vertex_is_solid(v, 2));
+}
+
+
 
 // --------------------------------------------------------
 ///
@@ -936,7 +942,7 @@ inline bool DynamicSurface::vertex_is_solid( size_t v ) const
 inline bool DynamicSurface::edge_is_any_solid( size_t e ) const
 {
     const Vec2st& edge = m_mesh.m_edges[e];
-    return ( vertex_is_solid(edge[0]) || vertex_is_solid(edge[1]) );
+    return ( vertex_is_any_solid(edge[0]) || vertex_is_any_solid(edge[1]) );
 }
 
 // --------------------------------------------------------
@@ -948,7 +954,7 @@ inline bool DynamicSurface::edge_is_any_solid( size_t e ) const
 inline bool DynamicSurface::triangle_is_any_solid( size_t t ) const
 {
     const Vec3st& tri = m_mesh.get_triangle(t);
-    return ( vertex_is_solid(tri[0]) || vertex_is_solid(tri[1]) || vertex_is_solid(tri[2]) );
+    return ( vertex_is_any_solid(tri[0]) || vertex_is_any_solid(tri[1]) || vertex_is_any_solid(tri[2]) );
 }
 
 // --------------------------------------------------------
@@ -960,7 +966,7 @@ inline bool DynamicSurface::triangle_is_any_solid( size_t t ) const
 inline bool DynamicSurface::edge_is_all_solid( size_t e ) const
 {
   const Vec2st& edge = m_mesh.m_edges[e];
-  return ( vertex_is_solid(edge[0]) && vertex_is_solid(edge[1]) );
+  return ( vertex_is_all_solid(edge[0]) && vertex_is_all_solid(edge[1]) );
 }
 
 // --------------------------------------------------------
@@ -972,7 +978,7 @@ inline bool DynamicSurface::edge_is_all_solid( size_t e ) const
 inline bool DynamicSurface::triangle_is_all_solid( size_t t ) const
 {
   const Vec3st& tri = m_mesh.get_triangle(t);
-  return ( vertex_is_solid(tri[0]) && vertex_is_solid(tri[1]) && vertex_is_solid(tri[2]) );
+  return ( vertex_is_all_solid(tri[0]) && vertex_is_all_solid(tri[1]) && vertex_is_all_solid(tri[2]) );
 }
 
 // ---------------------------------------------------------
