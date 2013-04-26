@@ -357,10 +357,15 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
    // move the vertex we decided to keep
     
     std::cout << "snap old pos: keep = " << m_surf.get_position(vertex_to_keep) << " delete = " << m_surf.get_position(vertex_to_delete) << std::endl;
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->log() << "old pos: keep = " << m_surf.get_position(vertex_to_keep) << " delete = " << m_surf.get_position(vertex_to_delete) << std::endl;
 
    m_surf.set_position( vertex_to_keep, vertex_new_position );
    m_surf.set_newposition( vertex_to_keep, vertex_new_position );
+    
     std::cout << "snap new pos: " << vertex_new_position << std::endl;
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->log() << "new pos: " << vertex_new_position << std::endl;
 
 //   ///////////////////////////////////////////////////////////////////////
 //   // FD 20121229
@@ -638,9 +643,9 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       snapping_vertex = result_vertex;
    }
   
-   if (m_surf.m_mesheventcallback)
-      m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vertex << " to " << vertex << std::endl;
-
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->log() << "attempting to snap vertex " << snapping_vertex << " (" << m_surf.get_position(snapping_vertex) << ") to " << vertex << " (" << m_surf.get_position(vertex) << ")" << std::endl;
+    
    //finally, if the splitting succeeds and we have a good vertex pair, try to snap them.
    bool success = vert_pair_is_snappable(snapping_vertex, vertex) && snap_vertex_pair(snapping_vertex, vertex);
    
