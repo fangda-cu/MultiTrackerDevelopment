@@ -458,9 +458,10 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
   
   // Do the actual splitting
 
-  Vec3d  new_vertex_mass = (1.0/3.0) * ( m_surf.m_masses[ vertex_a ] +
-                                         m_surf.m_masses[ vertex_b ] + 
-                                         m_surf.m_masses[ vertex_c ]);
+  Vec3d  new_vertex_mass = Vec3d(1, 1, 1);
+  if (m_surf.vertex_is_solid(vertex_a, 0) && m_surf.vertex_is_solid(vertex_b, 0) && m_surf.vertex_is_solid(vertex_c, 0)) new_vertex_mass[0] = std::numeric_limits<double>::infinity();
+  if (m_surf.vertex_is_solid(vertex_a, 1) && m_surf.vertex_is_solid(vertex_b, 1) && m_surf.vertex_is_solid(vertex_c, 1)) new_vertex_mass[1] = std::numeric_limits<double>::infinity();
+  if (m_surf.vertex_is_solid(vertex_a, 2) && m_surf.vertex_is_solid(vertex_b, 2) && m_surf.vertex_is_solid(vertex_c, 2)) new_vertex_mass[2] = std::numeric_limits<double>::infinity();
   
   size_t vertex_d = m_surf.add_vertex( new_vertex_smooth_position, new_vertex_mass );
 
