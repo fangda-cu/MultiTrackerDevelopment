@@ -87,6 +87,18 @@ namespace BASim
         return true;
     return false;
   }
+    
+  bool PositionDofsModel::isConstrainedInDirection(const VertexHandle & v, int dir) const
+  {
+    for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
+      if(m_constrained_vertices[i] == v)
+        if ((m_constraint_positions[i]->xEnabled && dir == 0) ||
+            (m_constraint_positions[i]->yEnabled && dir == 1) ||
+            (m_constraint_positions[i]->zEnabled && dir == 2))
+        return true;
+    return false;
+  }
+
 
   void PositionDofsModel::getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const
   {

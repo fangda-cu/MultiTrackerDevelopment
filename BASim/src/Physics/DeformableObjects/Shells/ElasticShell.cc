@@ -447,7 +447,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   //Convert the data to the form required by El Topo!
   std::vector<ElTopo::Vec3d> vert_new, vert_old;
   std::vector<ElTopo::Vec3st> tri_data;
-  std::vector<Scalar> masses;
+  std::vector<ElTopo::Vec3d> masses;
 
   DeformableObject& mesh = getDefoObj();
 
@@ -464,16 +464,14 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     Vec3d vert = getVertexPosition(vh);
     Vec3d old_vert = getVertexDampingUndeformed(vh);
 //    Scalar mass = getMass(vh);
-    Scalar mass = 1.0;
+    ElTopo::Vec3d mass(1, 1, 1);
 
     vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
-    if(getDefoObj().isConstrained(vh)) {
-      masses.push_back(numeric_limits<Scalar>::infinity());
-    }
-    else {
-      masses.push_back(mass);
-    }
+    for (int i = 0; i < 3; i++)
+      if (getDefoObj().isConstrainedInDirection(vh, i))
+        mass[i] = numeric_limits<Scalar>::infinity();
+    masses.push_back(mass);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
@@ -858,7 +856,7 @@ void ElasticShell::fracture() {
 
   std::vector<ElTopo::Vec3d> vert_data;
   std::vector<ElTopo::Vec3st> tri_data;
-  std::vector<Scalar> masses;
+  std::vector<ElTopo::Vec3d> masses;
 
   DeformableObject& mesh = getDefoObj();
 
@@ -874,16 +872,16 @@ void ElasticShell::fracture() {
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = getVertexPosition(vh);
-//    Scalar mass = getMass(vh);
-    Scalar mass = 1.0;
+    ElTopo::Vec3d mass(1, 1, 1);
+      
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    if(getDefoObj().isConstrained(vh))
-      masses.push_back(numeric_limits<Scalar>::infinity());
-    else
-      masses.push_back(mass);
+    for (int i = 0; i < 3; i++)
+      if (getDefoObj().isConstrainedInDirection(vh, i))
+        mass[i] = numeric_limits<Scalar>::infinity();
+    masses.push_back(mass);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
-
+      
     Vec3d pos = getVertexPosition(vh);
 
     ++id;
@@ -915,7 +913,9 @@ void ElasticShell::fracture() {
     FaceVertexIterator fvit = getDefoObj().fv_iter(faces[i]);
     for(;fvit; ++fvit) {
       VertexHandle vh = *fvit;
-      masses[vert_numbers[vh]] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][0] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][1] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][2] = numeric_limits<Scalar>::infinity();
     }
   }
 
@@ -1119,7 +1119,7 @@ void ElasticShell::remesh(bool initial)
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<Scalar> masses;
+  std::vector<ElTopo::Vec3d> masses;
 
   DeformableObject& mesh = getDefoObj();
   
@@ -1142,19 +1142,20 @@ void ElasticShell::remesh(bool initial)
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = getVertexPosition(vh);
-//    Scalar mass = getMass(vh);
-    Scalar mass = 1;
+
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
-      assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
-    if(getDefoObj().isConstrained(vh))
-      masses.push_back(numeric_limits<Scalar>::infinity());
-    else
-      masses.push_back(mass);
+      
+    ElTopo::Vec3d mass(1, 1, 1);
+    assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
+    for (int i = 0; i < 3; i++)
+      if (getDefoObj().isConstrainedInDirection(vh, i))
+        mass[i] = numeric_limits<Scalar>::infinity();
+    masses.push_back(mass);
+      
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
-
     ++id;
   }
 
@@ -1187,10 +1188,14 @@ void ElasticShell::remesh(bool initial)
     //vertices of the face...
     for(;fvit; ++fvit) {
       VertexHandle vh = *fvit;
-      masses[vert_numbers[vh]] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][0] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][1] = numeric_limits<Scalar>::infinity();
+      masses[vert_numbers[vh]][2] = numeric_limits<Scalar>::infinity();
     }
     //and the other vertex
-    masses[vert_numbers[verts[i]]] = numeric_limits<Scalar>::infinity();
+    masses[vert_numbers[verts[i]]][0] = numeric_limits<Scalar>::infinity();
+    masses[vert_numbers[verts[i]]][1] = numeric_limits<Scalar>::infinity();
+    masses[vert_numbers[verts[i]]][2] = numeric_limits<Scalar>::infinity();
   }
 
   std::cout << "Calling surface improvement\n";
@@ -1494,23 +1499,53 @@ bool ElasticShell::generate_split_position(ElTopo::SurfTrack & st, size_t v0, si
   return true;
 }
 
-bool ElasticShell::generate_collapsed_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+ElTopo::Vec3c ElasticShell::generate_collapsed_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1)
 {
-  return (label0 || label1);  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
+    ElTopo::Vec3d x0 = st.get_position(v0);
+    ElTopo::Vec3d x1 = st.get_position(v1);
+    
+    int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+    int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
+    
+    assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
+    assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
+    assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
+    assert(((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]);
+    assert(((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]);
+    assert(((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2]);
+    
+    ElTopo::Vec3c result;  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
+    int result_constraint = (constraint0 | constraint1);
+    result[0] = ((result_constraint & (1 << 0)) || (result_constraint & (1 << 3)));
+    result[1] = ((result_constraint & (1 << 1)) || (result_constraint & (1 << 4)));
+    result[2] = ((result_constraint & (1 << 2)) || (result_constraint & (1 << 5)));
+    
+    return result;
 }
 
-bool ElasticShell::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+ElTopo::Vec3c ElasticShell::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1)
 {
-  ElTopo::Vec3d x0 = st.get_position(v0);
-  ElTopo::Vec3d x1 = st.get_position(v1);
+    ElTopo::Vec3d x0 = st.get_position(v0);
+    ElTopo::Vec3d x1 = st.get_position(v1);
+    
+    int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+    int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
+    
+    assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
+    assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
+    assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
+    assert(((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]);
+    assert(((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]);
+    assert(((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2]);
+    
+    ElTopo::Vec3c result;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
+    int result_constraint = (constraint0 & constraint1);
+    result[0] = ((result_constraint & (1 << 0)) || (result_constraint & (1 << 3)));
+    result[1] = ((result_constraint & (1 << 1)) || (result_constraint & (1 << 4)));
+    result[2] = ((result_constraint & (1 << 2)) || (result_constraint & (1 << 5)));
+    
+    return result;
   
-  int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
-  int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
-  
-  assert((constraint0 != 0) == label0);
-  assert((constraint1 != 0) == label1);
-  
-  return (constraint0 & constraint1) != 0;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
 }
 
 bool ElasticShell::generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower)

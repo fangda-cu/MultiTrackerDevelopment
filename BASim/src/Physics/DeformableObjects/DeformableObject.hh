@@ -128,7 +128,8 @@ public:
   void releaseVertex(const VertexHandle & v);
   void releaseAllVertices();
   bool isConstrained(const VertexHandle & v) const;
-
+  bool isConstrainedInDirection(const VertexHandle & v, int dir) const;
+    
   void setTimeStep(Scalar dt);
   Scalar getTimeStep();
   void setTime(Scalar time);
