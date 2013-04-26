@@ -188,6 +188,7 @@ public:
     /// Determine if the vertex is on a solid surface (has infinite mass).
     ///
     inline bool vertex_is_solid( size_t vertex_index, int dof ) const;
+    inline Vec3c vertex_is_solid_3 (size_t vertex_index ) const;
     inline bool vertex_is_all_solid( size_t vertex_index ) const;
     inline bool vertex_is_any_solid( size_t vertex_index ) const;
     
@@ -919,6 +920,12 @@ inline bool DynamicSurface::vertex_is_solid( size_t v, int dof ) const
 {
     assert( v < m_masses.size() );
     return ( m_masses[v][dof] == std::numeric_limits<double>::infinity() );
+}
+
+inline Vec3c DynamicSurface::vertex_is_solid_3( size_t v ) const
+{
+    assert( v < m_masses.size() );
+    return (Vec3c(vertex_is_solid(v, 0), vertex_is_solid(v, 1), vertex_is_solid(v, 2)));
 }
 
 inline bool DynamicSurface::vertex_is_all_solid( size_t v ) const

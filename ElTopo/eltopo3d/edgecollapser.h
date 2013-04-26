@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <vec.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -145,7 +146,7 @@ private:
     bool get_new_vertex_position(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
 
     //Experimental edge collapser that decides features based on edge dihedral angles.
-    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
+    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, Vec3c& new_vert_solid_label);
 
 };
 

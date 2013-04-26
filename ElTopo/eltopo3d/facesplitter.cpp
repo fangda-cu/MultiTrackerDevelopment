@@ -458,7 +458,7 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
   
   // Do the actual splitting
 
-  double new_vertex_mass = (1.0/3.0) * ( m_surf.m_masses[ vertex_a ] + 
+  Vec3d  new_vertex_mass = (1.0/3.0) * ( m_surf.m_masses[ vertex_a ] +
                                          m_surf.m_masses[ vertex_b ] + 
                                          m_surf.m_masses[ vertex_c ]);
   

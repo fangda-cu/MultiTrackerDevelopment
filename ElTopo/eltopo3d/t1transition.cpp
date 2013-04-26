@@ -278,7 +278,7 @@ bool T1Transition::t1_pass()
         }
         
         // compute the desired destination positions, enforcing constraints
-        bool original_solid = m_surf.vertex_is_solid(xj);
+        Vec3c original_solid = m_surf.vertex_is_solid_3(xj);
         Vec3d original_position = m_surf.get_position(xj);
         
         double mean_edge_length = 0;
@@ -301,7 +301,7 @@ bool T1Transition::t1_pass()
         size_t a = static_cast<size_t>(~0);
         size_t b = static_cast<size_t>(~0);
         
-        if (original_solid)
+        if (m_surf.vertex_is_any_solid(xj))
         {
             assert(m_surf.m_solid_vertices_callback);
             m_surf.m_solid_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
@@ -468,10 +468,13 @@ bool T1Transition::t1_pass()
         
         m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
         m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
-        if (original_solid)
+        for (int i = 0; i < 3; i++)
         {
-            m_surf.m_masses[a] = std::numeric_limits<double>::infinity();
-            m_surf.m_masses[b] = std::numeric_limits<double>::infinity();
+            if (original_solid[i])
+            {
+                m_surf.m_masses[a][i] = std::numeric_limits<double>::infinity();
+                m_surf.m_masses[b][i] = std::numeric_limits<double>::infinity();
+            }
         }
         
         verts_to_delete.push_back(xj);

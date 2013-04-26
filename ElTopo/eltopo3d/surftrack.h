@@ -692,9 +692,9 @@ public:
         
         virtual bool generate_split_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
         
-        virtual bool generate_collapsed_solid_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        virtual Vec3c generate_collapsed_solid_label(SurfTrack & st, size_t v0, size_t v1, const Vec3c & label0, const Vec3c & label1) = 0;
         
-        virtual bool generate_split_solid_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        virtual Vec3c generate_split_solid_label(SurfTrack & st, size_t v0, size_t v1, const Vec3c & label0, const Vec3c & label1) = 0;
         
         virtual bool generate_edge_popped_positions(SurfTrack & st, size_t oldv, const Vec2i & cut, Vec3d & pos_upper, Vec3d & pos_lower) = 0;
         
