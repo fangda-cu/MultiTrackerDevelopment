@@ -323,9 +323,9 @@ bool ImpactZoneSolver::inelastic_projection( const ImpactZone& iz )
     for ( size_t i = 0; i < n; ++i )
     {
         
-        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]] );
-        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]] );
-        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]] );
+        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]][0] );
+        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]][1] );
+        inv_masses.push_back( 1.0 / m_surface.m_masses[zone_vertices[i]][2] );
         
         column_velocities.push_back( m_surface.m_velocities[zone_vertices[i]][0] );
         column_velocities.push_back( m_surface.m_velocities[zone_vertices[i]][1] );
@@ -637,9 +637,9 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     {
         size_t idx = vs[i];
         
-        double m = m_surface.m_masses[idx];
+        double m = (m_surface.m_masses[idx][0] + m_surface.m_masses[idx][1] + m_surface.m_masses[idx][2]) / 3.0;
         
-        if ( m_surface.vertex_is_solid(idx) )
+        if ( m_surface.vertex_is_any_solid(idx) )
         {
             m = m_rigid_zone_infinite_mass;
         }
@@ -677,9 +677,9 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     {
         size_t idx = vs[i];
         
-        double m = m_surface.m_masses[idx];
+        double m = (m_surface.m_masses[idx][0] + m_surface.m_masses[idx][1] + m_surface.m_masses[idx][2]) / 3.0;
         
-        if ( m_surface.vertex_is_solid(idx) )
+        if ( m_surface.vertex_is_any_solid(idx) )
         {
             m = m_rigid_zone_infinite_mass;
         }
@@ -697,9 +697,9 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     for(size_t i = 0; i < vs.size(); i++)
     {
         size_t idx = vs[i];
-        double m = m_surface.m_masses[idx];
+        double m = (m_surface.m_masses[idx][0] + m_surface.m_masses[idx][1] + m_surface.m_masses[idx][2]) / 3.0;
         
-        if ( m_surface.vertex_is_solid(idx) )
+        if ( m_surface.vertex_is_any_solid(idx) )
         {
             m = m_rigid_zone_infinite_mass;
         }
