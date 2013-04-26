@@ -327,7 +327,7 @@ void CollisionPipeline::add_point_update_candidates( size_t v,
     
     // Avoid solid-vs-solid tests during sequential impulses phase
     
-    if ( m_surface.vertex_is_solid(v) ) { return; }
+    if ( m_surface.vertex_is_all_solid(v) ) { return; }
     
     add_point_candidates(v, true, true, collision_candidates);
     
@@ -516,7 +516,7 @@ void CollisionPipeline::dynamic_point_vs_solid_triangle_proximities(double dt)
     
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid( i ) )
+        if ( m_surface.vertex_is_all_solid( i ) )
         {
             continue;
         }
@@ -689,7 +689,7 @@ bool CollisionPipeline::detect_point_triangle_collision( const Vec3st& candidate
     }
     
     
-    if ( m_surface.triangle_is_all_solid( t ) && m_surface.vertex_is_solid( v ) )
+    if ( m_surface.triangle_is_all_solid( t ) && m_surface.vertex_is_all_solid( v ) )
     {
         return false;
     }
@@ -931,7 +931,7 @@ void CollisionPipeline::dynamic_point_vs_solid_triangle_collisions(double dt,
     
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid( i ) )
+        if ( m_surface.vertex_is_all_solid( i ) )
         {
             continue;
         }
@@ -1156,7 +1156,7 @@ bool CollisionPipeline::detect_collisions( std::vector<Collision>& collisions )
     
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid(i) )
+        if ( m_surface.vertex_is_all_solid(i) )
         {
             continue;
         }
