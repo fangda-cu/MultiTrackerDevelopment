@@ -237,15 +237,6 @@ public:
 
     unsigned int compute_rank_from_triangles(const std::vector<size_t>& tris) const;
     
-    //Return whether the given edge is a feature as determined by dihedral angles.
-    bool edge_is_feature(size_t edge) const;
-    
-    //Return whether the vertex is on a feature, as determined by dihedral angles
-    int vertex_feature_edge_count(size_t vertex) const;
-
-    /// Get edge dihedral angle
-    double get_largest_dihedral(size_t edge) const;
-
     /// Determine which region the point is inside by ray-casting and looking at the normal
     /// of the first intersection, and comparing that with the triangle's labeling
     int get_region_containing_point( const Vec3d& p);

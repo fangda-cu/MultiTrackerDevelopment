@@ -665,6 +665,16 @@ public:
     int m_perform_smoothing;
     
     
+    //Return whether the given edge is a feature as determined by dihedral angles.
+    bool edge_is_feature(size_t edge) const;
+    
+    //Return whether the vertex is on a feature, as determined by dihedral angles
+    int vertex_feature_edge_count(size_t vertex) const;
+    
+    /// Get edge dihedral angle
+    double get_largest_dihedral(size_t edge) const;
+
+  
     /// Mesh update event callback
     ///
     class MeshEventCallback
@@ -699,7 +709,8 @@ public:
         virtual bool generate_edge_popped_positions(SurfTrack & st, size_t oldv, const Vec2i & cut, Vec3d & pos_upper, Vec3d & pos_lower) = 0;
         
         virtual bool generate_vertex_popped_positions(SurfTrack & st, size_t oldv, int A, int B, Vec3d & pos_a, Vec3d & pos_b) = 0;
-        
+      
+        virtual bool solid_edge_is_feature(const SurfTrack & st, size_t edge) = 0;
     };
     
     SolidVerticesCallback * m_solid_vertices_callback;
