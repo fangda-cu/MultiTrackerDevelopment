@@ -673,6 +673,9 @@ public:
     
     /// Get edge dihedral angle
     double get_largest_dihedral(size_t edge) const;
+  
+    // Return whether the incident feature curves on a vertex form a smooth ridge (implying # of feature curves = 2)
+    bool vertex_feature_is_smooth_ridge(size_t vertex) const;
 
   
     /// Mesh update event callback

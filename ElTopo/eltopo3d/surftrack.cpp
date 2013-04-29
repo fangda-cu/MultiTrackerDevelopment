@@ -968,6 +968,36 @@ double SurfTrack::get_largest_dihedral(size_t edge) const
     
     return largest_angle;
 }
+    
+bool SurfTrack::vertex_feature_is_smooth_ridge(size_t vertex) const
+{
+    std::vector<size_t> feature_edges;
+    for (size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); i++)
+        if (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i]))
+            feature_edges.push_back(m_mesh.m_vertex_to_edge_map[vertex][i]);
+
+    if (feature_edges.size() != 2)  // the feature cannot be a smooth ridge unless the number of feature edges is 2
+        return false;
+    
+    const Vec2st & e0 = m_mesh.m_edges[feature_edges[0]];
+    const Vec2st & e1 = m_mesh.m_edges[feature_edges[1]];
+    
+    Vec3d t0 = get_position(e0[0]) - get_position(e0[1]);
+    t0 /= mag(t0);
+    Vec3d t1 = get_position(e1[0]) - get_position(e1[1]);
+    t1 /= mag(t1);
+    
+    // adjust for orientation
+    if ((e0[0] == vertex && e1[0] == vertex) || (e0[1] == vertex && e1[1] == vertex))
+        t1 = -t1;
+    
+    double angle = acos(dot(t0, t1));
+    if (angle > m_feature_edge_angle_threshold)
+        return false;
+    
+    return true;
+}
+
 
 }
 

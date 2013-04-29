@@ -481,7 +481,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
     // situations where large collapse threshold applies:
     //  1. one of the two vertices has no feature edges
     //  2. both have feature edges, and the edge is a feature, and one of the two vertices has exactly two feature edges
-    bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || ((keep_rank == 2 || delete_rank == 2) && m_surf.edge_is_feature(edge)));
+    bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || (((keep_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_keep)) || (delete_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_delete))) && m_surf.edge_is_feature(edge)));
     
     double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
     if (!large_threshold && len >= m_t1_pull_apart_distance)
