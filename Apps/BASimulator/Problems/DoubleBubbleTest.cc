@@ -1074,7 +1074,7 @@ void DoubleBubbleTest::afterStartStep()
 
 void DoubleBubbleTest::beforeEndStep()
 {
-//  updateBBWallConstraints();
+  updateBBWallConstraints();
     
   Scalar dt = getDt();
   Scalar current_t = getTime();
