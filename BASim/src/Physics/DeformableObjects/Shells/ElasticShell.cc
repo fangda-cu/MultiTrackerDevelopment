@@ -1576,6 +1576,20 @@ bool ElasticShell::generate_vertex_popped_positions(ElTopo::SurfTrack & st, size
   return true;
 }
 
+bool ElasticShell::solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e)
+{
+  ElTopo::Vec3d x0 = st.get_position(st.m_mesh.m_edges[e][0]);
+  ElTopo::Vec3d x1 = st.get_position(st.m_mesh.m_edges[e][1]);
+  
+  int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+  int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
+  
+  if (constraint0 & constraint1)  // edge is completely inside a wall
+    return true;
+  else
+    return false;
+}
+
 void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
   VertexHandle v0 = m_obj->fromVertex(eh);
