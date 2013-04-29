@@ -478,6 +478,15 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
    bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
 
+    // situations where large collapse threshold applies:
+    //  1. one of the two vertices has no feature edges
+    //  2. both have feature edges, and the edge is a feature, and one of the two vertices has exactly two feature edges
+    bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || ((keep_rank == 2 || delete_rank == 2) && m_surf.edge_is_feature(edge)));
+    
+    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+    if (!large_threshold && len >= m_t1_pull_apart_distance)
+        return false;
+        
    // boundary vertices have precedence
    if (keep_vert_is_boundary) keep_rank = 4;
    if (del_vert_is_boundary) delete_rank = 4;
@@ -594,7 +603,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
 
       vertex_new_position = m_surf.get_position(vertex_to_keep);
    }
-
+    
    return true;
 }
 
