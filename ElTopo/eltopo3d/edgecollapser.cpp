@@ -635,7 +635,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
   {
-//    if (m_surf.m_verbose)
+    if (m_surf.m_verbose || eoi)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
     return false;
   }
