@@ -88,6 +88,10 @@ public:
       m_diffEq.endStep();
       
       substep_count++;
+        
+      ////////
+      if (substep_count > 100)
+        break;
     }
     
     std::cout << "Symplectic Euler time step finished after " << substep_count << " substeps." << std::endl;

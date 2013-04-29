@@ -625,6 +625,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
   double edge_len = mag(edge_vec);
+    
+    bool eoi = false;
+    if (edge_len < m_t1_pull_apart_distance)
+    {
+        eoi = true;
+        std::cout << "eoi 1: len = " << edge_len << "; t1 pull apart distance = " << m_t1_pull_apart_distance << std::endl;
+    }
   
   if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
   {
@@ -633,6 +640,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     return false;
   }
   
+    if (eoi)
+        std::cout << "eoi 2" << std::endl;
+    
   ///////////////////////////////////////////////////////////////////////
 
   ///////////////////////////////////////////////////////////////////////
@@ -732,6 +742,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   }
 
+    if (eoi)
+        std::cout << "eoi 3" << std::endl;
+    
 
   // --------------
 
@@ -764,6 +777,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   }
 
 
+    if (eoi)
+        std::cout << "eoi 4" << std::endl;
+    
   // --------------
   // decide on new vertex position
 
@@ -774,6 +790,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if(!can_collapse)
      return false;
 
+    if (eoi)
+        std::cout << "eoi 5" << std::endl;
+    
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
   // --------------
@@ -852,6 +871,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     }
   }
 
+    if (eoi)
+        std::cout << "eoi 6" << std::endl;
+    
   // --------------
 
   // start building history data
@@ -954,6 +976,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
 
+    if (eoi)
+        std::cout << "eoi 7" << std::endl;
+    
   return true;
 }
 
