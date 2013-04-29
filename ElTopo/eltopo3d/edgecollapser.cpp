@@ -483,7 +483,9 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
     //  2. both have feature edges, and the edge is a feature, and one of the two vertices has exactly two feature edges
     bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || ((keep_rank == 2 || delete_rank == 2) && m_surf.edge_is_feature(edge)));
     
-    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+    Vec3d keep_pos = m_surf.get_position(vertex_to_keep);
+    Vec3d delete_pos = m_surf.get_position(vertex_to_delete);
+    double len = mag(keep_pos - delete_pos);
     if (!large_threshold && len >= m_t1_pull_apart_distance)
         return false;
         

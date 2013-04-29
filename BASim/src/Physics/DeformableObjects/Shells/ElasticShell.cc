@@ -1506,7 +1506,15 @@ ElTopo::Vec3c ElasticShell::generate_collapsed_solid_label(ElTopo::SurfTrack & s
     
     int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
     int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
-    
+
+//    if (!((((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]) &&
+//          (((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]) &&
+//          (((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]) &&
+//          (((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]) &&
+//          (((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]) &&
+//          (((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2])))
+//        exit(0);
+
     assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
     assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
     assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
