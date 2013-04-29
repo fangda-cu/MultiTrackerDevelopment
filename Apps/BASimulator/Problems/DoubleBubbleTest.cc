@@ -3046,7 +3046,33 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     }
     if (e.isValid())
     {
-      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ") length = " << (shell->getVertexPosition(mesh.fromVertex(e)) - shell->getVertexPosition(mesh.toVertex(e))).norm() << std::endl;
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      Vec3d x0 = shell->getVertexPosition(mesh.fromVertex(e));
+      Vec3d x1 = shell->getVertexPosition(mesh.toVertex(e));
+      ElTopo::Vec3d st_x0(x0.x(), x0.y(), x0.z());
+      ElTopo::Vec3d st_x1(x1.x(), x1.y(), x1.z());
+      size_t st_v0 = st->m_mesh.nv();
+      size_t st_v1 = st->m_mesh.nv();
+      for (size_t i = 0; i < st->m_mesh.nv(); i++)
+      {
+        if (mag(st->get_position(i) - st_x0) < 1e-6)
+        {
+          assert(st_v0 == st->m_mesh.nv());
+          st_v0 = i;
+        }
+        if (mag(st->get_position(i) - st_x1) < 1e-6)
+        {
+          assert(st_v1 == st->m_mesh.nv());
+          st_v1 = i;
+        }
+      }
+      assert(st_v0 != st->m_mesh.nv());
+      assert(st_v1 != st->m_mesh.nv());
+      
+      size_t st_e = st->m_mesh.get_edge_index(st_v0, st_v1);
+      
+      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << x0 << ") - " << mesh.toVertex(e).idx() << " (" << x1 << ") length = " << (x0 - x1).norm() << " feature = " << st->edge_is_feature(st_e) << std::endl;
+      delete st;
     }
     if (f.isValid())
     {
