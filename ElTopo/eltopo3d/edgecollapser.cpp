@@ -971,6 +971,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
+    
+    std::cout << "collapse successful, new position = " << vertex_new_position << std::endl;
+    
 
   return true;
 }
