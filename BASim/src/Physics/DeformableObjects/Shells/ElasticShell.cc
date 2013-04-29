@@ -801,7 +801,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
-    remesh();
+    remesh(timestep);
 
     //Relabel DOFs if necessary
     do_relabel = true;
@@ -1069,7 +1069,7 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 }
 
 
-void ElasticShell::remesh(bool initial)
+void ElasticShell::remesh(Scalar timestep, bool initial)
 {
   // prune orphan edges and vertices
   for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
@@ -1145,7 +1145,7 @@ void ElasticShell::remesh(bool initial)
 
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = getVertexVelocity(vh);
-    vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+    vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]) * timestep);
       
     ElTopo::Vec3d mass(1, 1, 1);
     assert(getDefoObj().isConstrained(vh) == (getVertexConstraintLabel(vh) != 0));
