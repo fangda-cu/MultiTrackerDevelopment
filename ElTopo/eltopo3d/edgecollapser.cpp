@@ -500,6 +500,14 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
 
    if (keep_vert_is_any_solid)   keep_rank = 5;
    if (delete_vert_is_any_solid) delete_rank = 5;
+    
+    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+    bool eoi = false;
+    if (std::abs(len - 0.0498599) < 1e-4)
+    {
+        eoi = true;
+        std::cout << "eoi: len = " << len << " feature: " << edge_is_a_feature << " ranks: " << keep_rank << " " << delete_rank << " boundary: " << keep_vert_is_boundary << " " << del_vert_is_boundary << " any solid: " << keep_vert_is_any_solid << " " << delete_vert_is_any_solid << " manifold: " << keep_vert_is_manifold << " " << delete_vert_is_manifold << " " << std::endl;
+    }
 
    // Handle different cases of constrained, boundary and interior vertices
    if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_any_solid || delete_vert_is_any_solid))
