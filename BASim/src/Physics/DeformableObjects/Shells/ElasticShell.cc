@@ -702,7 +702,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
     for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
     {
-        assert(getVertexPosition(*v) == getVertexPosition(*v));
+//        assert(getVertexPosition(*v) == getVertexPosition(*v));
         std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
     }
     
