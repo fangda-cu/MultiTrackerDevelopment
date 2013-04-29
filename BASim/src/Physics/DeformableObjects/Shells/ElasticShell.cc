@@ -1395,18 +1395,20 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
 
 int ElasticShell::onBBWall(const Vec3d & pos) const
 {
+  static const double WALL_THRESHOLD = 1e-4;
+  
   int walls = 0;
-  if (pos.x() < 0 + 1e-6)
+  if (pos.x() < 0 + WALL_THRESHOLD)
     walls |= (1 << 0);
-  if (pos.y() < 0 + 1e-6)
+  if (pos.y() < 0 + WALL_THRESHOLD)
     walls |= (1 << 1);
-  if (pos.z() < 0 + 1e-6)
+  if (pos.z() < 0 + WALL_THRESHOLD)
     walls |= (1 << 2);
-  if (pos.x() > 1 - 1e-6)
+  if (pos.x() > 1 - WALL_THRESHOLD)
     walls |= (1 << 3);
-  if (pos.y() > 1 - 1e-6)
+  if (pos.y() > 1 - WALL_THRESHOLD)
     walls |= (1 << 4);
-  if (pos.z() > 1 - 1e-6)
+  if (pos.z() > 1 - WALL_THRESHOLD)
     walls |= (1 << 5);
   
   return walls;

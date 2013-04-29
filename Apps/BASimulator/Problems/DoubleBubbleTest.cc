@@ -439,18 +439,20 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
+  static const double WALL_THRESHOLD = 1e-4;
+  
   int walls = 0;
-  if (pos.x() < 0 + 1e-6)
+  if (pos.x() < 0 + WALL_THRESHOLD)
     walls |= (1 << 0);
-  if (pos.y() < 0 + 1e-6)
+  if (pos.y() < 0 + WALL_THRESHOLD)
     walls |= (1 << 1);
-  if (pos.z() < 0 + 1e-6)
+  if (pos.z() < 0 + WALL_THRESHOLD)
     walls |= (1 << 2);
-  if (pos.x() > 1 - 1e-6)
+  if (pos.x() > 1 - WALL_THRESHOLD)
     walls |= (1 << 3);
-  if (pos.y() > 1 - 1e-6)
+  if (pos.y() > 1 - WALL_THRESHOLD)
     walls |= (1 << 4);
-  if (pos.z() > 1 - 1e-6)
+  if (pos.z() > 1 - WALL_THRESHOLD)
     walls |= (1 << 5);
   
   return walls;
@@ -1001,7 +1003,9 @@ void DoubleBubbleTest::updateBBWallConstraints()
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
-    
+  
+    static const double WALL_THRESHOLD = 1e-4;
+
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
         VertexHandle v = *vit;
@@ -1011,37 +1015,37 @@ void DoubleBubbleTest::updateBBWallConstraints()
         bool x = false;
         bool y = false;
         bool z = false;
-        if (pos.x() < 1e-6)
+        if (pos.x() < WALL_THRESHOLD)
         {
             pos.x() = 0;
             x = true;
             constraint |= (1 << 0);
         }
-        if (pos.x() > 1 - 1e-6)
+        if (pos.x() > 1 - WALL_THRESHOLD)
         {
             pos.x() = 1;
             x = true;
             constraint |= (1 << 3);
         }
-        if (pos.y() < 1e-6)
+        if (pos.y() < WALL_THRESHOLD)
         {
             pos.y() = 0;
             y = true;
             constraint |= (1 << 1);
         }
-        if (pos.y() > 1 - 1e-6)
+        if (pos.y() > 1 - WALL_THRESHOLD)
         {
             pos.y() = 1;
             y = true;
             constraint |= (1 << 4);
         }
-        if (pos.z() < 1e-6)
+        if (pos.z() < WALL_THRESHOLD)
         {
             pos.z() = 0;
             z = true;
             constraint |= (1 << 2);
         }
-        if (pos.z() > 1 - 1e-6)
+        if (pos.z() > 1 - WALL_THRESHOLD)
         {
             pos.z() = 1;
             z = true;
