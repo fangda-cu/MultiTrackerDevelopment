@@ -773,7 +773,6 @@ void SurfTrack::improve_mesh( )
             
       //std::cout << "Collapse\n";
       // edge collapsing
-        m_verbose = true;
       int i;
       i = 0;
       while ( m_collapser.collapse_pass() ) {
@@ -781,7 +780,6 @@ void SurfTrack::improve_mesh( )
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
       }
-        m_verbose = false;
       
       ////////////////////////////////////////////////////////////
       
