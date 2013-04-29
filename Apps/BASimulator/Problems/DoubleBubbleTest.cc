@@ -2971,9 +2971,9 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     } else if (k == '}')
     {
       int f = g_recording.currentFrame();
-      g_recording.setCurrentFrame(f + 1);
+      g_recording.setCurrentFrame(f + 10);
       
-      setTime(getDt() * (f + 1));
+      setTime(getDt() * (f + 10));
       glutPostRedisplay();
       
     } else if (k == '.')
