@@ -1071,6 +1071,27 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 
 void ElasticShell::remesh(Scalar timestep, bool initial)
 {
+  // remove faces completely inside BB walls
+  for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = m_obj->fv_iter(*fit); assert(fvit);
+    Vec3d x0 = getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d x1 = getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d x2 = getVertexPosition(*fvit); ++fvit; assert(!fvit);
+    
+    //    if (x0.y() == 0 || x1.y() == 0 || x2.y() == 0)
+    //      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+    
+    int w0 = onBBWall(x0);
+    int w1 = onBBWall(x1);
+    int w2 = onBBWall(x2);
+    if (((w0 & w1) & w2) != 0)
+    {
+      //      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+      m_obj->deleteFace(*fit, false);
+    }
+  }
+  
   // prune orphan edges and vertices
   for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
     if (m_obj->edgeIncidentFaces(*eit) == 0)
