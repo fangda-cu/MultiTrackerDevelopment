@@ -1053,6 +1053,7 @@ void DoubleBubbleTest::updateBBWallConstraints()
             PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
             shellObj->constrainVertex(v, pc);
             shell->getVertexConstraintLabel(v) = constraint;
+            shell->setVertexPosition(v, pos);
         }
     }
     
@@ -1073,6 +1074,8 @@ void DoubleBubbleTest::afterStartStep()
 
 void DoubleBubbleTest::beforeEndStep()
 {
+  updateBBWallConstraints();
+    
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
