@@ -90,7 +90,7 @@ public:
       substep_count++;
         
       ////////
-      if (substep_count > 100)
+      if (substep_count >= 1)
         break;
     }
     
