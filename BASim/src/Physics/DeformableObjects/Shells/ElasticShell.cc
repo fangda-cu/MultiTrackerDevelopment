@@ -713,12 +713,12 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   if (m_obj->nf() == 0) // ElTopo crashes if given a mesh with zero triangles, which is possible for example when we're only testing rods.
     return;
-//  return;
+  return;
   
   //El Topo collision processing.
   
-//  if(m_do_eltopo_collisions)
-//    resolveCollisions(timestep);
+  if(m_do_eltopo_collisions)
+    resolveCollisions(timestep);
   
   //Ground plane penalty force.
   if(m_ground_collisions) {
