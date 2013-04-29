@@ -165,7 +165,7 @@ public:
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
-  void remesh(bool initial = false);
+  void remesh(Scalar timestep, bool initial = false);
   
   // SurfTrack::ConstrainedVerticesCollapsingCallback method  
   bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);

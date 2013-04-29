@@ -622,8 +622,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //
   // do not collapse the edge if the two vertices are moving apart
   
-  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
+  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete) - rel_vel;
   double edge_len = mag(edge_vec);
     
     bool eoi = false;

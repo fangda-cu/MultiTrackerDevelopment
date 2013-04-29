@@ -639,7 +639,7 @@ void DoubleBubbleTest::Setup()
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
   {
-    shell->remesh(true);
+    shell->remesh(1.0, true);
     updateBBWallConstraints();
   }
     
