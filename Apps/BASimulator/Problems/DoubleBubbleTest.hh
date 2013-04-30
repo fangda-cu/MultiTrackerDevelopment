@@ -26,6 +26,8 @@ public:
   
   void setCurrentFrame(int frame) { m_current_frame = frame; m_current_step = 0; m_of.close(); m_if.close(); }
   int currentFrame() const { return m_current_frame; }
+  void setCurrentStep(int step) { m_current_step = step % m_step_pos.size(); }
+  int currentStep() const { return m_current_step; }
   
   void recordSurfTrack(const ElTopo::SurfTrack & st);
   void loadRecording(ElTopo::SurfTrack & st, int next = 0);
@@ -73,6 +75,7 @@ public:
   virtual void resumeFromfile( std::ifstream& ifs );
 
   void beforeEndStep();
+  void afterStartStep();
   
 protected:
   void Setup();
@@ -116,7 +119,7 @@ protected:
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
-//  void setupScene3(); // double bubble collision
+  void setupScene3(); // T1 transition for surface tension force debugging
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 17
   void setupScene6(); // VIIM multiphase cube test (figure 24)

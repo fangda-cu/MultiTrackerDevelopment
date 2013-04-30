@@ -55,6 +55,8 @@ int db_current_ply_frame = 0;
 extern std::string outputdirectory;
 Recording g_recording;
 
+ShellRenderer * g_shell_renderer = NULL;
+
 void Recording::writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st)
 {
   size_t n;
@@ -148,7 +150,7 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   
   st.m_masses.resize(n);
   for (size_t i = 0; i < n; i++)
-    st.m_masses[i] = 1;
+    st.m_masses[i] = ElTopo::Vec3d(1, 1, 1);
   
   st.set_all_positions(pos);
   st.set_all_newpositions(pos);  
@@ -409,7 +411,7 @@ sceneFunc db_scenes[] =
   0,
   &DoubleBubbleTest::setupScene1,
   &DoubleBubbleTest::setupScene2,
-  0, //  &DoubleBubbleTest::setupScene3,
+  &DoubleBubbleTest::setupScene3,
   0, //  &DoubleBubbleTest::setupScene4,
   &DoubleBubbleTest::setupScene5,
   &DoubleBubbleTest::setupScene6,
@@ -439,18 +441,20 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
+  static const double WALL_THRESHOLD = 1e-4;
+  
   int walls = 0;
-  if (pos.x() < 0 + 1e-6)
+  if (pos.x() < 0 + WALL_THRESHOLD)
     walls |= (1 << 0);
-  if (pos.y() < 0 + 1e-6)
+  if (pos.y() < 0 + WALL_THRESHOLD)
     walls |= (1 << 1);
-  if (pos.z() < 0 + 1e-6)
+  if (pos.z() < 0 + WALL_THRESHOLD)
     walls |= (1 << 2);
-  if (pos.x() > 1 - 1e-6)
+  if (pos.x() > 1 - WALL_THRESHOLD)
     walls |= (1 << 3);
-  if (pos.y() > 1 - 1e-6)
+  if (pos.y() > 1 - WALL_THRESHOLD)
     walls |= (1 << 4);
-  if (pos.z() > 1 - 1e-6)
+  if (pos.z() > 1 - WALL_THRESHOLD)
     walls |= (1 << 5);
   
   return walls;
@@ -639,7 +643,7 @@ void DoubleBubbleTest::Setup()
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
   {
-    shell->remesh(true);
+    shell->remesh(1.0, true);
     updateBBWallConstraints();
   }
     
@@ -679,9 +683,9 @@ void DoubleBubbleTest::Setup()
   
   m_world->addObject(shellObj);
   m_world->addController(stepper);
-  RenderBase* shellRender = new ShellRenderer(*shell);
+  g_shell_renderer = new ShellRenderer(*shell);
+  RenderBase* shellRender = g_shell_renderer;
   m_world->addRenderer(shellRender);
-  
 }
 
 class VertexHandleComp
@@ -711,7 +715,7 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<Scalar> masses;
+  std::vector<ElTopo::Vec3d> masses;
   
   DeformableObject& mesh = *shellObj;
   
@@ -734,15 +738,15 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = shell->getVertexPosition(vh);
-    Scalar mass = 1;
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     Vec3d vel = shell->getVertexVelocity(vh);
     vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
     assert(shellObj->isConstrained(vh) == (shell->getVertexConstraintLabel(vh) != 0));
-    if(shellObj->isConstrained(vh))
-      masses.push_back(numeric_limits<Scalar>::infinity());
-    else
-      masses.push_back(mass);
+    ElTopo::Vec3d mass(1, 1, 1);
+    for (int i = 0; i < 3; i++)
+      if (shellObj->isConstrainedInDirection(vh, i))
+        mass[i] = numeric_limits<Scalar>::infinity();
+    masses.push_back(mass);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
     
@@ -911,14 +915,17 @@ void DoubleBubbleTest::AtEachTimestep()
         } else if (RENDER_METHOD == 1)
         {
             // dump one OBJ per region
+            std::set<int> excluding_regions;
             for (int i = 0; i < m_nregion; i++)
             {
                 std::stringstream name;
                 name << std::setfill('0');
                 name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
 
-                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, excluding_regions, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                
+                excluding_regions.insert(i);
             }
         } else if (RENDER_METHOD == 2)
         {
@@ -939,6 +946,8 @@ void DoubleBubbleTest::AtEachTimestep()
             
         } else
         {
+            g_shell_renderer->turnOffAllRegions();
+            
             // dump one OBJ per region listed in "obj-regions", plus one OBJ for the rest of the mesh
             std::stringstream regions_ss(GetStringOpt("obj-regions"));
             std::set<int> regions;
@@ -950,14 +959,17 @@ void DoubleBubbleTest::AtEachTimestep()
                     regions.insert(r);
             }
             
+            std::set<int> excluding_regions;
             for (std::set<int>::iterator i = regions.begin(); i != regions.end(); i++)
             {
                 std::stringstream name;
                 name << std::setfill('0');
                 name << outputdirectory << "/" << "region" << std::setw(4) << *i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
                 
-                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, name.str().c_str());
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, excluding_regions, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                g_shell_renderer->turnOnRegion(*i);
+                excluding_regions.insert(*i);
             }
             
             std::stringstream name;
@@ -968,6 +980,16 @@ void DoubleBubbleTest::AtEachTimestep()
             std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
           
         }
+        
+        {
+            std::stringstream name;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "rec" << std::setw(6) << db_current_obj_frame << ".rec";
+            
+            std::ofstream of(name.str().c_str());
+            Recording::writeSurfTrack(of, *st);
+            of.close();
+        }
       
         delete(st);
 
@@ -976,17 +998,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
     std::cout << "Time: " << this->getTime() << std::endl; 
 
-    updateBBWallConstraints();
   
     g_recording.setCurrentFrame((int)(this->getTime() / this->getDt() + 0.5));
-  
-    if (g_recording.isRecording())
-    {
-        ElTopo::SurfTrack * st = mesh2surftrack();
-        g_recording.log() << "Begin time step" << std::endl;
-        g_recording.recordSurfTrack(*st);
-        delete st;
-    }
 
 //    if (g_recording.isPlaybackOn())
 //    {
@@ -1005,7 +1018,9 @@ void DoubleBubbleTest::updateBBWallConstraints()
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
-    
+  
+    static const double WALL_THRESHOLD = 1e-4;
+
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
         VertexHandle v = *vit;
@@ -1015,37 +1030,37 @@ void DoubleBubbleTest::updateBBWallConstraints()
         bool x = false;
         bool y = false;
         bool z = false;
-        if (pos.x() < 1e-4)
+        if (pos.x() < WALL_THRESHOLD)
         {
             pos.x() = 0;
             x = true;
             constraint |= (1 << 0);
         }
-        if (pos.x() > 1 - 1e-4)
+        if (pos.x() > 1 - WALL_THRESHOLD)
         {
             pos.x() = 1;
             x = true;
             constraint |= (1 << 3);
         }
-        if (pos.y() < 1e-4)
+        if (pos.y() < WALL_THRESHOLD)
         {
             pos.y() = 0;
             y = true;
             constraint |= (1 << 1);
         }
-        if (pos.y() > 1 - 1e-4)
+        if (pos.y() > 1 - WALL_THRESHOLD)
         {
             pos.y() = 1;
             y = true;
             constraint |= (1 << 4);
         }
-        if (pos.z() < 1e-4)
+        if (pos.z() < WALL_THRESHOLD)
         {
             pos.z() = 0;
             z = true;
             constraint |= (1 << 2);
         }
-        if (pos.z() > 1 - 1e-4)
+        if (pos.z() > 1 - WALL_THRESHOLD)
         {
             pos.z() = 1;
             z = true;
@@ -1057,13 +1072,29 @@ void DoubleBubbleTest::updateBBWallConstraints()
             PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
             shellObj->constrainVertex(v, pc);
             shell->getVertexConstraintLabel(v) = constraint;
+            shell->setVertexPosition(v, pos);
         }
     }
     
 }
 
+void DoubleBubbleTest::afterStartStep()
+{
+  updateBBWallConstraints();
+  
+  if (g_recording.isRecording())
+  {
+    ElTopo::SurfTrack * st = mesh2surftrack();
+    g_recording.log() << "Begin time step" << std::endl;
+    g_recording.recordSurfTrack(*st);
+    delete st;
+  }
+}
+
 void DoubleBubbleTest::beforeEndStep()
 {
+  updateBBWallConstraints();
+    
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
@@ -1470,6 +1501,110 @@ void DoubleBubbleTest::setupScene2()
   
   shell->setFaceLabels(faceLabels);
   
+}
+
+void DoubleBubbleTest::setupScene3()
+{
+    //vertices
+    std::vector<VertexHandle> vertHandles;
+    VertexProperty<Vec3d> undeformed(shellObj);
+    VertexProperty<Vec3d> positions(shellObj);
+    VertexProperty<Vec3d> velocities(shellObj);
+    
+    //edge properties
+    EdgeProperty<Scalar> undefAngle(shellObj);
+    EdgeProperty<Scalar> edgeAngle(shellObj);
+    EdgeProperty<Scalar> edgeVel(shellObj);
+    
+    //create a cube
+    std::vector<VertexHandle> vertList;
+    
+    for(int i = 0; i < 20; ++i)
+    {
+        vertList.push_back(shellObj->addVertex());
+        velocities[vertList[i]] = Vec3d(0,0,0);
+    }
+    
+    //create positions
+    positions[vertList[ 0]] = Vec3d(0,0,0);
+    positions[vertList[ 1]] = Vec3d(0,0,1);
+    positions[vertList[ 2]] = Vec3d(0,1,0);
+    positions[vertList[ 3]] = Vec3d(0,1,1);
+    
+    positions[vertList[ 4]] = Vec3d(1,0,0);
+    positions[vertList[ 5]] = Vec3d(1,0,1);
+    positions[vertList[ 6]] = Vec3d(1,1,0);
+    positions[vertList[ 7]] = Vec3d(1,1,1);
+    
+    positions[vertList[ 8]] = Vec3d(0.3,0,0);
+    positions[vertList[ 9]] = Vec3d(0.3,0,1);
+    positions[vertList[10]] = Vec3d(0.3,1,0);
+    positions[vertList[11]] = Vec3d(0.3,1,1);
+    
+    positions[vertList[12]] = Vec3d(0.7,0,0);
+    positions[vertList[13]] = Vec3d(0.7,0,1);
+    positions[vertList[14]] = Vec3d(0.7,1,0);
+    positions[vertList[15]] = Vec3d(0.7,1,1);
+    
+    positions[vertList[16]] = Vec3d(0.3,0.5,0);
+    positions[vertList[17]] = Vec3d(0.3,0.5,1);
+    positions[vertList[18]] = Vec3d(0.7,0.5,0);
+    positions[vertList[19]] = Vec3d(0.7,0.5,1);
+    
+    for(int i = 0; i < 20; ++i)
+        undeformed[vertList[i]] = positions[vertList[i]];
+    
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+    
+    // face with x = 0.3
+    faceList.push_back(shellObj->addFace(vertList[ 8], vertList[16], vertList[17]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    faceList.push_back(shellObj->addFace(vertList[ 8], vertList[17], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    faceList.push_back(shellObj->addFace(vertList[16], vertList[10], vertList[11]));  faceLabels[faceList.back()] = Vec2i(0,3);
+    faceList.push_back(shellObj->addFace(vertList[16], vertList[11], vertList[17]));  faceLabels[faceList.back()] = Vec2i(0,3);
+    
+    // face with x = 0.7
+    faceList.push_back(shellObj->addFace(vertList[18], vertList[14], vertList[15]));  faceLabels[faceList.back()] = Vec2i(3,2);
+    faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[19]));  faceLabels[faceList.back()] = Vec2i(3,2);
+    faceList.push_back(shellObj->addFace(vertList[12], vertList[18], vertList[19]));  faceLabels[faceList.back()] = Vec2i(1,2);
+    faceList.push_back(shellObj->addFace(vertList[12], vertList[19], vertList[13]));  faceLabels[faceList.back()] = Vec2i(1,2);
+    
+    // face with y = 0.5
+    faceList.push_back(shellObj->addFace(vertList[16], vertList[17], vertList[19]));  faceLabels[faceList.back()] = Vec2i(1,3);
+    faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[16]));  faceLabels[faceList.back()] = Vec2i(1,3);
+    
+    // remove unused vertices
+    shellObj->deleteVertex(VertexHandle(vertList[0]));
+    shellObj->deleteVertex(VertexHandle(vertList[1]));
+    shellObj->deleteVertex(VertexHandle(vertList[2]));
+    shellObj->deleteVertex(VertexHandle(vertList[3]));
+    shellObj->deleteVertex(VertexHandle(vertList[4]));
+    shellObj->deleteVertex(VertexHandle(vertList[5]));
+    shellObj->deleteVertex(VertexHandle(vertList[6]));
+    shellObj->deleteVertex(VertexHandle(vertList[7]));
+    
+    //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+    FaceProperty<char> shellFaces(shellObj);
+    DeformableObject::face_iter fIt;
+    for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+        shellFaces[*fIt] = true;
+    
+    //now create the physical model to hang on the mesh
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+    shellObj->addModel(shell);
+    
+    //positions
+    //  shell->setVertexUndeformed(undeformed);
+    shell->setVertexPositions(positions);
+    shell->setVertexVelocities(velocities);
+    
+    //mid-edge normal variables
+    //  shell->setEdgeUndeformed(undefAngle);
+    //  shell->setEdgeXis(edgeAngle);
+    //  shell->setEdgeVelocities(edgeVel);
+    
+    shell->setFaceLabels(faceLabels);
+    
 }
 
 void DoubleBubbleTest::setupScene5()
@@ -2860,7 +2995,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
       
-    } else if (k == '>' || k == '.')
+    } else if (k == '.')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st, 1);
@@ -2868,13 +3003,25 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       delete st;
       
       glutPostRedisplay();
-    } else if (k == '<' || k == ',')
+    } else if (k == ',')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st, -1);
       surftrack2mesh(*st);
       delete st;
       
+      glutPostRedisplay();
+    } else if (k == '>')
+    {
+      int f = g_recording.currentStep();
+      g_recording.setCurrentStep(f + 10);
+      std::cout << "current step: " << g_recording.currentStep() << std::endl;
+      glutPostRedisplay();
+    } else if (k == '<')
+    {
+      int f = g_recording.currentStep();
+      g_recording.setCurrentStep(f - 10);
+      std::cout << "current step: " << g_recording.currentStep() << std::endl;
       glutPostRedisplay();
     }
     
@@ -2921,7 +3068,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     }
     if (e.isValid())
     {
-      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ")" << std::endl;
+      std::cout << "EOI: " << e.idx() << ": " << mesh.fromVertex(e).idx() << " (" << shell->getVertexPosition(mesh.fromVertex(e)) << ") - " << mesh.toVertex(e).idx() << " (" << shell->getVertexPosition(mesh.toVertex(e)) << ") length = " << (shell->getVertexPosition(mesh.fromVertex(e)) - shell->getVertexPosition(mesh.toVertex(e))).norm() << std::endl;
     }
     if (f.isValid())
     {

@@ -49,14 +49,13 @@ struct T1Transition::InteriorStencil
 
 T1Transition::T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries) :
     m_remesh_boundaries(remesh_boundaries),
-    m_pull_apart_distance(0.1),
+    m_pull_apart_distance(0.002),
     m_pull_apart_tendency_threshold(0),
     m_velocity_field_callback(vfc),
     m_surf(surf)
 {
 
 }
-
 
 template <class S, class T>
 struct less_pair_first
@@ -279,7 +278,7 @@ bool T1Transition::t1_pass()
         }
         
         // compute the desired destination positions, enforcing constraints
-        bool original_solid = m_surf.vertex_is_solid(xj);
+        Vec3c original_solid = m_surf.vertex_is_solid_3(xj);
         Vec3d original_position = m_surf.get_position(xj);
         
         double mean_edge_length = 0;
@@ -294,14 +293,15 @@ bool T1Transition::t1_pass()
         assert(edge_count > 0);
         mean_edge_length /= edge_count;
         
-        Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
-        
+//        Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+        Vec3d pull_apart_offset = pull_apart_direction;
+      
         Vec3d a_desired_position = original_position + pull_apart_offset * m_pull_apart_distance;
         Vec3d b_desired_position = original_position - pull_apart_offset * m_pull_apart_distance;
         size_t a = static_cast<size_t>(~0);
         size_t b = static_cast<size_t>(~0);
         
-        if (original_solid)
+        if (m_surf.vertex_is_any_solid(xj))
         {
             assert(m_surf.m_solid_vertices_callback);
             m_surf.m_solid_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
@@ -468,10 +468,13 @@ bool T1Transition::t1_pass()
         
         m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
         m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
-        if (original_solid)
+        for (int i = 0; i < 3; i++)
         {
-            m_surf.m_masses[a] = std::numeric_limits<double>::infinity();
-            m_surf.m_masses[b] = std::numeric_limits<double>::infinity();
+            if (original_solid[i])
+            {
+                m_surf.m_masses[a][i] = std::numeric_limits<double>::infinity();
+                m_surf.m_masses[b][i] = std::numeric_limits<double>::infinity();
+            }
         }
         
         verts_to_delete.push_back(xj);
@@ -488,30 +491,30 @@ bool T1Transition::t1_pass()
         
         triangulate_popped_vertex(xj, A, B, a, b, faces_to_delete, faces_to_create, face_labels_to_create);
         
-        // check for big/small angles in the final configuration
-        for (size_t i = 0; i < faces_to_create.size(); i++)
-        {
-            Vec3st & t = faces_to_create[i];
-            Vec3d x0 = (t[0] == a ? a_desired_position : (t[0] == b ? b_desired_position : m_surf.get_position(t[0])));
-            Vec3d x1 = (t[1] == a ? a_desired_position : (t[1] == b ? b_desired_position : m_surf.get_position(t[1])));
-            Vec3d x2 = (t[2] == a ? a_desired_position : (t[2] == b ? b_desired_position : m_surf.get_position(t[2])));
-            
-            double min_angle = min_triangle_angle(x0, x1, x2);
-            if (rad2deg(min_angle) < m_surf.m_min_triangle_angle)
-            {
-                if (m_surf.m_verbose)
-                    std::cout << "Vertex popping: small angle introduced" << std::endl;
-                return false;
-            }
-            
-            double max_angle = max_triangle_angle(x0, x1, x2);
-            if (rad2deg(max_angle) > m_surf.m_max_triangle_angle)
-            {
-                if (m_surf.m_verbose)
-                    std::cout << "Vertex popping: large angle introduced" << std::endl;
-                return false;
-            }
-        }
+//        // check for big/small angles in the final configuration
+//        for (size_t i = 0; i < faces_to_create.size(); i++)
+//        {
+//            Vec3st & t = faces_to_create[i];
+//            Vec3d x0 = (t[0] == a ? a_desired_position : (t[0] == b ? b_desired_position : m_surf.get_position(t[0])));
+//            Vec3d x1 = (t[1] == a ? a_desired_position : (t[1] == b ? b_desired_position : m_surf.get_position(t[1])));
+//            Vec3d x2 = (t[2] == a ? a_desired_position : (t[2] == b ? b_desired_position : m_surf.get_position(t[2])));
+//            
+//            double min_angle = min_triangle_angle(x0, x1, x2);
+//            if (rad2deg(min_angle) < m_surf.m_min_triangle_angle)
+//            {
+//                if (m_surf.m_verbose)
+//                    std::cout << "Vertex popping: small angle introduced" << std::endl;
+//                return false;
+//            }
+//            
+//            double max_angle = max_triangle_angle(x0, x1, x2);
+//            if (rad2deg(max_angle) > m_surf.m_max_triangle_angle)
+//            {
+//                if (m_surf.m_verbose)
+//                    std::cout << "Vertex popping: large angle introduced" << std::endl;
+//                return false;
+//            }
+//        }
         
         if (m_surf.m_verbose)
         {
@@ -551,7 +554,7 @@ bool T1Transition::t1_pass()
   
     return pop_occurred;
 }
-    
+
         
 // --------------------------------------------------------
 ///
@@ -655,9 +658,11 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
         for (int j = 0; j < 3; j++)
         {
             if (t[j] == a)
-                pos[j] = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//                pos[j] = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+                pos[j] = xxj + pull_apart_direction * m_pull_apart_distance;
             else if (t[j] == b)
-                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+                pos[j] = xxj - pull_apart_direction * m_pull_apart_distance;
             else
                 pos[j] = m_surf.get_position(t[j]);
         }
@@ -748,15 +753,18 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     
     // decide the final positions
     Vec3d xxj = m_surf.get_position(xj);
-    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-    
+//    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+//    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+    Vec3d x_a = xxj + pull_apart_direction * m_pull_apart_distance;
+    Vec3d x_b = xxj - pull_apart_direction * m_pull_apart_distance;
+  
 //    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
     Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
     Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
     
-    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
-    
+//    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
+    double divergence = dot(v_a - v_b, pull_apart_direction) / (m_pull_apart_distance * 2);
+  
     return divergence;
 }
     

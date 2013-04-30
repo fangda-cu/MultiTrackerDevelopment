@@ -99,7 +99,7 @@ m_verbose(false)
 SurfTrack::SurfTrack( const std::vector<Vec3d>& vs, 
                      const std::vector<Vec3st>& ts, 
                      const std::vector<Vec2i>& labels,
-                     const std::vector<double>& masses,
+                     const std::vector<Vec3d>& masses,
                      const SurfTrackInitializationParameters& initial_parameters ) :
 
 DynamicSurface( vs, 
@@ -192,6 +192,9 @@ m_mesheventcallback(NULL)
         m_max_volume_change = initial_parameters.m_max_volume_change;  
     }
     
+    m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+    m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+  
     if ( m_verbose )
     {
         std::cout << "m_min_edge_length: " << m_min_edge_length << std::endl;
@@ -324,7 +327,7 @@ void SurfTrack::renumber_triangle(size_t tri, const Vec3st& verts) {
 ///
 // ---------------------------------------------------------
 
-size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_vertex_mass )
+size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, const Vec3d& new_vertex_mass )
 {
     size_t new_vertex_index = m_mesh.nondestructive_add_vertex( );
     
@@ -347,7 +350,7 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_verte
     
     if ( m_collision_safety )
     {
-        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_solid(new_vertex_index) );       
+        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) );
     }
     
     return new_vertex_index;
@@ -831,6 +834,7 @@ void SurfTrack::improve_mesh( )
         i++;
       }
         
+//        m_verbose = true;
       i = 0;
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
@@ -838,6 +842,7 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
          i++;
       }
+//        m_verbose = false;
       
       // null-space smoothing
       if ( m_perform_smoothing)
@@ -938,6 +943,109 @@ void SurfTrack::assert_no_bad_labels()
       assert(label[0] != label[1]  && "Same front and back labels");
    }
 }
+
+int SurfTrack::vertex_feature_edge_count( size_t vertex ) const
+{
+   int count = 0;
+   for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i])? 1 : 0);
+   }
+   return count;
+}
+int SurfTrack::vertex_feature_edge_count( size_t vertex, const std::vector<Vec3d>& cached_normals ) const
+{
+   int count = 0;
+   for(size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); ++i) {
+      count += (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i], cached_normals)? 1 : 0);
+   }
+   return count;
+}
+
+//Return whether the given edge is a feature.
+bool SurfTrack::edge_is_feature(size_t edge) const
+{
+    if (edge_is_any_solid(edge))
+    {
+        assert(m_solid_vertices_callback);
+        if (m_solid_vertices_callback->solid_edge_is_feature(*this, edge))
+            return true;
+    }
+    return get_largest_dihedral(edge) > m_feature_edge_angle_threshold;
+}
+
+bool SurfTrack::edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const
+{
+   if (edge_is_any_solid(edge))
+   {
+      assert(m_solid_vertices_callback);
+      if (m_solid_vertices_callback->solid_edge_is_feature(*this, edge))
+         return true;
+   }
+   return get_largest_dihedral(edge, cached_normals) > m_feature_edge_angle_threshold;
+}
+
+/*
+/// Look at all triangle pairs and get the smallest angle, ignoring regions.
+double SurfTrack::get_largest_dihedral(size_t edge) const
+{
+    const std::vector<size_t>& tri_list = m_mesh.m_edge_to_triangle_map[edge];
+    
+    //consider all triangle pairs
+    size_t v0 = m_mesh.m_edges[edge][0];
+    size_t v1 = m_mesh.m_edges[edge][1];
+    
+    double largest_angle = 0;
+    for (size_t i = 0; i < tri_list.size(); ++i)
+    {
+        size_t tri_id0 = tri_list[i];
+        Vec3d norm0 = get_triangle_normal(tri_id0);
+        for (size_t j = i+1; j < tri_list.size(); ++j)
+        {
+            size_t tri_id1 = tri_list[j];
+            Vec3d norm1 = get_triangle_normal(tri_id1);
+            
+            //possibly flip one normal so the tris are oriented in a matching way, to get the right dihedral angle.
+            if (m_mesh.oriented(v0, v1, m_mesh.get_triangle(tri_id0)) != m_mesh.oriented(v1, v0, m_mesh.get_triangle(tri_id1)))
+                norm1 = -norm1;
+          
+            double angle = acos(dot(norm0,norm1));
+            largest_angle = std::max(largest_angle,angle);
+        }
+    }
+    
+    return largest_angle;
+}
+*/
+
+bool SurfTrack::vertex_feature_is_smooth_ridge(size_t vertex) const
+{
+    std::vector<size_t> feature_edges;
+    for (size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); i++)
+        if (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i]))
+            feature_edges.push_back(m_mesh.m_vertex_to_edge_map[vertex][i]);
+
+    if (feature_edges.size() != 2)  // the feature cannot be a smooth ridge unless the number of feature edges is 2
+        return false;
+    
+    const Vec2st & e0 = m_mesh.m_edges[feature_edges[0]];
+    const Vec2st & e1 = m_mesh.m_edges[feature_edges[1]];
+    
+    Vec3d t0 = get_position(e0[0]) - get_position(e0[1]);
+    t0 /= mag(t0);
+    Vec3d t1 = get_position(e1[0]) - get_position(e1[1]);
+    t1 /= mag(t1);
+    
+    // adjust for orientation
+    if ((e0[0] == vertex && e1[0] == vertex) || (e0[1] == vertex && e1[1] == vertex))
+        t1 = -t1;
+    
+    double angle = acos(dot(t0, t1));
+    if (angle > m_feature_edge_angle_threshold)
+        return false;
+    
+    return true;
+}
+
 
 }
 

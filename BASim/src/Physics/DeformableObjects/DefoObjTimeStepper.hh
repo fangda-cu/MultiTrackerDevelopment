@@ -210,6 +210,8 @@ public:
     assert( velocities.size() == m_obj.ndof() );
     for( int i = 0; i < m_obj.ndof(); ++i ) velocities(i) = m_obj.getVel(i);
   }
+  
+    Scalar determineMaxDt(const VecXd & pdot);
 
   /**
    * This function computes the force on each degree of freedom

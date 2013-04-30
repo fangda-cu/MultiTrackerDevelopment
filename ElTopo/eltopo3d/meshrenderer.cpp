@@ -41,14 +41,14 @@ void MeshRenderer::render( const DynamicSurface& surface )
    for(size_t e = 0; e < surface.m_mesh.m_edges.size(); e++)
    {
 
-      if(surface.edge_is_feature(e)) {
+      /*if(surface.edge_is_feature(e)) {
          const Vec2st& edge = surface.m_mesh.m_edges[e];
          const Vec3d& vtx0 = surface.get_position(edge[0]);
          const Vec3d& vtx1 = surface.get_position(edge[1]);
          glColor3d(0,1,0);
          glVertex3d(vtx0[0], vtx0[1], vtx0[2]);
          glVertex3d(vtx1[0], vtx1[1], vtx1[2]);
-      }
+      }*/
    }
 
    glEnd(); 

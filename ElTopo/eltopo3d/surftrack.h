@@ -160,6 +160,9 @@ struct SurfTrackInitializationParameters
     /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
     ///
     bool m_remesh_boundaries;
+  
+    /// Pull apart distance, in terms of absolute length
+    double m_pull_apart_distance;
 
     /// Whether to be verbose in outputting data
     ///
@@ -457,7 +460,7 @@ public:
     SurfTrack(const std::vector<Vec3d>& vs, 
               const std::vector<Vec3st>& ts,
               const std::vector<Vec2i>& labels,
-              const std::vector<double>& masses,
+              const std::vector<Vec3d>& masses,
               const SurfTrackInitializationParameters& initial_parameters );
     
     /// Destructor
@@ -496,7 +499,7 @@ public:
     
     /// Add a vertex to the surface.  Update the acceleration grid. 
     ///
-    size_t add_vertex( const Vec3d& new_vertex_position, double new_vertex_mass );
+    size_t add_vertex( const Vec3d& new_vertex_position, const Vec3d& new_vertex_mass );
     
     /// Remove a vertex from the surface.  Update the acceleration grid. 
     ///
@@ -666,6 +669,19 @@ public:
     int m_perform_smoothing;
     
     
+    //Return whether the given edge is a feature as determined by dihedral angles.
+    bool edge_is_feature(size_t edge) const;
+    bool edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const;
+    
+    //Return whether the vertex is on a feature, as determined by dihedral angles
+    int vertex_feature_edge_count(size_t vertex) const;
+    int vertex_feature_edge_count(size_t vertex, const std::vector<Vec3d>& cached_normals) const;
+    
+
+    // Return whether the incident feature curves on a vertex form a smooth ridge (implying # of feature curves = 2)
+    bool vertex_feature_is_smooth_ridge(size_t vertex) const;
+
+  
     /// Mesh update event callback
     ///
     class MeshEventCallback
@@ -693,14 +709,15 @@ public:
         
         virtual bool generate_split_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
         
-        virtual bool generate_collapsed_solid_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        virtual Vec3c generate_collapsed_solid_label(SurfTrack & st, size_t v0, size_t v1, const Vec3c & label0, const Vec3c & label1) = 0;
         
-        virtual bool generate_split_solid_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        virtual Vec3c generate_split_solid_label(SurfTrack & st, size_t v0, size_t v1, const Vec3c & label0, const Vec3c & label1) = 0;
         
         virtual bool generate_edge_popped_positions(SurfTrack & st, size_t oldv, const Vec2i & cut, Vec3d & pos_upper, Vec3d & pos_lower) = 0;
         
         virtual bool generate_vertex_popped_positions(SurfTrack & st, size_t oldv, int A, int B, Vec3d & pos_a, Vec3d & pos_b) = 0;
-        
+      
+        virtual bool solid_edge_is_feature(const SurfTrack & st, size_t edge) = 0;
     };
     
     SolidVerticesCallback * m_solid_vertices_callback;

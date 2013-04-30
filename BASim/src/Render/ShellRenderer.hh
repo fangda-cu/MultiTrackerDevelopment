@@ -34,6 +34,9 @@ namespace BASim {
     
     void keyboard(unsigned char key, int x, int y);
     
+    void turnOffAllRegions() { for (size_t i = 0; i < m_region_visible.size(); i++) m_region_visible[i] = false; }
+    void turnOnRegion(int i) { m_region_visible[i] = true; }
+
   protected:
     ElasticShell& m_shell;
     DrawMode m_mode;

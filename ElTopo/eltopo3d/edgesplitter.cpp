@@ -410,7 +410,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   bool use_average_point;
   bool use_constrained_point;
 
-  bool new_vert_solid_label = false;
+  Vec3c new_vert_solid_label = Vec3c(false, false, false);
 
   // Try to decide what point to use
   if(use_specified_point) { 
@@ -422,9 +422,9 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      
      new_vertex_proposed_final_position = *pos;
      if (m_surf.m_solid_vertices_callback)
-       new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid(vertex_a), m_surf.vertex_is_solid(vertex_b));
+       new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid_3(vertex_a), m_surf.vertex_is_solid_3(vertex_b));
   }
-  else if (m_surf.vertex_is_solid(vertex_a) || m_surf.vertex_is_solid(vertex_b))
+  else if (m_surf.vertex_is_any_solid(vertex_a) || m_surf.vertex_is_any_solid(vertex_b))
   {
      // Use the constraint callbacks if the edge has constraints
      
@@ -439,7 +439,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
         if (m_surf.m_verbose) std::cout << "Constraint callback vetoed splitting" << std::endl;
         return false;
      }
-     new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid(vertex_a), m_surf.vertex_is_solid(vertex_b));
+     new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_split_solid_label(m_surf, vertex_a, vertex_b, m_surf.vertex_is_solid_3(vertex_a), m_surf.vertex_is_solid_3(vertex_b));
   }
   else if( incident_tris.size() == 2 || typeid(*m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
      // Use smooth subdivision if the geometry and subd scheme will allow us
@@ -652,11 +652,14 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   
   // Do the actual splitting
 
-  double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
-  if (new_vert_solid_label)
-    new_vertex_mass = std::numeric_limits<double>::infinity();
-  else
-    new_vertex_mass = 1;
+  Vec3d new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
+  for (int i = 0; i < 3; i++)
+  {
+    if (new_vert_solid_label[i])
+      new_vertex_mass[i] = std::numeric_limits<double>::infinity();
+    else
+      new_vertex_mass[i] = 1;
+  }
   size_t vertex_e = m_surf.add_vertex( new_vertex_proposed_final_position, new_vertex_mass );
 
   // Add to change history

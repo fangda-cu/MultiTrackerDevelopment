@@ -1027,7 +1027,8 @@ namespace {
             pthread_mutex_lock( &surf_mutex );   
             char binary_filename[256];
             sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+            //TODO Fix this to support Fang's new vector masses.
+            //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
             std::cout << "binary file written" << std::endl;      
             pthread_mutex_unlock( &surf_mutex );   
         }
@@ -1090,12 +1091,14 @@ namespace {
             
             double dt;
             std::vector<Vec3d> xs;
-            read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
+            //TODO Fix this
+            //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
             g_surf->set_all_positions(xs);
             
             NonDestructiveTriMesh temp_mesh;
             std::vector<Vec3d> new_xs;
-            read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
+            //TODO Fix this
+            //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
             g_surf->set_all_newpositions(new_xs);
             
             // TEMP: unique-ify
@@ -1630,7 +1633,11 @@ namespace {
         
         // init SurfTrack
         //std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
-        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, script_init.masses, script_init.surf_track_params );   
+        std::vector<Vec3d> vector_masses(script_init.masses.size());
+        for(size_t i = 0; i < script_init.masses.size(); ++i)
+           vector_masses[i] = Vec3d(script_init.masses[i],script_init.masses[i],script_init.masses[i]);
+
+        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
         
         std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
         g_surf->set_all_remesh_velocities(remesh_vels);
@@ -1744,7 +1751,8 @@ int main(int argc, char **argv)
     // write frame 0
     char binary_filename[256];
     sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-    write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+    //TODO Fix this.
+    //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
     
     driver->write_to_disk( g_output_path, frame_stepper->get_frame() );
     
