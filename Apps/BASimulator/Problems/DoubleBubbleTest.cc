@@ -55,6 +55,8 @@ int db_current_ply_frame = 0;
 extern std::string outputdirectory;
 Recording g_recording;
 
+ShellRenderer * g_shell_renderer = NULL;
+
 void Recording::writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st)
 {
   size_t n;
@@ -681,9 +683,9 @@ void DoubleBubbleTest::Setup()
   
   m_world->addObject(shellObj);
   m_world->addController(stepper);
-  RenderBase* shellRender = new ShellRenderer(*shell);
+  g_shell_renderer = new ShellRenderer(*shell);
+  RenderBase* shellRender = g_shell_renderer;
   m_world->addRenderer(shellRender);
-  
 }
 
 class VertexHandleComp
@@ -944,6 +946,8 @@ void DoubleBubbleTest::AtEachTimestep()
             
         } else
         {
+            g_shell_renderer->turnOffAllRegions();
+            
             // dump one OBJ per region listed in "obj-regions", plus one OBJ for the rest of the mesh
             std::stringstream regions_ss(GetStringOpt("obj-regions"));
             std::set<int> regions;
@@ -964,6 +968,7 @@ void DoubleBubbleTest::AtEachTimestep()
                 
                 write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, excluding_regions, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                g_shell_renderer->turnOnRegion(*i);
                 excluding_regions.insert(*i);
             }
             
