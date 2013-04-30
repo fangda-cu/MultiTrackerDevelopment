@@ -980,6 +980,16 @@ void DoubleBubbleTest::AtEachTimestep()
             std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
           
         }
+        
+        {
+            std::stringstream name;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "rec" << std::setw(6) << db_current_obj_frame << ".rec";
+            
+            std::ofstream of(name.str().c_str());
+            Recording::writeSurfTrack(of, *st);
+            of.close();
+        }
       
         delete(st);
 
