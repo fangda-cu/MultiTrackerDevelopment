@@ -82,7 +82,8 @@ m_allow_topology_changes(true),
 m_allow_non_manifold(true),
 m_perform_improvement(true),
 m_remesh_boundaries(true),
-m_verbose(false)
+m_verbose(false),
+m_pull_apart_distance(0.01)
 {}
 
 
