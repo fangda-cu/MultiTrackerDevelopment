@@ -370,17 +370,23 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
         double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
-        assert(mina > 0);
-        assert(maxa > mina);
-        assert(M_PI > maxa);
+
+        //treat *input* degeneracies by leaving the geometry alone 
+        //(i.e., flag the proposed collapse as "creating" bad triangles and carry on, in hopes that subsequent motion will get us out of our bad state)
+        if(mina <= 0)
+           return true;
+        if(maxa >= M_PI)
+           return true;
+        if(mina != mina || maxa != maxa)
+           return true;
+        
         if (min_tri_angle < 0 || mina < min_tri_angle)
             min_tri_angle = mina;
         if (max_tri_angle < 0 || maxa > max_tri_angle)
             max_tri_angle = maxa;
     }
-    assert(min_tri_angle > 0);
-    assert(max_tri_angle > min_tri_angle);
-    assert(M_PI > max_tri_angle);
+    
+    assert(max_tri_angle >= min_tri_angle);
     
     min_tri_angle = std::min(min_tri_angle, deg2rad(m_surf.m_min_triangle_angle));
     max_tri_angle = std::max(max_tri_angle, deg2rad(m_surf.m_max_triangle_angle));
