@@ -300,7 +300,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
    assert(idx < m_elementcount);
 
    //if the list of cells it formerly filled is zero, it's basically a new element, since there can be no overlap
-   bool is_new = m_elementidxs[idx].size() == 0; 
+   bool is_new = m_elementidxs[idx].empty(); 
    
    Vec3d xmin_old(0,0,0), xmax_old(0,0,0); 
    Vec3i xmini_new, xmaxi_new;
