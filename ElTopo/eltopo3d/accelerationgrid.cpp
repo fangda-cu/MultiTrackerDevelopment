@@ -289,7 +289,13 @@ bool boxes_overlap(Vec3i low_0, Vec3i high_0, Vec3i low_1, Vec3i high_1) {
 void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d& xmax)
 {
 
-   //formerly we had a full remove-element and then add-element, which is less efficient.
+   //FYI: formerly we had a full remove-element and then add-element, which is less efficient.
+   
+   if(idx >= m_elementcount) {
+      //I don't see why this case should ever occur, but for now let's handle it in the same manner as a remove-then-add did in the past.
+      add_element(idx, xmin, xmax);
+      return;
+   }
 
    assert(idx < m_elementcount);
 
