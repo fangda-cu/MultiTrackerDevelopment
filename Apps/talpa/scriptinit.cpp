@@ -37,6 +37,9 @@ void ScriptInit::parse_surftrack_parameters( const ParseTree& surftrack_branch )
     std::string subdivision_scheme;
     
     surftrack_branch.get_int( "use_fraction", use_fraction );
+    
+    surftrack_branch.get_number("feature_min_edge_length", surf_track_params.m_pull_apart_distance );
+
     surftrack_branch.get_number( "min_edge_length", surf_track_params.m_min_edge_length );
     surftrack_branch.get_number( "max_edge_length", surf_track_params.m_max_edge_length  );
     surftrack_branch.get_number( "max_volume_change", surf_track_params.m_max_volume_change );
