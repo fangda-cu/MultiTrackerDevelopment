@@ -83,7 +83,7 @@ m_allow_non_manifold(true),
 m_perform_improvement(true),
 m_remesh_boundaries(true),
 m_verbose(false),
-m_pull_apart_distance(0.01)
+m_pull_apart_distance(0.1)
 {}
 
 
@@ -178,7 +178,11 @@ m_mesheventcallback(NULL)
         
         m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
         m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
-        m_max_volume_change = initial_parameters.m_max_volume_change * avg_length * avg_length * avg_length;        
+        m_max_volume_change = initial_parameters.m_max_volume_change * avg_length * avg_length * avg_length;
+        
+        m_t1transition.m_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance;
+        m_collapser.m_t1_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance;
+
     }
     else
     {
@@ -191,10 +195,12 @@ m_mesheventcallback(NULL)
         m_min_edge_length = initial_parameters.m_min_edge_length;
         m_max_edge_length = initial_parameters.m_max_edge_length;
         m_max_volume_change = initial_parameters.m_max_volume_change;  
+
+        m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+        m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance;
     }
     
-    m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
-    m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+
   
     if ( m_verbose )
     {
@@ -849,6 +855,7 @@ void SurfTrack::improve_mesh( )
       if ( m_perform_smoothing)
       {
          //std::cout << "Smooth\n";
+         
          m_smoother.null_space_smoothing_pass( 1.0 );
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
