@@ -1095,6 +1095,7 @@ namespace {
             run_all_sisc_examples( "./sisc-scripts/" );
         }
         
+        /* //I have disabled this because I kept hitting it by accident and crashing my code - Christopher, May 2, 2013
         if ( key == 'c' )
         {
             std::cout << "loading meshes" << std::endl;
@@ -1145,6 +1146,7 @@ namespace {
             double actual_dt;
             g_surf->integrate( dt, actual_dt );      
         }
+        */
                 
         timer_advance_frame(0);
         
