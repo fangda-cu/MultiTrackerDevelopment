@@ -547,6 +547,9 @@ public:
     /// 
     void assert_no_degenerate_triangles();
     
+    /// Fire an assert if any triangles get bad enough to produce NaN's or zero/180 degree angles.
+    void assert_no_geometrically_degenerate_triangles();
+
     //
     // Member variables
     //

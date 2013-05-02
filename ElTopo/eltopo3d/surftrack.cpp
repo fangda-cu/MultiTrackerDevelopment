@@ -573,6 +573,47 @@ void SurfTrack::assert_no_degenerate_triangles( )
     
 }
 
+// --------------------------------------------------------
+///
+/// Fire an assert if any triangle has repeated vertices or if any zero-volume tets are found.
+///
+// --------------------------------------------------------
+
+void SurfTrack::assert_no_geometrically_degenerate_triangles( )
+{
+
+   // for each triangle on the surface
+   for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
+   {
+      Vec3st tri = m_mesh.m_tris[i];
+      if(m_mesh.triangle_is_deleted(i))
+         continue;
+      
+      assert(tri[0] != tri[1] && tri[1] != tri[2] && tri[0] != tri[2]);
+
+      Vec3d v0 = get_position(tri[0]);
+      Vec3d v1 = get_position(tri[1]);
+      Vec3d v2 = get_position(tri[2]);
+      
+      double min_angle = min_triangle_angle(v0,v1,v2);
+      double max_angle = max_triangle_angle(v0,v1,v2);
+      
+      if(min_angle < 0 || max_angle >= 1.000001*M_PI) {
+         std::cout << "Min angle: " << min_angle << std::endl;
+         std::cout << "Max angle: " << max_angle << std::endl;
+         std::cout << "V0: " << v0 << std::endl;;
+         std::cout << "V1: " << v1 << std::endl;;
+         std::cout << "V2: " << v2 << std::endl;;
+
+      }
+      assert(min_angle >= 0);
+      assert(max_angle < 1.000001*M_PI);
+      assert(min_angle == min_angle);
+      assert(max_angle == max_angle);
+
+   }
+
+}
 
 // --------------------------------------------------------
 ///
@@ -805,12 +846,14 @@ void SurfTrack::improve_mesh( )
       // and collapsing removes them much more effectively than
       // splitting
             
+      
       //std::cout << "Collapse\n";
       // edge collapsing
       int i;
       i = 0;
       while ( m_collapser.collapse_pass() ) {
-        if (m_mesheventcallback)
+         
+         if (m_mesheventcallback)
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
       }
@@ -818,20 +861,22 @@ void SurfTrack::improve_mesh( )
       ////////////////////////////////////////////////////////////
       
       // edge splitting
-      //std::cout << "Split\n";
+      
       i = 0;
+      //std::cout << "Split\n";
       while ( m_splitter.split_pass() ) {
         if (m_mesheventcallback)
           m_mesheventcallback->log() << "Split pass " << i << " finished" << std::endl;
         i++;
       }
-
+      
       //std::cout << "Flip\n";
       // edge flipping
       m_flipper.flip_pass();		
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
+      
       //std::cout << "Collapse\n";
       // edge collapsing
       i = 0;
@@ -840,9 +885,11 @@ void SurfTrack::improve_mesh( )
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
       }
-        
+      
+      
 //        m_verbose = true;
       i = 0;
+      //std::cout << "T1\n";
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
          if (m_mesheventcallback)
@@ -865,6 +912,7 @@ void SurfTrack::improve_mesh( )
       ////////////////////////////////////////////////////////////
       
       assert_no_bad_labels();
+      //assert_no_geometrically_degenerate_triangles();
 
       if ( m_collision_safety )
       {

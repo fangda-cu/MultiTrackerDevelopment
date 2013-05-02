@@ -359,27 +359,27 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
                                                        size_t destination_vertex, 
                                                        const Vec3d& vertex_new_position )
 {
-    
+
     std::vector<size_t> moving_triangles;
     get_moving_triangles( source_vertex, destination_vertex,  moving_triangles );
-    
+   
+    int edge_id = m_surf.m_mesh.get_edge_index(source_vertex, destination_vertex);
+
     double min_tri_angle = -1;
     double max_tri_angle = -1;
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
+
+
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+        
         double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
         double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
 
-        //treat *input* degeneracies by leaving the geometry alone 
-        //(i.e., flag the proposed collapse as "creating" bad triangles and carry on, in hopes that subsequent motion will get us out of our bad state)
-        if(mina <= 0)
-           return true;
-        if(maxa >= M_PI)
-           return true;
-        if(mina != mina || maxa != maxa)
-           return true;
-        
+        assert(mina >= 0); //This should always be true, I believe.
+        assert(mina == mina);
+        assert(maxa == maxa);
+
         if (min_tri_angle < 0 || mina < min_tri_angle)
             min_tri_angle = mina;
         if (max_tri_angle < 0 || maxa > max_tri_angle)
@@ -393,25 +393,27 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
-        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+       //skip the tris incident on the collapsing edge.
+       const std::vector< size_t >& triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge_id];
+       bool irrelevant_tri = false;
+       for(size_t j = 0; j < triangles_incident_to_edge.size(); ++j) {
+          if(triangles_incident_to_edge[j] == moving_triangles[i]) {
+             irrelevant_tri = true;
+             continue;
+          }
+       }
+
+       if(irrelevant_tri) 
+          continue;
         
-        ///////////////////////////////////////////////////////////////////////
-        // FD 20121218
-        //
-        //  This is a bug in El Topo? This check always includes the two
-        //  triangles that are incident to the edge being collapsed (both
-        //  source_vertex and destination_vertex are in the triangle), and
-        //  for these triangles min_triangle_angle may return nan or a very
-        //  small (virtually zero) value. Random.
-        //
-        int count = 0;
+       const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         
+
         Vec3d a = m_surf.get_position( tri[0] );
         
         if ( tri[0] == source_vertex || tri[0] == destination_vertex )
         {
             a = vertex_new_position;
-            count++;
         }
         
         Vec3d b = m_surf.get_position( tri[1] );
@@ -419,7 +421,6 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[1] == source_vertex || tri[1] == destination_vertex )
         {
             b = vertex_new_position;
-            count++;
         }
         
         Vec3d c = m_surf.get_position( tri[2] );
@@ -427,23 +428,17 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[2] == source_vertex || tri[2] == destination_vertex )
         {
             c = vertex_new_position;
-            count++;
         }
-        
-        if (count == 2)
-            continue;
         
         ///////////////////////////////////////////////////////////////////////
         
         double min_angle = min_triangle_angle( a, b, c );
-        
         if ( min_angle < min_tri_angle )
         {
             return true;
         }
         
         double max_angle = max_triangle_angle( a, b, c );
-        
         if ( max_angle > max_tri_angle )
         {
             return true;
@@ -795,7 +790,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Check vertex pseudo motion for collisions and volume change
 
-  if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
+  if ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) != m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) )
+  //if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
   {
 
     // Change source vertex predicted position to superimpose onto destination vertex
@@ -828,9 +824,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       return false;
     }
 
-    bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position );
+    bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position);
 
-    if ( bad_angle && (edge_len >= m_t1_pull_apart_distance) )
+    if ( bad_angle && edge_len >= m_t1_pull_apart_distance )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -1102,17 +1098,17 @@ bool EdgeCollapser::collapse_pass()
     //
     // attempt to collapse each edge in the sorted list
     //
-    
+
     for ( size_t si = 0; si < sortable_edges_to_try.size(); ++si )
     {
         size_t e = sortable_edges_to_try[si].m_edge_index;
         
         assert( e < m_surf.m_mesh.m_edges.size() );
-        
+ 
         double dummy;
         if(edge_is_collapsible(e, dummy)) {
           bool result = collapse_edge( e );
-
+          
           if ( result )
           { 
             // clean up degenerate triangles and tets

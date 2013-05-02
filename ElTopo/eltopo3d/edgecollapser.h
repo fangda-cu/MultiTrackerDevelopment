@@ -126,7 +126,7 @@ private:
     ///
     bool collapse_edge_introduces_bad_angle( size_t source_vertex, 
                                             size_t destination_vertex, 
-                                            const Vec3d& vertex_new_position );
+                                            const Vec3d& vertex_new_position);
     
     /// Delete an edge by moving its source vertex to its destination vertex
     ///

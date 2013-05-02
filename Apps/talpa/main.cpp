@@ -608,26 +608,28 @@ namespace {
             sprintf( stats_filename, "%s/aaa-stats.txt", g_output_path );      
             g_stats.write_to_file( stats_filename );
 
-            // dump one OBJ file per region pair
-            for (int i = 0; i < region_count; i++)
-            {
-               for (int j = i + 1; j < region_count; j++)
-               {
-                  std::stringstream name;
-                  name << std::setfill('0');
-                  name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
-
-                  //Disabled for speed.
-                  //write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
-                  //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
-               }
-
-            }
+            
             
         }
         
         std::cout << " -------------- end sim step -------------- \n" << std::endl;
         
+        // dump one OBJ file per region pair
+        for (int i = 0; i < region_count; i++)
+        {
+           for (int j = i + 1; j < region_count; j++)
+           {
+              std::stringstream name;
+              name << std::setfill('0');
+              name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
+
+              //Disabled for speed.
+              write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+              //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+           }
+
+        }
+
         double sim_step_time = get_time_in_seconds() - start_time;
         g_stats.add_to_double( "total_sim_time", sim_step_time );
         
