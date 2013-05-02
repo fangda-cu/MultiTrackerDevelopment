@@ -153,7 +153,8 @@ std::vector<Vec2i> renderable_labels;
 // Local to main.cpp
 namespace {    
 
-    MeshDriver* driver = NULL;     // The thing that makes the dynamic surface go
+    std::vector<MeshDriver*> driver_list;     // The thing that makes the dynamic surface go
+    //MeshDriver* driver = NULL;     // The thing that makes the dynamic surface go
     
     // ---------------------------------------------------------
     // Interface declarations for functions local to this file
@@ -450,6 +451,10 @@ namespace {
     void advance_sim( double sim_dt )
     {
         
+        static int cur_driver = -1;
+        ++cur_driver;
+        cur_driver %= driver_list.size();
+
         double start_time = get_time_in_seconds();
         
         double accum_dt = 0;
@@ -487,6 +492,7 @@ namespace {
                 // Improve
                 std::cout << "Improve\n";
                 double pre_improve_time = get_time_in_seconds();
+                //for(int i = 0; i < 3; ++i)
                 g_surf->improve_mesh();
                 double post_improve_time = get_time_in_seconds();
                 g_stats.add_to_double( "total_improve_time", post_improve_time - pre_improve_time );
@@ -511,8 +517,10 @@ namespace {
                 
                 // Update driver
                 std::cout << "Update driver\n";
-                driver->update(*g_surf, sim->m_curr_t);
-                driver->update_simulation_elements( *g_surf );
+                
+                driver_list[cur_driver]->update(*g_surf, sim->m_curr_t);
+                driver_list[cur_driver]->update_simulation_elements( *g_surf );
+                
                 
             }
 #endif
@@ -540,7 +548,7 @@ namespace {
             
             std::vector<Vec3d> new_positions( g_surf->get_num_vertices() );
             std::cout << "Predict new positions\n";
-            driver->set_predicted_vertex_positions( *g_surf, new_positions, sim->m_curr_t + accum_dt, curr_dt );
+            driver_list[cur_driver]->set_predicted_vertex_positions( *g_surf, new_positions, sim->m_curr_t + accum_dt, curr_dt );
             
             g_surf->set_all_newpositions( new_positions );
             
@@ -577,9 +585,9 @@ namespace {
             // Need to inform the driver what the actual vertex motion was (e.g. for velocity update)
             //
             
-            driver->notify_done_integration( initial_positions, final_positions, actual_dt );
+            driver_list[cur_driver]->notify_done_integration( initial_positions, final_positions, actual_dt );
             
-            driver->compute_error( *g_surf, sim->m_curr_t + accum_dt );
+            driver_list[cur_driver]->compute_error( *g_surf, sim->m_curr_t + accum_dt );
             
 
             double end_time_sub_step = get_time_in_seconds();
@@ -723,7 +731,8 @@ namespace {
         {
             delete sim;
             delete g_surf;
-            delete driver;
+            for(size_t s = 0; s < driver_list.size(); ++s)
+               delete driver_list[s];
             
             // re-initialize the simulation
             char filename[256];
@@ -814,7 +823,7 @@ namespace {
         
 
         // get cached driver visualizer
-        driver_renderer = driver->get_renderer();
+        driver_renderer = driver_list[0]->get_renderer();
         
 #ifdef RUN_ASYNC   
         // release mutex
@@ -903,7 +912,7 @@ namespace {
         Gluvi::sgi_screenshot( sgi_filename );
         
         // allow the driver to write to disk (e.g. for caching simulation data)
-        driver->write_to_disk( g_output_path, frame_stepper->get_frame() );
+        driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
         
         int ok = pthread_mutex_unlock( &surf_mutex );
         assert( ok == 0 );
@@ -940,7 +949,8 @@ namespace {
             pthread_mutex_lock( &surf_mutex );   
             delete g_surf;
             pthread_mutex_unlock( &surf_mutex );   
-            delete driver;
+            for(unsigned int s = 0; s < driver_list.size(); ++s)
+               delete driver_list[s];
             exit(0);
         }
         
@@ -1646,8 +1656,9 @@ namespace {
         
         // init driver
         
-        driver = script_init.driver;   
-        driver->initialize( *g_surf );
+        driver_list = script_init.driver_list;   
+        for(size_t i = 0; i < driver_list.size(); ++i)
+            driver_list[i]->initialize( *g_surf );
         
         if ( g_surf->m_collision_safety )
         {
@@ -1754,7 +1765,7 @@ int main(int argc, char **argv)
     //TODO Fix this.
     //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
     
-    driver->write_to_disk( g_output_path, frame_stepper->get_frame() );
+    driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
     
     //
     // Now start
