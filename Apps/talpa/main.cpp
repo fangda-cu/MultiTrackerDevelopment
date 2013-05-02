@@ -615,19 +615,33 @@ namespace {
         std::cout << " -------------- end sim step -------------- \n" << std::endl;
         
         // dump one OBJ file per region pair
+        std::vector<Vec2i> region_pairs;
         for (int i = 0; i < region_count; i++)
         {
            for (int j = i + 1; j < region_count; j++)
            {
-              std::stringstream name;
-              name << std::setfill('0');
-              name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
-
-              //Disabled for speed.
-              write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
-              //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+              region_pairs.push_back(Vec2i(i,j));
            }
+        }
+        
+        int length = region_pairs.size();
+        //Christopher learns how to use OpenMP. Fun!
+        #pragma omp parallel
+        {
+           #pragma omp for
+           for (int t = 0; t < length; t++)
+           {
+              Vec2i cur_pair = region_pairs[t];
+              int i = cur_pair[0], j = cur_pair[1];
 
+               std::stringstream name;
+               name << std::setfill('0');
+               name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
+
+               //Disabled for speed.
+               write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+               //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+           }
         }
 
         double sim_step_time = get_time_in_seconds() - start_time;
