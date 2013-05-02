@@ -399,7 +399,7 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
        for(size_t j = 0; j < triangles_incident_to_edge.size(); ++j) {
           if(triangles_incident_to_edge[j] == moving_triangles[i]) {
              irrelevant_tri = true;
-             continue;
+             break;
           }
        }
 
