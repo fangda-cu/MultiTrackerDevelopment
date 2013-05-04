@@ -103,7 +103,7 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
     
     st.m_masses.resize(n);
     for (size_t i = 0; i < n; i++)
-        st.m_masses[i] = 1;
+        st.m_masses[i] = ElTopo::Vec3d(1, 1, 1);
     
     st.set_all_positions(pos);
     st.set_all_newpositions(pos);
