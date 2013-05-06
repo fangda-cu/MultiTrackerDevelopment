@@ -36,7 +36,7 @@ public:
     labels(),
     masses(),
     surf_track_params(),
-    driver( NULL ),
+    //driver( NULL ),
     camera_target( UNINITIALIZED_DOUBLE ),
     camera_distance( UNINITIALIZED_DOUBLE ),
     camera_heading( UNINITIALIZED_DOUBLE ),
@@ -108,8 +108,9 @@ public:
     // MeshDriver
     // --------
     
-    MeshDriver* driver;
-    
+    //MeshDriver* driver;
+    std::vector<MeshDriver*>  driver_list;
+
     // GUI
     // --------
     

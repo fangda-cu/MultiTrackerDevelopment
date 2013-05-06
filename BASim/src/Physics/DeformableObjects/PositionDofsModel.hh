@@ -148,14 +148,16 @@ namespace BASim
 
     // dof scripting interface inherited from PhysicalModel
     void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
-
+    bool isDofScripted(const DofHandle & hnd) const;
+    
     // scripting on position dofs
     void constrainVertex(const VertexHandle & v, const Vec3d & pos);
     void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
     void releaseVertex(const VertexHandle & v);
     void releaseAllVertices();
     bool isConstrained(const VertexHandle & v) const;
-    
+    bool isConstrainedInDirection(const VertexHandle & v, int dir) const;
+
     void addForce(DefoObjForce* force) { m_position_forces.push_back(force); }
 
   public:

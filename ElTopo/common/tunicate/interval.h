@@ -95,6 +95,8 @@ inline Interval::Interval( double val )
 
 inline Interval::Interval( double left, double right )
 {
+    assert(left == left);
+    assert(right == right);
     assert( left <= right );
     v[0] = -left;
     v[1] = right;

@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <vec.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -75,6 +76,9 @@ public:
     /// The region label to consider when computing ranks
     /// (default = -1, means consider all regions.)
     int m_rank_region;
+  
+    /// t1 pull apart distance
+    double m_t1_pull_apart_distance;
 
 private:
     
@@ -122,7 +126,7 @@ private:
     ///
     bool collapse_edge_introduces_bad_angle( size_t source_vertex, 
                                             size_t destination_vertex, 
-                                            const Vec3d& vertex_new_position );
+                                            const Vec3d& vertex_new_position);
     
     /// Delete an edge by moving its source vertex to its destination vertex
     ///
@@ -142,7 +146,7 @@ private:
     bool get_new_vertex_position(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
 
     //Experimental edge collapser that decides features based on edge dihedral angles.
-    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, bool& new_vert_solid_label);
+    bool get_new_vertex_position_dihedral(Vec3d& new_vertex_position, size_t& vert_to_keep, size_t& vert_to_delete, const size_t& edge, Vec3c& new_vert_solid_label);
 
 };
 

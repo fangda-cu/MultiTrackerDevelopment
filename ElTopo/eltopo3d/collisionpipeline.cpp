@@ -121,44 +121,24 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     Vec3d& v2 = m_surface.m_velocities[e2];
     Vec3d& v3 = m_surface.m_velocities[e3];
     
-    double inv_m0 = 1.0 / m_surface.m_masses[e0];
-    double inv_m1 = 1.0 / m_surface.m_masses[e1];
-    double inv_m2 = 1.0 / m_surface.m_masses[e2];
-    double inv_m3 = 1.0 / m_surface.m_masses[e3];
-    
     double s0 = alphas[0];
     double s1 = alphas[1];
     double s2 = alphas[2];
     double s3 = alphas[3];
     
-    double i = impulse_magnitude / (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3);
-    
-    if ( i > 100.0 / dt )
-    {
-        std::cout << "big impulse: " << i << std::endl;
-        if (i == std::numeric_limits<double>::infinity())
-            return;
-    }
-    
     Vec3d pre_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;
     Vec3d pre_rv_normal = dot( normal, pre_relative_velocity ) * normal;
     Vec3d pre_rv_tangential = pre_relative_velocity - pre_rv_normal;
     
-    v0 += i*s0*inv_m0 * normal;
-    v1 += i*s1*inv_m1 * normal;
-    v2 += i*s2*inv_m2 * normal;
-    v3 += i*s3*inv_m3 * normal;
-    
     //
     // Friction
     //
-    
+
     Vec3d post_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;
-    Vec3d post_rv_normal = dot( normal, post_relative_velocity ) * normal;   
+    Vec3d post_rv_normal = dot( normal, post_relative_velocity ) * normal;
     double delta_rv_normal = mag( post_rv_normal - pre_rv_normal );
     double friction_impulse = min( m_friction_coefficient * delta_rv_normal, mag(pre_rv_tangential) );
-    double friction_i = friction_impulse / (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3);
-    
+
     Vec3d tan_collision_normal = -pre_rv_tangential;
     double mag_n = mag( tan_collision_normal );
     if ( mag_n > 1e-8 )
@@ -170,10 +150,70 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
         tan_collision_normal = Vec3d(0);
     }
     
-    v0 += friction_i*s0*inv_m0 * tan_collision_normal;
-    v1 += friction_i*s1*inv_m1 * tan_collision_normal;
-    v2 += friction_i*s2*inv_m2 * tan_collision_normal;
-    v3 += friction_i*s3*inv_m3 * tan_collision_normal;
+//    for (int j = 0; j < 3; j++)
+//    {
+//        double inv_m0 = 1.0 / m_surface.m_masses[e0][j];
+//        double inv_m1 = 1.0 / m_surface.m_masses[e1][j];
+//        double inv_m2 = 1.0 / m_surface.m_masses[e2][j];
+//        double inv_m3 = 1.0 / m_surface.m_masses[e3][j];
+//        
+//        double i = impulse_magnitude / (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3);
+//        
+//        if (i == std::numeric_limits<double>::infinity() || i == -std::numeric_limits<double>::infinity())
+//            continue;
+//        
+//        v0[j] += i*s0*inv_m0 * normal[j];
+//        v1[j] += i*s1*inv_m1 * normal[j];
+//        v2[j] += i*s2*inv_m2 * normal[j];
+//        v3[j] += i*s3*inv_m3 * normal[j];
+//
+//        if ( std::abs(i) > 100.0 / dt )
+//        {
+//            std::cout << "big impulse: " << i << " axis = " << j << " impulse magnitude = " << impulse_magnitude << " s = " << s0 << " " << s1 << " " << s2 << " " << s3 << " m = " << inv_m0 << " " << inv_m1 << " " << inv_m2 << " " << inv_m3 << std::endl;
+//            std::cout << "post impulse velocities: " << v0[j] << " " << v1[j] << " " << v2[j] << " " << v3[j] << std::endl;
+//        }
+//        
+//        //
+//        // Friction
+//        //
+//        
+//        double friction_i = friction_impulse / (s0*s0*inv_m0 + s1*s1*inv_m1 + s2*s2*inv_m2 + s3*s3*inv_m3);
+//        
+//        v0[j] += friction_i*s0*inv_m0 * tan_collision_normal[j];
+//        v1[j] += friction_i*s1*inv_m1 * tan_collision_normal[j];
+//        v2[j] += friction_i*s2*inv_m2 * tan_collision_normal[j];
+//        v3[j] += friction_i*s3*inv_m3 * tan_collision_normal[j];
+//    }
+    
+    double denom = 0;   // denom = n^T * (\sum w_i M_i^{-1}) * n
+    
+    for (int j = 0; j < 3; j++)
+    {
+        double inv_m0 = 1.0 / m_surface.m_masses[e0][j];
+        double inv_m1 = 1.0 / m_surface.m_masses[e1][j];
+        double inv_m2 = 1.0 / m_surface.m_masses[e2][j];
+        double inv_m3 = 1.0 / m_surface.m_masses[e3][j];
+        
+        denom += normal[j] * normal[j] * (s0 * s0 * inv_m0 + s1 * s1 * inv_m1 + s2 * s2 * inv_m2 + s3 * s3 * inv_m3);
+    }
+    
+    double i = impulse_magnitude / denom;
+    
+    for (int j = 0; j < 3; j++)
+    {
+        double inv_m0 = 1.0 / m_surface.m_masses[e0][j];
+        double inv_m1 = 1.0 / m_surface.m_masses[e1][j];
+        double inv_m2 = 1.0 / m_surface.m_masses[e2][j];
+        double inv_m3 = 1.0 / m_surface.m_masses[e3][j];
+        
+        v0[j] += i * s0 * inv_m0 * normal[j];
+        v1[j] += i * s1 * inv_m1 * normal[j];
+        v2[j] += i * s2 * inv_m2 * normal[j];
+        v3[j] += i * s3 * inv_m3 * normal[j];
+    }
+
+    // friction not implemented
+    assert(m_friction_coefficient == 0);
     
     m_surface.set_newposition( e0, m_surface.get_position(e0) + dt * m_surface.m_velocities[e0] );
     m_surface.set_newposition( e1, m_surface.get_position(e1) + dt * m_surface.m_velocities[e1] );
@@ -324,7 +364,7 @@ void CollisionPipeline::add_point_update_candidates( size_t v,
     
     // Avoid solid-vs-solid tests during sequential impulses phase
     
-    if ( m_surface.vertex_is_solid(v) ) { return; }
+    if ( m_surface.vertex_is_all_solid(v) ) { return; }
     
     add_point_candidates(v, true, true, collision_candidates);
     
@@ -513,7 +553,7 @@ void CollisionPipeline::dynamic_point_vs_solid_triangle_proximities(double dt)
     point_collision_candidates.clear();
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid( i ) )
+        if ( m_surface.vertex_is_all_solid( i ) )
         {
             continue;
         }
@@ -688,7 +728,7 @@ bool CollisionPipeline::detect_point_triangle_collision( const Vec3st& candidate
     }
     
     
-    if ( m_surface.triangle_is_all_solid( t ) && m_surface.vertex_is_solid( v ) )
+    if ( m_surface.triangle_is_all_solid( t ) && m_surface.vertex_is_all_solid( v ) )
     {
         return false;
     }
@@ -930,7 +970,7 @@ void CollisionPipeline::dynamic_point_vs_solid_triangle_collisions(double dt,
     
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid( i ) )
+        if ( m_surface.vertex_is_all_solid( i ) )
         {
             continue;
         }
@@ -1161,7 +1201,7 @@ bool CollisionPipeline::detect_collisions( std::vector<Collision>& collisions )
     
     for ( size_t i = 0; i < m_surface.get_num_vertices(); ++i )
     {
-        if ( m_surface.vertex_is_solid(i) )
+        if ( m_surface.vertex_is_all_solid(i) )
         {
             continue;
         }

@@ -177,6 +177,7 @@ void DeformableObject::setPositionDofBase(const VertexHandle& vh, int dof) { m_p
   void DeformableObject::releaseVertex(const VertexHandle & v) { m_posdofsmodel->releaseVertex(v); }
   void DeformableObject::releaseAllVertices() { m_posdofsmodel->releaseAllVertices(); }
   bool DeformableObject::isConstrained(const VertexHandle & v) const { return m_posdofsmodel->isConstrained(v); }
+  bool DeformableObject::isConstrainedInDirection(const VertexHandle & v, int dir) const { return m_posdofsmodel->isConstrainedInDirection(v, dir); }
 
 void DeformableObject::computeDofIndexing()
 {
@@ -278,7 +279,13 @@ void DeformableObject::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar
     m_models[i]->getScriptedDofs(dofIndices, dofValues, time);
 }
 
-void DeformableObject::startStep() 
+bool DeformableObject::isDofScripted(int i) const {
+  int model = m_dofModels[i];
+  DofHandle hnd = m_dofHandles[i];
+  return m_models[model]->isDofScripted(hnd);
+}
+
+void DeformableObject::startStep()
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startStep(m_time, m_dt); 

@@ -27,12 +27,12 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     //
     
     std::vector<ElTopo::Vec3d> vs;
-    std::vector<double> masses;
+    std::vector<ElTopo::Vec3d> masses;
     
     for ( int i = 0; i < inputs->num_vertices; ++i )
     {
         vs.push_back( ElTopo::Vec3d( inputs->vertex_locations[3*i], inputs->vertex_locations[3*i + 1], inputs->vertex_locations[3*i + 2] ) );
-        masses.push_back( inputs->vertex_masses[i] );      
+        masses.push_back( ElTopo::Vec3d( inputs->vertex_masses[3*i], inputs->vertex_masses[3*i + 1], inputs->vertex_masses[3*i + 2] ) );
     }
     
     std::vector<ElTopo::Vec3st> ts;
@@ -140,7 +140,7 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     
     outputs->num_vertices = ElTopo::to_int(surface_tracker.get_num_vertices());
     outputs->vertex_locations = (double*) malloc( 3 * (outputs->num_vertices) * sizeof(double) );
-    outputs->vertex_masses = (double*) malloc( (outputs->num_vertices) * sizeof(double) );
+    outputs->vertex_masses = (double*) malloc( 3 * (outputs->num_vertices) * sizeof(double) );
     
     for ( int i = 0; i < outputs->num_vertices; ++i )
     {
@@ -148,7 +148,10 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
         outputs->vertex_locations[3*i + 0] = pos[0];
         outputs->vertex_locations[3*i + 1] = pos[1];  
         outputs->vertex_locations[3*i + 2] = pos[2];
-        outputs->vertex_masses[i] = surface_tracker.m_masses[i];
+        const ElTopo::Vec3d& mass = surface_tracker.m_masses[i];
+        outputs->vertex_masses[3*i + 0] = mass[0];
+        outputs->vertex_masses[3*i + 1] = mass[1];
+        outputs->vertex_masses[3*i + 2] = mass[2];
     }
     
     outputs->num_triangles = ElTopo::to_int(surface_tracker.m_mesh.num_triangles());
@@ -211,12 +214,12 @@ void el_topo_integrate( const ElTopoMesh* inputs,
     //
     
     std::vector<ElTopo::Vec3d> vs;
-    std::vector<double> masses;
+    std::vector<ElTopo::Vec3d> masses;
     
     for ( int i = 0; i < inputs->num_vertices; ++i )
     {
         vs.push_back( ElTopo::Vec3d( inputs->vertex_locations[3*i], inputs->vertex_locations[3*i + 1], inputs->vertex_locations[3*i + 2] ) );
-        masses.push_back( inputs->vertex_masses[i] );
+        masses.push_back( ElTopo::Vec3d( inputs->vertex_masses[3*i], inputs->vertex_masses[3*i + 1], inputs->vertex_masses[3*i + 2] ) );
     }
     
     std::vector<ElTopo::Vec3st> ts;

@@ -90,6 +90,8 @@
 #include <gluvi.h> 
 #endif
 
+#include "Recording.h"
+
 using namespace ElTopo;
 
 // ---------------------------------------------------------
@@ -139,6 +141,7 @@ struct hack_camera
 SurfTrack* g_surf = NULL;        // The dynamic surface
 
 
+
 std::vector<Vec3d> renderable_vertices;
 std::vector<Vec3d> renderable_vertex_normals;
 std::vector<Vec3d> renderable_tri_normals;
@@ -153,7 +156,8 @@ std::vector<Vec2i> renderable_labels;
 // Local to main.cpp
 namespace {    
 
-    MeshDriver* driver = NULL;     // The thing that makes the dynamic surface go
+    std::vector<MeshDriver*> driver_list;     // The thing that makes the dynamic surface go
+    //MeshDriver* driver = NULL;     // The thing that makes the dynamic surface go
     
     // ---------------------------------------------------------
     // Interface declarations for functions local to this file
@@ -450,6 +454,10 @@ namespace {
     void advance_sim( double sim_dt )
     {
         
+        static int cur_driver = -1;
+        ++cur_driver;
+        cur_driver %= driver_list.size();
+
         double start_time = get_time_in_seconds();
         
         double accum_dt = 0;
@@ -487,6 +495,7 @@ namespace {
                 // Improve
                 std::cout << "Improve\n";
                 double pre_improve_time = get_time_in_seconds();
+                //for(int i = 0; i < 3; ++i)
                 g_surf->improve_mesh();
                 double post_improve_time = get_time_in_seconds();
                 g_stats.add_to_double( "total_improve_time", post_improve_time - pre_improve_time );
@@ -511,8 +520,10 @@ namespace {
                 
                 // Update driver
                 std::cout << "Update driver\n";
-                driver->update(*g_surf, sim->m_curr_t);
-                driver->update_simulation_elements( *g_surf );
+                
+                driver_list[cur_driver]->update(*g_surf, sim->m_curr_t);
+                driver_list[cur_driver]->update_simulation_elements( *g_surf );
+                
                 
             }
 #endif
@@ -540,7 +551,7 @@ namespace {
             
             std::vector<Vec3d> new_positions( g_surf->get_num_vertices() );
             std::cout << "Predict new positions\n";
-            driver->set_predicted_vertex_positions( *g_surf, new_positions, sim->m_curr_t + accum_dt, curr_dt );
+            driver_list[cur_driver]->set_predicted_vertex_positions( *g_surf, new_positions, sim->m_curr_t + accum_dt, curr_dt );
             
             g_surf->set_all_newpositions( new_positions );
             
@@ -577,9 +588,9 @@ namespace {
             // Need to inform the driver what the actual vertex motion was (e.g. for velocity update)
             //
             
-            driver->notify_done_integration( initial_positions, final_positions, actual_dt );
+            driver_list[cur_driver]->notify_done_integration( initial_positions, final_positions, actual_dt );
             
-            driver->compute_error( *g_surf, sim->m_curr_t + accum_dt );
+            driver_list[cur_driver]->compute_error( *g_surf, sim->m_curr_t + accum_dt );
             
 
             double end_time_sub_step = get_time_in_seconds();
@@ -600,26 +611,28 @@ namespace {
             sprintf( stats_filename, "%s/aaa-stats.txt", g_output_path );      
             g_stats.write_to_file( stats_filename );
 
-            // dump one OBJ file per region pair
-            for (int i = 0; i < region_count; i++)
-            {
-               for (int j = i + 1; j < region_count; j++)
-               {
-                  std::stringstream name;
-                  name << std::setfill('0');
-                  name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
-
-                  //Disabled for speed.
-                  //write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
-                  //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
-               }
-
-            }
+            
             
         }
         
         std::cout << " -------------- end sim step -------------- \n" << std::endl;
         
+        // dump one OBJ file per region pair
+        for (int i = 0; i < region_count; i++)
+        {
+           for (int j = i + 1; j < region_count; j++)
+           {
+              std::stringstream name;
+              name << std::setfill('0');
+              name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
+
+              //Disabled for speed.
+              write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+              //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+           }
+
+        }
+
         double sim_step_time = get_time_in_seconds() - start_time;
         g_stats.add_to_double( "total_sim_time", sim_step_time );
         
@@ -652,6 +665,13 @@ namespace {
         {
             sim->m_currently_advancing_simulation = true;
             
+            if (g_recording.isRecording())
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.log() << "Begin time step" << std::endl;
+                g_recording.recordSurfTrack(*st);
+            }
+            
             //
             // Advance frame
             //
@@ -667,8 +687,17 @@ namespace {
             
             std::cout << " --------------- end frame " << frame_stepper->get_frame() << " --------------- \n" << std::endl;
             
-            // update frame stepper      
+            // update frame stepper
             frame_stepper->next_frame();
+            
+            g_recording.setCurrentFrame(frame_stepper->get_frame());
+            
+            if (g_recording.isRecording())
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.log() << "End time step" << std::endl;
+                g_recording.recordSurfTrack(*st);
+            }
             
             sim->m_currently_advancing_simulation = false;
             
@@ -723,7 +752,8 @@ namespace {
         {
             delete sim;
             delete g_surf;
-            delete driver;
+            for(size_t s = 0; s < driver_list.size(); ++s)
+               delete driver_list[s];
             
             // re-initialize the simulation
             char filename[256];
@@ -814,7 +844,7 @@ namespace {
         
 
         // get cached driver visualizer
-        driver_renderer = driver->get_renderer();
+        driver_renderer = driver_list[0]->get_renderer();
         
 #ifdef RUN_ASYNC   
         // release mutex
@@ -903,7 +933,7 @@ namespace {
         Gluvi::sgi_screenshot( sgi_filename );
         
         // allow the driver to write to disk (e.g. for caching simulation data)
-        driver->write_to_disk( g_output_path, frame_stepper->get_frame() );
+        driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
         
         int ok = pthread_mutex_unlock( &surf_mutex );
         assert( ok == 0 );
@@ -934,13 +964,96 @@ namespace {
     
     void keyboard(unsigned char key, int, int )
     {
+        if (g_recording.isPlaybackOn())
+        {
+            unsigned char k = key;
+            if (k == '[')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f - 1);
+                
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st);
+                update_renderable_objects();
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f - 1);
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == ']')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f + 1);
+                
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st);
+                update_renderable_objects();
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f + 1);
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '{')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f - 1);
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f - 1);
+                std::cout << "current time: " << ss.str() << " (frame " << g_recording.currentFrame() << std::endl;
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '}')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f + 1);
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f + 1);
+                std::cout << "current time: " << ss.str() << " (frame " << g_recording.currentFrame() << std::endl;
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '.')
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st, 1);
+                update_renderable_objects();
+
+                glutPostRedisplay();
+            } else if (k == ',')
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st, -1);
+                update_renderable_objects();
+                
+                glutPostRedisplay();
+            } else if (k == '>')
+            {
+                int f = g_recording.currentStep();
+                g_recording.setCurrentStep(f + 10);
+                std::cout << "current step: " << g_recording.currentStep() << std::endl;
+                glutPostRedisplay();
+            } else if (k == '<')
+            {
+                int f = g_recording.currentStep();
+                g_recording.setCurrentStep(f - 10);
+                std::cout << "current step: " << g_recording.currentStep() << std::endl;
+                glutPostRedisplay();
+            }
+            
+        }
         
         if(key == 'q')
         {
             pthread_mutex_lock( &surf_mutex );   
             delete g_surf;
             pthread_mutex_unlock( &surf_mutex );   
-            delete driver;
+            for(unsigned int s = 0; s < driver_list.size(); ++s)
+               delete driver_list[s];
             exit(0);
         }
         
@@ -1027,7 +1140,8 @@ namespace {
             pthread_mutex_lock( &surf_mutex );   
             char binary_filename[256];
             sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+            //TODO Fix this to support Fang's new vector masses.
+            //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
             std::cout << "binary file written" << std::endl;      
             pthread_mutex_unlock( &surf_mutex );   
         }
@@ -1090,12 +1204,14 @@ namespace {
             
             double dt;
             std::vector<Vec3d> xs;
-            read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
+            //TODO Fix this
+            //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
             g_surf->set_all_positions(xs);
             
             NonDestructiveTriMesh temp_mesh;
             std::vector<Vec3d> new_xs;
-            read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
+            //TODO Fix this
+            //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
             g_surf->set_all_newpositions(new_xs);
             
             // TEMP: unique-ify
@@ -1630,7 +1746,11 @@ namespace {
         
         // init SurfTrack
         //std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
-        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, script_init.masses, script_init.surf_track_params );   
+        std::vector<Vec3d> vector_masses(script_init.masses.size());
+        for(size_t i = 0; i < script_init.masses.size(); ++i)
+           vector_masses[i] = Vec3d(script_init.masses[i],script_init.masses[i],script_init.masses[i]);
+
+        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
         
         std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
         g_surf->set_all_remesh_velocities(remesh_vels);
@@ -1639,8 +1759,9 @@ namespace {
         
         // init driver
         
-        driver = script_init.driver;   
-        driver->initialize( *g_surf );
+        driver_list = script_init.driver_list;   
+        for(size_t i = 0; i < driver_list.size(); ++i)
+            driver_list[i]->initialize( *g_surf );
         
         if ( g_surf->m_collision_safety )
         {
@@ -1661,6 +1782,65 @@ namespace {
         
         
     }
+
+    class MainMeshEventCallback : public SurfTrack::MeshEventCallback
+    {
+    public:
+        void collapse(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "collapse---" << std::endl;
+            g_recording.log() << "Collapse edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void split(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "split---" << std::endl;
+            g_recording.log() << "Split edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void flip(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "flip---" << std::endl;
+            g_recording.log() << "Flip edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void t1(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "t1---" << std::endl;
+            g_recording.log() << "T1 pop vertex " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void facesplit(const ElTopo::SurfTrack & st, size_t f)
+        {
+//            std::cout << "face split---" << std::endl;
+            g_recording.log() << "Split face " << f << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1)
+        {
+//            std::cout << "snap---" << std::endl;
+            g_recording.log() << "Snap vertex " << v0 << " to vertex " << v1 << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void smoothing(const ElTopo::SurfTrack & st)
+        {
+//            std::cout << "smooth---" << std::endl;
+            g_recording.log() << "Null space smoothing " << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        std::ostream & log()
+        {
+            return g_recording.log();
+        }
+    };
+    
     
 }  // unnamed namespace
 
@@ -1675,12 +1855,15 @@ int main(int argc, char **argv)
     
     std::cout << "Talpa: Demo applications of El Topo" << std::endl;
     std::cout << "-----------------------------------" << std::endl << std::endl;
-    
-    if( argc < 2 )
+
+    if ( argc < 2 )
     {
-        std::cout << "Usage: <executable> <scriptfile> <outputbasedirectory>" << std::endl;
-        std::cout << "e.g.: " << std::endl;
-        std::cout << "$ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
+        std::cout << "Usage: " << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory>" << std::endl;
+        std::cout << "    e.g.: " << std::endl;
+        std::cout << "    $ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory> record" << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory> playback" << std::endl;
         return 0;
     }
     
@@ -1695,6 +1878,25 @@ int main(int argc, char **argv)
         // argc == 2
         strcpy( g_base_output_path, "./" );
     }
+    
+    //////////////////////
+    // FD 20130418
+    if (argc > 3)
+    {
+        std::string command(argv[3]);
+        if (command == "record")
+        {
+            g_recording.turnOnRecording();
+            g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+            
+        } else if (command == "playback")
+        {
+            g_recording.turnOnPlayback();
+            g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+        }
+    }
+    
+    //////////////////////
     
 #ifdef USE_GUI
     pthread_mutexattr_t mta;
@@ -1744,9 +1946,13 @@ int main(int argc, char **argv)
     // write frame 0
     char binary_filename[256];
     sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-    write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+    //TODO Fix this.
+    //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
     
-    driver->write_to_disk( g_output_path, frame_stepper->get_frame() );
+    driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
+    
+    MainMeshEventCallback mmec;
+    g_surf->m_mesheventcallback = &mmec;
     
     //
     // Now start

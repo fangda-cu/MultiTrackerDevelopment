@@ -59,7 +59,7 @@ extern RunStats g_stats;
 DynamicSurface::DynamicSurface( const std::vector<Vec3d>& vertex_positions, 
                                const std::vector<Vec3st>& triangles,
                                const std::vector<Vec2i>& labels,
-                               const std::vector<double>& masses,
+                               const std::vector<Vec3d>& masses,
                                double in_proximity_epsilon,
                                double in_friction_coefficient,
                                bool in_collision_safety,
@@ -86,7 +86,7 @@ m_feature_edge_angle_threshold(M_PI/5)
     // if masses not provided, set all to 1.0
     if ( m_masses.size() == 0 )
     {
-        m_masses.resize( get_num_vertices(), 1.0 );
+        m_masses.resize( get_num_vertices(), Vec3d(1.0, 1.0, 1.0) );
     }
 
     assert(triangles.size() == labels.size());
@@ -510,13 +510,6 @@ unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_
    return rank;
 }
 
-//Return whether the given edge is a feature.
-bool DynamicSurface::edge_is_feature(size_t edge) const {
-   return get_largest_dihedral(edge) > m_feature_edge_angle_threshold;
-}
-bool DynamicSurface::edge_is_feature(size_t edge, const std::vector<Vec3d>& cached_normals) const {
-   return get_largest_dihedral(edge, cached_normals) > m_feature_edge_angle_threshold;
-}
 
 /// Look at all triangle pairs and get the smallest angle, ignoring regions.
 double DynamicSurface::get_largest_dihedral(size_t edge) const {
@@ -866,7 +859,7 @@ void DynamicSurface::update_static_broad_phase( size_t vertex_index )
     
     Vec3d low, high;
     vertex_static_bounds( vertex_index, low, high );
-    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_solid(vertex_index) );
+    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_all_solid(vertex_index) );
     
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
@@ -898,7 +891,7 @@ void DynamicSurface::update_continuous_broad_phase( size_t vertex_index )
     
     Vec3d low, high;
     vertex_continuous_bounds( vertex_index, low, high );
-    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_solid(vertex_index) );
+    m_broad_phase->update_vertex( vertex_index, low, high, vertex_is_all_solid(vertex_index) );
     
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
@@ -1476,7 +1469,7 @@ void DynamicSurface::check_continuous_broad_phase_is_up_to_date() const
                 std::cout << "is deleted: " << m_mesh.vertex_is_deleted( brute_force_overlapping_vertices[k] ) << std::endl;
                 
                 Vec3d lo, hi;
-                bool is_solid = vertex_is_solid( brute_force_overlapping_vertices[k] );
+                bool is_solid = vertex_is_all_solid( brute_force_overlapping_vertices[k] );
                 m_broad_phase->get_vertex_aabb( brute_force_overlapping_vertices[k], is_solid, lo, hi );
                 std::cout << "AABB: " << lo << " - " << hi << std::endl;
                 std::cout << "x: " << pm_positions[brute_force_overlapping_vertices[k]] << ", new_x: " << pm_newpositions[brute_force_overlapping_vertices[k]] << std::endl;
@@ -1917,6 +1910,7 @@ void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy
     
 }
 
+/*
 int DynamicSurface::vertex_feature_edge_count( size_t vertex ) const
 {
    int count = 0;
@@ -1934,6 +1928,7 @@ int DynamicSurface::vertex_feature_edge_count( size_t vertex, const std::vector<
    }
    return count;
 }
+*/
 
 }
 

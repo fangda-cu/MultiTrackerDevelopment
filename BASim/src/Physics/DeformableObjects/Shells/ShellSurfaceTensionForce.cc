@@ -175,13 +175,65 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
   */
   
   //Derived by directly taking the derivative of len(cross(v1,v2))
-  Vec3d v1 = deformed[1] - deformed[0];
-  Vec3d v2 = deformed[2] - deformed[0];
-  Vec3d A = v1.cross(v2);
-  Vec3d mul = A / A.norm();
-  Vec3d p2part = m_surface_tension_coeff*v1.cross(mul);
-  Vec3d p1part = m_surface_tension_coeff*mul.cross(v2);
+  Vec3d v01 = deformed[1] - deformed[0];
+  Vec3d v20 = deformed[0] - deformed[2];
+  Vec3d v12 = deformed[2] - deformed[1];
+  Scalar v01norm = v01.norm();
+  Scalar v20norm = v20.norm();
+  Scalar v12norm = v12.norm();
+  
+  Vec3d A = v01.cross(-v20);
+  Scalar Anorm = A.norm();
+  Vec3d mul = A / Anorm;
+  Vec3d p2part = m_surface_tension_coeff*v01.cross(mul);
+  Vec3d p1part = m_surface_tension_coeff*mul.cross(-v20);
   Vec3d p0part = -(p1part + p2part);
+
+//  // handle degenerate cases
+//  Scalar mean_edge_length = (v01norm + v12norm + v20norm) / 3;
+//  if (Anorm < 0.01 * mean_edge_length * mean_edge_length)
+//  {
+//    Scalar r = Anorm / (0.01 * mean_edge_length * mean_edge_length);
+//    Scalar t = std::max(0.0, r * 2.0 - 1.0); // t = 0 to 1 for Anorm = 0.5% to 1% of mean edge length squared
+//    
+//    Vec3d & max_edge = ((v01norm > v12norm && v01norm > v20norm) ? v01 : (v12norm > v20norm ? v12 : v20));
+//    Vec3d max_edge_perp;
+//    if (fabs(max_edge.x()) < fabs(max_edge.y()) && fabs(max_edge.x()) < fabs(max_edge.z()))
+//      max_edge_perp = Vec3d(0.0, -max_edge.z(), max_edge.y()).normalized() * max_edge.norm();
+//    else if (fabs(max_edge.y()) < fabs(max_edge.x()) && fabs(max_edge.y()) < fabs(max_edge.z()))
+//      max_edge_perp = Vec3d(-max_edge.z(), 0.0, max_edge.x()).normalized() * max_edge.norm();
+//    else
+//      max_edge_perp = Vec3d(-max_edge.y(), max_edge.x(), 0.0).normalized() * max_edge.norm();
+//    
+//    Vec3d p2part_limit;
+//    Vec3d p1part_limit;
+//    Vec3d p0part_limit;
+//    
+//    if (v01norm > v12norm && v01norm > v20norm)
+//    {
+//      // v01 is the longest edge
+//      p2part_limit = max_edge_perp;
+//      p1part_limit = -max_edge_perp * v20norm / (v12norm + v20norm);
+//      p0part_limit = -max_edge_perp * v12norm / (v12norm + v20norm);
+//    } else if (v12norm > v20norm)
+//    {
+//      // v12 is the longest edge
+//      p2part_limit = -max_edge_perp * v01norm / (v01norm + v20norm);
+//      p1part_limit = -max_edge_perp * v20norm / (v01norm + v20norm);
+//      p0part_limit = max_edge_perp;
+//    } else
+//    {
+//      // v20 is the longest edge
+//      p2part_limit = -max_edge_perp * v01norm / (v01norm + v12norm);
+//      p1part_limit = max_edge_perp;
+//      p0part_limit = -max_edge_perp * v12norm / (v01norm + v12norm);
+//    }
+//    
+//    p2part = p2part * t + p2part_limit * (1 - t);
+//    p1part = p1part * t + p1part_limit * (1 - t);
+//    p0part = p0part * t + p0part_limit * (1 - t);
+//    
+//  }
   
   /*  
   //Alternative implementation

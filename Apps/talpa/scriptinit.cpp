@@ -37,6 +37,9 @@ void ScriptInit::parse_surftrack_parameters( const ParseTree& surftrack_branch )
     std::string subdivision_scheme;
     
     surftrack_branch.get_int( "use_fraction", use_fraction );
+    
+    surftrack_branch.get_number("feature_min_edge_length", surf_track_params.m_pull_apart_distance );
+
     surftrack_branch.get_number( "min_edge_length", surf_track_params.m_min_edge_length );
     surftrack_branch.get_number( "max_edge_length", surf_track_params.m_max_edge_length  );
     surftrack_branch.get_number( "max_volume_change", surf_track_params.m_max_volume_change );
@@ -158,7 +161,8 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
     //set solution data for the original normal flow tests.
     d->set_solution_data(Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2);
 
-    driver = d;
+    //driver = d;
+    driver_list.push_back(d);
     
 }
 
@@ -168,7 +172,8 @@ void ScriptInit::parse_normal( const ParseTree& normal_sim_branch )
 {
     double speed;
     normal_sim_branch.get_number( "speed", speed );
-    driver = new NormalDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
+    //driver = new NormalDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
+    driver_list.push_back(new NormalDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 ));
 }
 
 // ---------------------------------------------------------
@@ -190,20 +195,23 @@ void ScriptInit::parse_mean_curvature( const ParseTree& mean_curvature_sim_branc
     double phi_domain_dx;
     mean_curvature_sim_branch.get_number( "phi_domain_dx", phi_domain_dx );
     
-    driver = new MeanCurvatureDriver( speed, sethian_final, phi_domain_low, phi_domain_dx );
+    //driver = new MeanCurvatureDriver( speed, sethian_final, phi_domain_low, phi_domain_dx );
+    driver_list.push_back(new MeanCurvatureDriver( speed, sethian_final, phi_domain_low, phi_domain_dx ));
 }
 
 // ---------------------------------------------------------
 
 void ScriptInit::parse_sisc_curl_noise( const ParseTree&  )
 {
-    driver = new SISCCurlNoiseDriver( );
+    //driver = new SISCCurlNoiseDriver( );
+   driver_list.push_back(new SISCCurlNoiseDriver());
 }
 
 // ---------------------------------------------------------
 void ScriptInit::parse_enright( const ParseTree&  )
 {
-    driver = new EnrightDriver( );
+    //driver = new EnrightDriver( );
+   driver_list.push_back(new EnrightDriver( ));
 }
 
 // ---------------------------------------------------------

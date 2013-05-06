@@ -75,6 +75,7 @@ public:
   virtual void resumeFromfile( std::ifstream& ifs );
 
   void beforeEndStep();
+  void afterStartStep();
   
 protected:
   void Setup();
@@ -118,7 +119,7 @@ protected:
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
-//  void setupScene3(); // double bubble collision
+  void setupScene3(); // T1 transition for surface tension force debugging
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 17
   void setupScene6(); // VIIM multiphase cube test (figure 24)

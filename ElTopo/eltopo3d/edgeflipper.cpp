@@ -814,7 +814,7 @@ bool EdgeFlipper::flip_pass( )
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
             
             //threshold the distance drop to prevent rapid flipping back and forth.
-            //if ( potential_length < 0.9*(current_length - m_edge_flip_min_length_change) || need_valence_flip)
+            //if ( potential_length < current_length - m_edge_flip_min_length_change)
             if ( need_valence_flip )
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            

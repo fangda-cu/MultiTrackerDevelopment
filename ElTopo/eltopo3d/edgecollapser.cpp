@@ -359,53 +359,61 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
                                                        size_t destination_vertex, 
                                                        const Vec3d& vertex_new_position )
 {
-    
+
     std::vector<size_t> moving_triangles;
     get_moving_triangles( source_vertex, destination_vertex,  moving_triangles );
-    
+   
+    int edge_id = m_surf.m_mesh.get_edge_index(source_vertex, destination_vertex);
+
     double min_tri_angle = -1;
     double max_tri_angle = -1;
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
+
+
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+        
         double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
         double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
-        assert(mina > 0);
-        assert(maxa > mina);
-        assert(M_PI > maxa);
+
+        assert(mina >= 0); //This should always be true, I believe.
+        assert(mina == mina);
+        assert(maxa == maxa);
+
         if (min_tri_angle < 0 || mina < min_tri_angle)
             min_tri_angle = mina;
         if (max_tri_angle < 0 || maxa > max_tri_angle)
             max_tri_angle = maxa;
     }
-    assert(min_tri_angle > 0);
-    assert(max_tri_angle > min_tri_angle);
-    assert(M_PI > max_tri_angle);
+    
+    assert(max_tri_angle >= min_tri_angle);
     
     min_tri_angle = std::min(min_tri_angle, deg2rad(m_surf.m_min_triangle_angle));
     max_tri_angle = std::max(max_tri_angle, deg2rad(m_surf.m_max_triangle_angle));
     
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
-        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+       //skip the tris incident on the collapsing edge.
+       const std::vector< size_t >& triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge_id];
+       bool irrelevant_tri = false;
+       for(size_t j = 0; j < triangles_incident_to_edge.size(); ++j) {
+          if(triangles_incident_to_edge[j] == moving_triangles[i]) {
+             irrelevant_tri = true;
+             continue;
+          }
+       }
+
+       if(irrelevant_tri) 
+          continue;
         
-        ///////////////////////////////////////////////////////////////////////
-        // FD 20121218
-        //
-        //  This is a bug in El Topo? This check always includes the two
-        //  triangles that are incident to the edge being collapsed (both
-        //  source_vertex and destination_vertex are in the triangle), and
-        //  for these triangles min_triangle_angle may return nan or a very
-        //  small (virtually zero) value. Random.
-        //
-        int count = 0;
+       const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         
+
         Vec3d a = m_surf.get_position( tri[0] );
         
         if ( tri[0] == source_vertex || tri[0] == destination_vertex )
         {
             a = vertex_new_position;
-            count++;
         }
         
         Vec3d b = m_surf.get_position( tri[1] );
@@ -413,7 +421,6 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[1] == source_vertex || tri[1] == destination_vertex )
         {
             b = vertex_new_position;
-            count++;
         }
         
         Vec3d c = m_surf.get_position( tri[2] );
@@ -421,23 +428,17 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[2] == source_vertex || tri[2] == destination_vertex )
         {
             c = vertex_new_position;
-            count++;
         }
-        
-        if (count == 2)
-            continue;
         
         ///////////////////////////////////////////////////////////////////////
         
         double min_angle = min_triangle_angle( a, b, c );
-        
         if ( min_angle < min_tri_angle )
         {
             return true;
         }
         
         double max_angle = max_triangle_angle( a, b, c );
-        
         if ( max_angle > max_tri_angle )
         {
             return true;
@@ -460,7 +461,7 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
 ///
 
 // --------------------------------------------------------
-bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position, size_t& vertex_to_keep, size_t& vertex_to_delete, const size_t& edge, bool& new_vert_solid_label) {
+bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position, size_t& vertex_to_keep, size_t& vertex_to_delete, const size_t& edge, Vec3c & new_vert_solid_label) {
 
 
    // rank 1, 2, 3 = smooth, ridge, peak
@@ -474,34 +475,44 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    unsigned int delete_rank = delete_incident_features < 2 ? 1 : (delete_incident_features >= 3 ? 3 : 2);
    
    bool edge_is_a_feature = m_surf.edge_is_feature(edge);
-     
 
    bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
    bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
 
+    // situations where large collapse threshold applies:
+    //  1. one of the two vertices has no feature edges
+    //  2. both have feature edges, and the edge is a feature, and one of the two vertices has exactly two feature edges
+    bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || (((keep_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_keep)) || (delete_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_delete))) && m_surf.edge_is_feature(edge)));
+    
+    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+    if (!large_threshold && len >= m_t1_pull_apart_distance)
+        return false;
+        
    // boundary vertices have precedence
    if (keep_vert_is_boundary) keep_rank = 4;
    if (del_vert_is_boundary) delete_rank = 4;
 
    // constraint vertices have higher precedence
-   bool keep_vert_is_solid =   m_surf.vertex_is_solid(vertex_to_keep);
-   bool delete_vert_is_solid = m_surf.vertex_is_solid(vertex_to_delete);
+   Vec3c keep_vert_is_solid =   m_surf.vertex_is_solid_3(vertex_to_keep);
+   Vec3c delete_vert_is_solid = m_surf.vertex_is_solid_3(vertex_to_delete);
+   bool keep_vert_is_any_solid =   m_surf.vertex_is_any_solid(vertex_to_keep);
+   bool delete_vert_is_any_solid = m_surf.vertex_is_any_solid(vertex_to_delete);
 
    bool keep_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_keep);
    bool delete_vert_is_manifold = !m_surf.m_mesh.is_vertex_nonmanifold(vertex_to_delete);
 
-   new_vert_solid_label = false;
-   if (keep_vert_is_solid || delete_vert_is_solid)
+   new_vert_solid_label = Vec3c(false, false, false);
+   if (keep_vert_is_any_solid || delete_vert_is_any_solid)
    {
       assert(m_surf.m_solid_vertices_callback);
       new_vert_solid_label = m_surf.m_solid_vertices_callback->generate_collapsed_solid_label(m_surf, vertex_to_keep, vertex_to_delete, keep_vert_is_solid, delete_vert_is_solid);
    }
 
-   if (keep_vert_is_solid)   keep_rank = 5;
-   if (delete_vert_is_solid) delete_rank = 5;
+   if (keep_vert_is_any_solid)   keep_rank = 5;
+   if (delete_vert_is_any_solid) delete_rank = 5;
 
    // Handle different cases of constrained, boundary and interior vertices
-   if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_solid || delete_vert_is_solid))
+   if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_any_solid || delete_vert_is_any_solid))
    {
       //Ranks dominate (i.e. use ranks to decide collapsing first, and if they match then use nonmanifoldness to decide).
       //-> This is particularly important for outward normal flow: it snaps the non-manifold curve back onto the 
@@ -557,7 +568,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
       }
 
    } 
-   else if (keep_vert_is_solid || delete_vert_is_solid)
+   else if (keep_vert_is_any_solid || delete_vert_is_any_solid)
    {
       assert(m_surf.m_solid_vertices_callback);
 
@@ -593,7 +604,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
 
       vertex_new_position = m_surf.get_position(vertex_to_keep);
    }
-
+    
    return true;
 }
 
@@ -621,10 +632,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //
   // do not collapse the edge if the two vertices are moving apart
   
-  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
+  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete) - rel_vel;
+  double edge_len = mag(edge_vec);
   
-  if (dot(rel_vel, edge_vec) > 0 && collapse_will_produce_irregular_junction(edge))
+  if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
   {
     if (m_surf.m_verbose)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
@@ -767,7 +779,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   //Choose the vertex to keep and its new position.
   Vec3d vertex_new_position;
-  bool new_vert_solid_label;
+  Vec3c new_vert_solid_label;
   bool can_collapse = get_new_vertex_position_dihedral(vertex_new_position, vertex_to_keep, vertex_to_delete, edge, new_vert_solid_label);
   if(!can_collapse)
      return false;
@@ -778,7 +790,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Check vertex pseudo motion for collisions and volume change
 
-  if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
+  if ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) != m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) )
+  //if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
   {
 
     // Change source vertex predicted position to superimpose onto destination vertex
@@ -801,7 +814,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
-    if ( normal_inversion )
+    if ( normal_inversion && (edge_len >= m_t1_pull_apart_distance) )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -811,9 +824,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       return false;
     }
 
-    bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position );
+    bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position);
 
-    if ( bad_angle )
+    if ( bad_angle && edge_len >= m_t1_pull_apart_distance )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -867,8 +880,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   // FD 20121229
   //
   // update the vertex constraint label
-  if (new_vert_solid_label)
-    m_surf.m_masses[vertex_to_keep] = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < 3; i++)
+  {
+    if (new_vert_solid_label[i])
+      m_surf.m_masses[vertex_to_keep][i] = std::numeric_limits<double>::infinity();
+    else
+      m_surf.m_masses[vertex_to_keep][i] = 1;
+  }
   
   ///////////////////////////////////////////////////////////////////////
 
@@ -1080,17 +1098,17 @@ bool EdgeCollapser::collapse_pass()
     //
     // attempt to collapse each edge in the sorted list
     //
-    
+
     for ( size_t si = 0; si < sortable_edges_to_try.size(); ++si )
     {
         size_t e = sortable_edges_to_try[si].m_edge_index;
         
         assert( e < m_surf.m_mesh.m_edges.size() );
-        
+ 
         double dummy;
         if(edge_is_collapsible(e, dummy)) {
           bool result = collapse_edge( e );
-
+          
           if ( result )
           { 
             // clean up degenerate triangles and tets

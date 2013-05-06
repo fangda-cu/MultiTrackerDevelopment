@@ -648,7 +648,7 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
     double max_displacement = 1e-30;
     for ( size_t i = 0; i < m_surf.get_num_vertices(); ++i )
     {
-        if ( !m_surf.vertex_is_solid(i) )
+        if ( !m_surf.vertex_is_all_solid(i) )
         {
             null_space_smooth_vertex( i, triangle_areas, triangle_normals, triangle_centroids, displacements[i] );
             max_displacement = max( max_displacement, mag( displacements[i] ) );
@@ -664,7 +664,12 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
     
     for ( size_t i = 0; i < m_surf.get_num_vertices(); ++i )
     {
-        m_surf.set_newposition( i, m_surf.get_position(i) + (max_beta) * displacements[i] );
+        Vec3d displacement = (max_beta) * displacements[i];
+        Vec3c solid = m_surf.vertex_is_solid_3(i);
+        if (solid[0]) displacement[0] = 0;
+        if (solid[1]) displacement[1] = 1;
+        if (solid[2]) displacement[2] = 2;
+        m_surf.set_newposition( i, m_surf.get_position(i) + displacement );
         m_surf.m_velocities[i] = (m_surf.get_newposition(i) - m_surf.get_position(i)) / dt;
     }
     

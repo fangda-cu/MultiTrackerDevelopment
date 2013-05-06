@@ -187,9 +187,27 @@ inline double circumcircle_radius( const Vec3d& a, const Vec3d& b, const Vec3d& 
 inline void triangle_angles(const Vec3d& a, const Vec3d& b, const Vec3d& c, 
                             double& angle_a, double& angle_b, double& angle_c )
 {   
-    angle_a = acos( dot( normalized(b-a), normalized(c-a) ) );
-    angle_b = acos( dot( normalized(a-b), normalized(c-b) ) );
-    angle_c = acos( dot( normalized(b-c), normalized(a-c) ) );   
+   
+   //Handle some degeneracies
+   if(b==a) {
+      angle_a = M_PI/2;
+      angle_b = M_PI/2;
+      angle_c = 0;
+   }
+   if(c==a){
+      angle_a = M_PI/2;
+      angle_b = 0;
+      angle_c = M_PI/2;
+   }
+   if(b==c){    
+      angle_a = 0;
+      angle_b = M_PI/2;
+      angle_c = M_PI/2;
+   }
+
+   angle_a = acos( dot( normalized(b-a), normalized(c-a) ) );
+   angle_b = acos( dot( normalized(a-b), normalized(c-b) ) );
+   angle_c = acos( dot( normalized(b-c), normalized(a-c) ) );   
 }
 
 // ---------------------------------------------------------
