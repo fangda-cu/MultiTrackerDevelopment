@@ -893,7 +893,7 @@ namespace {
             
             // If first frame, output initial screen cap
             
-            if ( frame_stepper->get_frame() == 0 )
+            if ( frame_stepper->get_frame() == 0 || frame_stepper->get_frame() == g_resume_frame+1)
             {
                 // output initial conditions
                 char sgi_filename[256];
@@ -1058,8 +1058,12 @@ namespace {
             pthread_mutex_lock( &surf_mutex );   
             char binary_filename[256];
             sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            //TODO Fix this to support Fang's new vector masses.
-            //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+            
+            std::vector<double> masses(g_surf->m_masses.size());
+            for(size_t i = 0; i< g_surf->m_masses.size(); ++i)
+               masses[i] = g_surf->m_masses[i][0];
+
+            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), masses, sim->m_curr_t, binary_filename );   
             std::cout << "binary file written" << std::endl;      
             pthread_mutex_unlock( &surf_mutex );   
         }
@@ -1120,56 +1124,56 @@ namespace {
             run_all_sisc_examples( "./sisc-scripts/" );
         }
         
-        if ( key == 'c' )
-        {
-            std::cout << "loading meshes" << std::endl;
-            
-            //g_surf->m_positions.clear();
-            
-            double dt;
-            std::vector<Vec3d> xs;
-            //TODO Fix this
-            //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
-            g_surf->set_all_positions(xs);
-            
-            NonDestructiveTriMesh temp_mesh;
-            std::vector<Vec3d> new_xs;
-            //TODO Fix this
-            //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
-            g_surf->set_all_newpositions(new_xs);
-            
-            // TEMP: unique-ify
-            std::vector< Vec3st > tris;
-            for ( unsigned int i = 0; i < temp_mesh.get_triangles().size(); ++i )
-            {
-                bool found = false;
-                for ( unsigned int j = 0; j < tris.size(); ++j )
-                {
-                    if ( tris[j] == temp_mesh.get_triangle(i) )
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if ( !found )
-                {
-                    tris.push_back( temp_mesh.get_triangle(i) );
-                }
-            }
-            
-            if ( dt == 0.0 ) { dt = 1.0; }
-            
-            std::vector<Vec2i> dummy_labels(tris.size(), Vec2i(0,1));
-            g_surf->m_mesh.clear();
-            g_surf->m_mesh.replace_all_triangles( tris, dummy_labels );
-            g_surf->defrag_mesh();      
-            
-            std::cout << "integrating" << std::endl;
-            
-            double actual_dt;
-            g_surf->integrate( dt, actual_dt );      
-        }
+        //if ( key == 'c' )
+        //{
+        //    std::cout << "loading meshes" << std::endl;
+        //    
+        //    //g_surf->m_positions.clear();
+        //    
+        //    double dt;
+        //    std::vector<Vec3d> xs;
+        //    //TODO Fix this
+        //    //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
+        //    g_surf->set_all_positions(xs);
+        //    
+        //    NonDestructiveTriMesh temp_mesh;
+        //    std::vector<Vec3d> new_xs;
+        //    //TODO Fix this
+        //    //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
+        //    g_surf->set_all_newpositions(new_xs);
+        //    
+        //    // TEMP: unique-ify
+        //    std::vector< Vec3st > tris;
+        //    for ( unsigned int i = 0; i < temp_mesh.get_triangles().size(); ++i )
+        //    {
+        //        bool found = false;
+        //        for ( unsigned int j = 0; j < tris.size(); ++j )
+        //        {
+        //            if ( tris[j] == temp_mesh.get_triangle(i) )
+        //            {
+        //                found = true;
+        //                break;
+        //            }
+        //        }
+        //        
+        //        if ( !found )
+        //        {
+        //            tris.push_back( temp_mesh.get_triangle(i) );
+        //        }
+        //    }
+        //    
+        //    if ( dt == 0.0 ) { dt = 1.0; }
+        //    
+        //    std::vector<Vec2i> dummy_labels(tris.size(), Vec2i(0,1));
+        //    g_surf->m_mesh.clear();
+        //    g_surf->m_mesh.replace_all_triangles( tris, dummy_labels );
+        //    g_surf->defrag_mesh();      
+        //    
+        //    std::cout << "integrating" << std::endl;
+        //    
+        //    double actual_dt;
+        //    g_surf->integrate( dt, actual_dt );      
+        //}
         
                 
         timer_advance_frame(0);
@@ -1684,6 +1688,7 @@ namespace {
            //figure out the time to start from
            frame_stepper->frame_count = g_resume_frame;
            sim->m_curr_t = script_init.frame_dt * g_resume_frame;
+           frame_stepper->next_frame();
            std::cout << "Resuming from:\n";
            std::cout << "curr_t: " << sim->m_curr_t << std::endl;
            std::cout << "curr_frame: " << g_resume_frame << std::endl; 
@@ -1825,35 +1830,35 @@ int main(int argc, char **argv)
     //
     // Make a copy of the input script in the output directory
     //
+    if(!resuming) {
+       char* script_filename = argv[1];
+       std::ifstream original_file_stream( script_filename );
+       assert( original_file_stream.good() );
     
-    char* script_filename = argv[1];
-    std::ifstream original_file_stream( script_filename );
-    assert( original_file_stream.good() );
+       char script_copy_filename[256];
+       snprintf( script_copy_filename, 256, "%s/aaa-script.txt", g_output_path );
     
-    char script_copy_filename[256];
-    snprintf( script_copy_filename, 256, "%s/aaa-script.txt", g_output_path );
+       char command[1024];
+       sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
+       printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
+       bool ok = system(command) == 0;
+       if(!ok)
+          printf("System call failed\n");
     
-    char command[1024];
-    sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
-    printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
-    bool ok = system(command) == 0;
-    if(!ok)
-       printf("System call failed\n");
+       srand( 1 );
     
-    srand( 1 );
-    
-    // write frame 0
-    char binary_filename[256];
-    sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
+       // write frame 0
+       char binary_filename[256];
+       sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
 
-    std::vector<double> scalar_masses(g_surf->m_masses.size());
-    for(size_t i = 0; i < scalar_masses.size(); ++i)
-       scalar_masses[i] = g_surf->m_masses[i][0];
+       std::vector<double> scalar_masses(g_surf->m_masses.size());
+       for(size_t i = 0; i < scalar_masses.size(); ++i)
+          scalar_masses[i] = g_surf->m_masses[i][0];
 
-    write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
+       write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
     
-    driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
-    
+       driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
+    }
     //
     // Now start
     //
