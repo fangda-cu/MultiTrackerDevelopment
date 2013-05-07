@@ -1773,50 +1773,102 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
-  //generate voronoi sites
-  int nsite = GetIntOpt("shell-x-resolution");
-  srand(GetIntOpt("shell-y-resolution"));
-  std::vector<Vec3d> sites;
-  for (int i = 0; i < nsite; i++)
-    sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
- 
-  //create an initial tet that contains the entire range [0, 1]^3
-  TopologicalObject dtmesh;
-  VertexProperty<Vec3d> dtpositions(&dtmesh);
-  std::vector<VertexHandle> dtvertList;
-  
-  for (int i = 0; i < 4; i++)
-    dtvertList.push_back(dtmesh.addVertex());
-  
-  dtpositions[dtvertList[0]] = Vec3d(-1,-1,-1);
-  dtpositions[dtvertList[1]] = Vec3d(4,0,0);
-  dtpositions[dtvertList[2]] = Vec3d(0,4,0);
-  dtpositions[dtvertList[3]] = Vec3d(0,0,4);
-  
-  std::vector<FaceHandle> dtfaceList;
-  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[2])); // 0  // z = 0
-  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[3])); // 1  // y = 0
-  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[2], dtvertList[3])); // 2  // x = 0
-  dtfaceList.push_back(dtmesh.addFace(dtvertList[1], dtvertList[2], dtvertList[3])); // 3  // x+y+z
-  
-  std::vector<TetHandle> dttetList;
-  dttetList.push_back(dtmesh.addTet(dtfaceList[0], dtfaceList[1], dtfaceList[2], dtfaceList[3]));  
-  
-  DelaunayTriangulator::DelaunayTriangulator dt(&dtmesh, dtpositions);
-  
-  for (int i = 0; i < nsite; i++)
-    dt.insertVertex(sites[i]);
-  dtpositions = dt.positions();
+//  //generate voronoi sites
+//  int nsite = GetIntOpt("shell-x-resolution");
+//  srand(GetIntOpt("shell-y-resolution"));
+//  std::vector<Vec3d> sites;
+//  for (int i = 0; i < nsite; i++)
+//    sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
+// 
+//  //create an initial tet that contains the entire range [0, 1]^3
+//  TopologicalObject dtmesh;
+//  VertexProperty<Vec3d> dtpositions(&dtmesh);
+//  std::vector<VertexHandle> dtvertList;
+//  
+//  for (int i = 0; i < 4; i++)
+//    dtvertList.push_back(dtmesh.addVertex());
+//  
+//  dtpositions[dtvertList[0]] = Vec3d(-1,-1,-1);
+//  dtpositions[dtvertList[1]] = Vec3d(4,0,0);
+//  dtpositions[dtvertList[2]] = Vec3d(0,4,0);
+//  dtpositions[dtvertList[3]] = Vec3d(0,0,4);
+//  
+//  std::vector<FaceHandle> dtfaceList;
+//  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[2])); // 0  // z = 0
+//  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[3])); // 1  // y = 0
+//  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[2], dtvertList[3])); // 2  // x = 0
+//  dtfaceList.push_back(dtmesh.addFace(dtvertList[1], dtvertList[2], dtvertList[3])); // 3  // x+y+z
+//  
+//  std::vector<TetHandle> dttetList;
+//  dttetList.push_back(dtmesh.addTet(dtfaceList[0], dtfaceList[1], dtfaceList[2], dtfaceList[3]));  
+//  
+//  DelaunayTriangulator::DelaunayTriangulator dt(&dtmesh, dtpositions);
+//  
+//  for (int i = 0; i < nsite; i++)
+//    dt.insertVertex(sites[i]);
+//  dtpositions = dt.positions();
+//
+//  FaceProperty<Vec2i> faceLabels(shellObj);
+//  dt.extractVoronoiDiagram(shellObj, positions, faceLabels, Vec3d(0, 0, 0), Vec3d(1, 1, 1));
+//  
+//  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+//  {
+//    undeformed[*vit] = positions[*vit];
+//    velocities[*vit] = Vec3d(0, 0, 0);
+//  }
+    
+    std::ifstream objfile("/Users/fangda/Researches/BASim/DoubleBubble/mcf_gen/mcf_gen/output.OBJ");
+    std::vector<Vec3d> obj_vs;
+    std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
 
-  FaceProperty<Vec2i> faceLabels(shellObj);
-  dt.extractVoronoiDiagram(shellObj, positions, faceLabels, Vec3d(0, 0, 0), Vec3d(1, 1, 1));
-  
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-  {
-    undeformed[*vit] = positions[*vit];
-    velocities[*vit] = Vec3d(0, 0, 0);
-  }
-  
+    while (!objfile.eof())
+    {
+        std::string line;
+        std::getline(objfile, line);
+        std::stringstream liness(line);
+        std::string ins;
+        liness >> ins;
+        if (ins == "v")
+        {
+            Vec3d v;
+            liness >> v.x() >> v.y() >> v.z();
+            obj_vs.push_back(v);
+        } else if (ins == "f")
+        {
+            Vec3i f;
+            Vec2i fl;
+            liness >> f.x() >> f.y() >> f.z();
+            liness >> fl.x() >> fl.y();
+            f.x()--;
+            f.y()--;
+            f.z()--;
+            obj_fs.push_back(std::pair<Vec3i, Vec2i>(f, fl));
+        }
+    }
+    objfile.close();
+    
+    std::cout << "OBJ load report: nv = " << obj_vs.size() << " nf = " << obj_fs.size() << std::endl;
+    
+    //create the mesh
+    std::vector<VertexHandle> vertList;
+    for (size_t i = 0; i < obj_vs.size(); i++)
+    {
+        vertList.push_back(shellObj->addVertex());
+        velocities[vertList[i]] = Vec3d(0, 0, 0);
+        positions[vertList[i]] = obj_vs[i];
+        undeformed[vertList[i]] = positions[vertList[i]];
+    }
+    
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+    
+    for (size_t i = 0; i < obj_fs.size(); i++)
+    {
+        faceList.push_back(shellObj->addFace(vertList[obj_fs[i].first.x()], vertList[obj_fs[i].first.y()], vertList[obj_fs[i].first.z()]));
+        faceLabels[faceList.back()] = Vec2i(obj_fs[i].second.x(), obj_fs[i].second.y());  // placeholder here; real labels will be set below
+    }
+    
+    
   // remove the bounding box wall faces
   std::vector<FaceHandle> faces_to_remove;
   for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
