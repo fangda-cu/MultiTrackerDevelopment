@@ -7,8 +7,8 @@
 //
 // ---------------------------------------------------------
 
-#ifndef EL_TOPO_MEANCURVATURE_H
-#define EL_TOPO_MEANCURVATURE_H
+#ifndef EL_TOPO_MEANCURVATURE_MULTI_H
+#define EL_TOPO_MEANCURVATURE_MULTI_H
 
 // ---------------------------------------------------------
 // Nested includes

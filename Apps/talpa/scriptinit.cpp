@@ -16,6 +16,7 @@
 #include "geometryinit.h"
 #include <iomesh.h>
 #include "drivers/meancurvature.h"
+#include "drivers/meancurvature_multi.h"
 #include "drivers/normaldriver.h"
 #include "drivers/sisccurlnoisedriver.h"
 #include <subdivisionscheme.h>
@@ -183,20 +184,8 @@ void ScriptInit::parse_mean_curvature( const ParseTree& mean_curvature_sim_branc
     double speed;
     mean_curvature_sim_branch.get_number( "speed", speed );
     
-    std::string ground_truth_file;
-    mean_curvature_sim_branch.get_string( "ground_truth_file", ground_truth_file );
-    
-    Array3d sethian_final;
-    read_signed_distance( ground_truth_file.c_str(), sethian_final );       
-    
-    Vec3d phi_domain_low;   
-    mean_curvature_sim_branch.get_vec3d( "phi_domain_low", phi_domain_low );
-    
-    double phi_domain_dx;
-    mean_curvature_sim_branch.get_number( "phi_domain_dx", phi_domain_dx );
-    
     //driver = new MeanCurvatureDriver( speed, sethian_final, phi_domain_low, phi_domain_dx );
-    driver_list.push_back(new MeanCurvatureDriver( speed, sethian_final, phi_domain_low, phi_domain_dx ));
+    driver_list.push_back(new MeanCurvatureMultiDriver( speed ));
 }
 
 // ---------------------------------------------------------
@@ -508,6 +497,86 @@ void ScriptInit::parse_multiphase_objfile( const ParseTree& obj_branch)
     
     append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_labels, obj_masses );
 }
+
+void ScriptInit::parse_labeled_objfile( const ParseTree& obj_branch)
+{
+    std::string meshpath;
+    obj_branch.get_string("filepath", meshpath);
+    printf("Got path: %s\n", meshpath.c_str());
+    
+    NonDestructiveTriMesh trimesh;
+    
+    printf("Reading file\n");
+    
+    std::ifstream objfile(meshpath.c_str());
+    std::vector<Vec3d> obj_vs;
+    std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
+    
+    while (!objfile.eof())
+    {
+        std::string line;
+        std::getline(objfile, line);
+        std::stringstream liness(line);
+        std::string ins;
+        liness >> ins;
+        if (ins == "v")
+        {
+            Vec3d v;
+            liness >> v[0] >> v[1] >> v[2];
+            obj_vs.push_back(v);
+        } else if (ins == "f")
+        {
+            Vec3i f;
+            Vec2i fl;
+            liness >> f[0] >> f[1] >> f[2];
+            liness >> fl[0] >> fl[1];
+            f[0]--;
+            f[1]--;
+            f[2]--;
+            obj_fs.push_back(std::pair<Vec3i, Vec2i>(f, fl));
+        }
+    }
+    objfile.close();
+    
+    std::cout << "OBJ load report: nv = " << obj_vs.size() << " nf = " << obj_fs.size() << std::endl;
+    
+    std::vector<Vec3st> obj_triangles(obj_fs.size());
+    std::vector<Vec2i> obj_labels(obj_fs.size());
+    for (size_t i = 0; i < obj_fs.size(); i++)
+    {
+        obj_triangles[i][0] = obj_fs[i].first[0];
+        obj_triangles[i][1] = obj_fs[i].first[1];
+        obj_triangles[i][2] = obj_fs[i].first[2];
+        obj_labels[i][0] = obj_fs[i].second[0];
+        obj_labels[i][1] = obj_fs[i].second[1];
+    }
+    
+    Vec3d translate;
+    if ( obj_branch.get_vec3d("translate", translate) )
+    {
+        for ( size_t i = 0; i < obj_vs.size(); ++i )
+        {
+            obj_vs[i] += translate;
+        }
+    }
+    
+    std::vector<double> obj_masses(0);
+    int is_solid = 0;
+    obj_branch.get_int( "is_solid", is_solid );
+    
+    if ( is_solid )
+    {
+        obj_masses.resize( obj_vs.size(), std::numeric_limits<double>::infinity() );
+    }
+    else
+    {
+        obj_masses.resize( obj_vs.size(), 1.0 );
+    }
+    
+    append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vs, obj_labels, obj_masses );
+}
+
+
 
 // ---------------------------------------------------------
 
@@ -963,6 +1032,24 @@ void ScriptInit::parse_script( const char* filename )
         
     }
 
+    {
+        unsigned int obj_n = 0;
+        char obj_name[256];
+        snprintf( obj_name, 256, "labeled_objfile%d", obj_n );
+        const ParseTree* obj_branch = tree.get_branch( obj_name );
+        
+        while ( obj_branch != NULL )
+        {
+            printf("Found labeled obj branch\n");
+            parse_labeled_objfile( *obj_branch );
+            obj_branch = NULL;
+            ++obj_n;
+            snprintf( obj_name, 256, "labeled_objfile%d", obj_n );
+            obj_branch = tree.get_branch( obj_name );
+        }
+        
+    }
+    
     
     //
     // SurfTrack parameters
