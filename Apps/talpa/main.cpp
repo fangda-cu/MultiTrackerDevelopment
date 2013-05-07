@@ -112,6 +112,7 @@ namespace ElTopo {
 
 char g_output_path[256];  // Where to write output data
 char g_base_output_path[256];  // Where to write output data
+int g_resume_frame;
 
 //extern unsigned int g_fluid_render_type;
 
@@ -163,7 +164,7 @@ namespace {
     void advance_sim( double dt );
     void advance_frame();
     void run_simulation( );
-    void set_up_output_path( );
+    void set_up_output_path( bool resuming );
     
 #ifdef USE_GUI
     enum { RAY_HIT_VERTEX, RAY_HIT_EDGE, RAY_HIT_TRIANGLE, RAY_HIT_NOTHING };
@@ -181,7 +182,7 @@ namespace {
     void init_gui( const ScriptInit& script_init );
 #endif
     
-    void init_simulation( char *script_filename );
+    void init_simulation( char *script_filename, bool resuming );
     
     // ---------------------------------------------------------
     // Variables local to this file
@@ -600,9 +601,13 @@ namespace {
             // file output
             //
             
-           /* char binary_filename[256];
-            sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   */
+            char binary_filename[256];
+            sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );  
+            std::vector<double> scalar_masses(g_surf->m_masses.size());
+            for(size_t i = 0; i < scalar_masses.size(); ++i)
+               scalar_masses[i] = g_surf->m_masses[i][0];
+
+            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename ); 
             
             char stats_filename[256];
             sprintf( stats_filename, "%s/aaa-stats.txt", g_output_path );      
@@ -755,7 +760,7 @@ namespace {
             strcpy( filename, sisc_script_directory );
             strcat( filename, sisc_script_filenames[i].c_str() );
             
-            init_simulation( filename );
+            init_simulation( filename, false );
             
             g_stats.clear();
             
@@ -1092,16 +1097,22 @@ namespace {
             std::cout << "running: " << (sim->m_running ? "yes" : "no") << std::endl;
         }
         
-        //   if (key == 'h')
-        //   {
-        //      pthread_mutex_lock( &surf_mutex );   
-        //      char v_binary_filename[256];
-        //      sprintf( v_binary_filename, "%s/pre-improve.bin", g_output_path );      
-        //      read_binary_file( g_surf->m_mesh, , g_surf->m_masses, sim->m_curr_t, v_binary_filename );   
-        //      g_surf->m_newpositions.resize( g_surf->get_num_vertices() );      
-        //      g_surf->improve_mesh();
-        //      pthread_mutex_unlock( &surf_mutex );   
-        //   }   
+         //if (key == 'h')
+         //{
+         //   pthread_mutex_lock( &surf_mutex );   
+         //   char v_binary_filename[256];
+         //   sprintf( v_binary_filename, "%s/pre-improve.bin", g_output_path );      
+         //   std::vector<double> scalar_masses;
+         //   std::vector<Vec3d> positions;
+         //   read_binary_file( g_surf->m_mesh, positions, scalar_masses, sim->m_curr_t, v_binary_filename );   
+         //   for(size_t i = 0; i < g_surf->m_masses.size(); ++i){
+         //      g_surf->m_masses[i] = Vec3d(scalar_masses[i],scalar_masses[i],scalar_masses[i]);
+         //   }
+         //   g_surf->pm_positions = positions;
+         //   g_surf->pm_newpositions = positions;      
+         //   //g_surf->improve_mesh();
+         //   pthread_mutex_unlock( &surf_mutex );   
+         //}   
         
         
         if ( key == 'Z' )
@@ -1109,7 +1120,6 @@ namespace {
             run_all_sisc_examples( "./sisc-scripts/" );
         }
         
-        /* //I have disabled this because I kept hitting it by accident and crashing my code - Christopher, May 2, 2013
         if ( key == 'c' )
         {
             std::cout << "loading meshes" << std::endl;
@@ -1160,7 +1170,7 @@ namespace {
             double actual_dt;
             g_surf->integrate( dt, actual_dt );      
         }
-        */
+        
                 
         timer_advance_frame(0);
         
@@ -1550,7 +1560,7 @@ namespace {
     
     // ---------------------------------------------------------
     
-    void set_up_output_path( )
+    void set_up_output_path( bool resuming )
     {
         
         DIR *dp;
@@ -1583,8 +1593,15 @@ namespace {
         {
             std::cout << "Couldn't open the specified output directory" << std::endl;
         }
-        
-        sprintf( g_output_path, "%s/run%04d", g_output_path, max_dir + 1 );
+
+        if(!resuming) {
+           //use the next number
+           sprintf( g_output_path, "%s/run%04d", g_output_path, max_dir + 1 );
+        }
+        else {
+           //use the current number
+           sprintf( g_output_path, "%s", g_output_path, max_dir );
+        }
         std::cout << "Output path: " << g_output_path << std::endl;
         
         char mkdir_command[1024];
@@ -1605,7 +1622,7 @@ namespace {
     ///
     // ---------------------------------------------------------
     
-    void init_simulation( char *script_filename )
+    void init_simulation( char *script_filename, bool resuming )
     {
         
         SurfTrackInitializationParameters init_params;
@@ -1617,17 +1634,22 @@ namespace {
         
         ScriptInit script_init;
         script_init.parse_script( script_filename );
-        
-        if ( script_init.output_path_is_relative )
-        {
-           std::cout << "Base path: " << g_base_output_path << std::endl;
-           std::cout << "Relative path: " << script_init.output_path.c_str() << std::endl;
 
-            snprintf( g_output_path, 256, "%s/%s", g_base_output_path, script_init.output_path.c_str() );
+        if(!resuming) {
+           if ( script_init.output_path_is_relative )
+           {
+              std::cout << "Base path: " << g_base_output_path << std::endl;
+              std::cout << "Relative path: " << script_init.output_path.c_str() << std::endl;
+
+               snprintf( g_output_path, 256, "%s/%s", g_base_output_path, script_init.output_path.c_str() );
+           }
+           else
+           {
+               snprintf( g_output_path, 256, "%s", script_init.output_path.c_str() );
+           }
         }
-        else
-        {
-            snprintf( g_output_path, 256, "%s", script_init.output_path.c_str() );
+        else {
+           snprintf( g_output_path, 256, "%s", g_base_output_path );
         }
         
         region_count = script_init.region_count;
@@ -1657,17 +1679,47 @@ namespace {
             
             frame_stepper->frame_count = curr_frame;
         }
+
+        if (resuming) {
+           //figure out the time to start from
+           frame_stepper->frame_count = g_resume_frame;
+           sim->m_curr_t = script_init.frame_dt * g_resume_frame;
+           std::cout << "Resuming from:\n";
+           std::cout << "curr_t: " << sim->m_curr_t << std::endl;
+           std::cout << "curr_frame: " << g_resume_frame << std::endl; 
+
+        }
         
         
         // init SurfTrack
-        //std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
+
         std::vector<Vec3d> vector_masses(script_init.masses.size());
         for(size_t i = 0; i < script_init.masses.size(); ++i)
            vector_masses[i] = Vec3d(script_init.masses[i],script_init.masses[i],script_init.masses[i]);
 
-        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
         
-        std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
+        if(!resuming) {
+           g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
+        }
+        else {
+           char v_binary_filename[256];
+           sprintf( v_binary_filename, "%s/frame%04d.bin", g_output_path, g_resume_frame); 
+           std::cout << "Resume filename: " << v_binary_filename << std::endl;
+           std::vector<double> scalar_masses;
+           std::vector<Vec3d> positions;
+           NonDestructiveTriMesh mesh;
+           std::vector<Vec2i> labels;
+           std::vector<Vec3d> vector_masses;
+           read_binary_file( mesh, positions, scalar_masses, sim->m_curr_t, v_binary_filename );   
+           for(size_t i = 0; i < scalar_masses.size(); ++i){
+              vector_masses.push_back(Vec3d(scalar_masses[i],scalar_masses[i],scalar_masses[i]));
+           }
+
+           g_surf = new SurfTrack(positions, mesh.m_tris, mesh.m_triangle_labels, vector_masses, script_init.surf_track_params);
+           
+        }
+
+        std::vector<Vec3d> remesh_vels(g_surf->pm_positions.size(), Vec3d(0,0,0));
         g_surf->set_all_remesh_velocities(remesh_vels);
 
         g_surf->defrag_mesh();
@@ -1721,15 +1773,28 @@ int main(int argc, char **argv)
     }
     
     // set path for outputting obj, bin files, etc.
-    
-    if ( argc > 2 )
+    bool resuming = false;
+    if ( argc == 2 )
     {
-        strcpy( g_base_output_path, argv[2] );
+       strcpy( g_base_output_path, "./" );
+       std::cout << "Using current folder as base output folder.\n";
     }
-    else
+    else if(argc == 3) {
+       
+       strcpy( g_base_output_path, argv[2] );
+       std::cout << "Using " << g_base_output_path << " as output folder.\n";
+    }
+    else if(argc == 4) {
+        strcpy( g_base_output_path, argv[2] );
+        char start_frame[256]; //what frame to start at if we are resuming
+        strcpy( start_frame, argv[3]);
+        g_resume_frame = atoi(start_frame);
+        std::cout << "Attempting resume from frame " << g_resume_frame << std::endl;
+        resuming = true;
+    }
+    else if(argc > 4)
     {
-        // argc == 2
-        strcpy( g_base_output_path, "./" );
+      std::cout << "Unrecognized command-line arguments.\n";
     }
     
 #ifdef USE_GUI
@@ -1748,14 +1813,14 @@ int main(int argc, char **argv)
     // Initialize the simulation using the script file
     //
     
-    init_simulation( argv[1] );
+    init_simulation( argv[1], resuming );
     
     
     //
     // Make a new directory for output
     //
     
-    set_up_output_path();
+    set_up_output_path(resuming);
     
     //
     // Make a copy of the input script in the output directory
@@ -1780,8 +1845,12 @@ int main(int argc, char **argv)
     // write frame 0
     char binary_filename[256];
     sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-    //TODO Fix this.
-    //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+
+    std::vector<double> scalar_masses(g_surf->m_masses.size());
+    for(size_t i = 0; i < scalar_masses.size(); ++i)
+       scalar_masses[i] = g_surf->m_masses[i][0];
+
+    write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
     
     driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
     

@@ -895,7 +895,6 @@ void ScriptInit::parse_script( const char* filename )
         
         std::vector<Vec3d> input_vertices;
         std::vector<double> in_masses;
-        
         read_binary_file( trimesh, input_vertices, in_masses, curr_t, meshpath.c_str() );
         curr_t_specified = true;
         
@@ -922,7 +921,7 @@ void ScriptInit::parse_script( const char* filename )
             }
         }
                 
-        append_mesh( triangles, vertices, labels, masses, trimesh.get_triangles(), input_vertices, in_masses );        
+        append_mesh( triangles, vertices, labels, masses, trimesh.get_triangles(), input_vertices, trimesh.m_triangle_labels, in_masses );        
         
         printf("loaded file %s", meshpath.c_str());
     }

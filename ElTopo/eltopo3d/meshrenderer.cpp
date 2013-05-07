@@ -13,6 +13,7 @@
 
 #include <dynamicsurface.h>
 #include <gluvi.h>
+#include "trianglequality.h"
 
 // ---------------------------------------------------------
 // Member function definitions
@@ -273,6 +274,7 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         glEnd(); 
     }
 
+    
     if ( render_nonmanifold_curve )
     {
        glLineWidth(2);
@@ -336,7 +338,7 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
 
     if ( render_vertex_rank )
     {
-        glPointSize(10);
+        glPointSize(7);
         glBegin(GL_POINTS);
         for ( size_t v = 0; v < xs.size(); ++v )
         {
@@ -348,8 +350,10 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
               glColor3d(0,1,0);
            else if(ranks[v] == 3)
               glColor3d(0,0,1);
+           
+           if(ranks[v] > 1)
+               glVertex3dv( xs[v].v );               
 
-            glVertex3dv( xs[v].v );               
         }
         glEnd();
     }   
