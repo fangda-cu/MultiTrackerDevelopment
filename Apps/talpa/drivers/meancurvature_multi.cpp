@@ -192,5 +192,11 @@ void MeanCurvatureMultiDriver::set_predicted_vertex_positions(const SurfTrack & 
     for (size_t i = 0; i < mesh.nv(); i++)
     {
         predicted_positions[i] = surf.get_position(i) + adaptive_dt * v[i];
+        if (surf.get_position(i)[0] == 0) predicted_positions[i][0] = 0;
+        if (surf.get_position(i)[1] == 0) predicted_positions[i][1] = 0;
+        if (surf.get_position(i)[2] == 0) predicted_positions[i][2] = 0;
+        if (surf.get_position(i)[0] == 1) predicted_positions[i][0] = 1;
+        if (surf.get_position(i)[1] == 1) predicted_positions[i][1] = 1;
+        if (surf.get_position(i)[2] == 1) predicted_positions[i][2] = 1;
     }
 }
