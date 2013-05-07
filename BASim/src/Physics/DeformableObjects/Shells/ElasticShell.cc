@@ -1561,6 +1561,18 @@ ElTopo::Vec3c ElasticShell::generate_collapsed_solid_label(ElTopo::SurfTrack & s
     int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
     int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
     
+    if (!(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]) ||
+        !(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]) ||
+        !(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]) ||
+        !(((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]) ||
+        !(((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]) ||
+        !(((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2]))
+    {
+        std::cout << "labels: " << (bool)label0[0] << (bool)label0[1] << (bool)label0[2] << " " << (bool)label1[0] << (bool)label1[1] << (bool)label1[2] << std::endl;
+        std::cout << "consts: " << constraint0 << " " << constraint1 << std::endl;
+        std::cout << "x0 = " << std::setprecision(15) << x0[0] << " " << x0[1] << " " << x0[2] << " x1 = " << x1[0] << " " << x1[1] << " " << x1[2] << std::endl;
+    }
+    
     assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
     assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
     assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
