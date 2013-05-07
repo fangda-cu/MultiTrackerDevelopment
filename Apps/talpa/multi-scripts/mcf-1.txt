@@ -6,7 +6,7 @@ frame_dt 0.01
 sim_dt 0.01
 end_sim_t 30.0
 
-multiphase_mean_curvature_simulation
+mean_curvature_simulation
 (
    speed 4.0 
 )
@@ -14,8 +14,8 @@ multiphase_mean_curvature_simulation
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.05
-   max_edge_length 0.15
+   min_edge_length 0.25
+   max_edge_length 0.75
    max_volume_change 0.1
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
@@ -37,8 +37,8 @@ labeled_objfile0
 
 camera
 (
-   target [0.0 0.0 0.0]
-   distance 1.5
+   target [0.5 0.5 0.5]
+   distance 2.5
    heading 0.0
    pitch 0.0   
 )
