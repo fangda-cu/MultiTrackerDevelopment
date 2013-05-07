@@ -441,7 +441,7 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
-  static const double WALL_THRESHOLD = 1e-4;
+  static const double WALL_THRESHOLD = 1e-8;
   
   int walls = 0;
   if (pos.x() < 0 + WALL_THRESHOLD)
@@ -1019,7 +1019,7 @@ void DoubleBubbleTest::updateBBWallConstraints()
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
   
-    static const double WALL_THRESHOLD = 1e-4;
+    static const double WALL_THRESHOLD = 1e-8;
 
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
@@ -1817,7 +1817,7 @@ void DoubleBubbleTest::setupScene6()
 //    velocities[*vit] = Vec3d(0, 0, 0);
 //  }
     
-    std::ifstream objfile("/Users/fangda/Researches/BASim/DoubleBubble/mcf_gen/mcf_gen/output.OBJ");
+    std::ifstream objfile("/Users/fangda/Researches/BASim/DoubleBubble/mcf_gen/mcf_gen/500.OBJ");
     std::vector<Vec3d> obj_vs;
     std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
 
