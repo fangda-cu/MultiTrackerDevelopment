@@ -173,7 +173,7 @@ void ShellVolumeForce::update() {
 
 int ShellVolumeForce::onBBWall(const Vec3d & pos) const
 {
-  static const Scalar WALL_THRESHOLD = 1e-4;
+  static const Scalar WALL_THRESHOLD = 1e-8;
   
   int walls = 0;
   if (pos.x() < 0 + WALL_THRESHOLD)
