@@ -944,7 +944,7 @@ void DoubleBubbleTest::AtEachTimestep()
                 
             }
             
-        } else
+        } else if (RENDER_METHOD == 3)
         {
             g_shell_renderer->turnOffAllRegions();
             
