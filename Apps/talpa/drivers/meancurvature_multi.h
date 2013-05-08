@@ -32,12 +32,14 @@
 ///
 // ---------------------------------------------------------
 
-class MeanCurvatureMultiDriver : public MeshDriver
+class MeanCurvatureMultiDriver : public MeshDriver, ElTopo::SurfTrack::SolidVerticesCallback
 {
 public:
     /// Constructor specifying speed of flow and final signed distance field to compare against.
     /// 
     MeanCurvatureMultiDriver(double in_curvature_multiplier);
+    
+    void initialize(ElTopo::SurfTrack & st);
     
     /// Compute MC * normal at a vertex
     ///
@@ -51,6 +53,15 @@ public:
     ///
     double curvature_multiplier;
     
+    // SolidVerticesCallback
+    bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+    bool generate_split_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+    ElTopo::Vec3c generate_collapsed_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1);
+    ElTopo::Vec3c generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1);
+    bool generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower);
+    bool generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b);
+    bool solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e);
+
 };
 
 // ---------------------------------------------------------

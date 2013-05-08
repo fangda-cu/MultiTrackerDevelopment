@@ -48,6 +48,12 @@ MeanCurvatureMultiDriver::MeanCurvatureMultiDriver(double in_curvature_multiplie
 {
 }
 
+void MeanCurvatureMultiDriver::initialize(ElTopo::SurfTrack & st)
+{
+    st.m_solid_vertices_callback = this;
+}
+
+
 // ---------------------------------------------------------
 ///
 /// Compute mean curvature times normal at a vertex and return the sum of weights used (for computing the time step restriction)
@@ -200,3 +206,195 @@ void MeanCurvatureMultiDriver::set_predicted_vertex_positions(const SurfTrack & 
         if (surf.get_position(i)[2] == 1) predicted_positions[i][2] = 1;
     }
 }
+
+
+int onBBWall(const Vec3d & pos)
+{
+    int walls = 0;
+    if (pos[0] == 0) walls |= (1 << 0);
+    if (pos[1] == 0) walls |= (1 << 1);
+    if (pos[2] == 0) walls |= (1 << 2);
+    if (pos[0] == 1) walls |= (1 << 3);
+    if (pos[1] == 1) walls |= (1 << 4);
+    if (pos[2] == 1) walls |= (1 << 5);
+    
+    return walls;
+}
+
+Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints)
+{
+    Vec3d output = input;
+    if (constraints & (1 << 0)) output[0] = 0;
+    if (constraints & (1 << 1)) output[1] = 0;
+    if (constraints & (1 << 2)) output[2] = 0;
+    if (constraints & (1 << 3)) output[0] = 1;
+    if (constraints & (1 << 4)) output[1] = 1;
+    if (constraints & (1 << 5)) output[2] = 1;
+    
+    return output;
+}
+
+bool MeanCurvatureMultiDriver::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
+{
+    ElTopo::Vec3d x0 = st.get_position(v0);
+    ElTopo::Vec3d x1 = st.get_position(v1);
+    
+    int label0 = onBBWall(x0);
+    int label1 = onBBWall(x1);
+    
+    if (label0 == label1)
+    {
+        // on the same wall(s), prefer the one with higher max edge valence
+        size_t maxedgevalence0 = 0;
+        size_t maxedgevalence1 = 0;
+        for (size_t i = 0; i < st.m_mesh.m_vertex_to_edge_map[v0].size(); i++)
+            if (st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v0][i]].size() > maxedgevalence0)
+                maxedgevalence0 = st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v0][i]].size();
+        for (size_t i = 0; i < st.m_mesh.m_vertex_to_edge_map[v1].size(); i++)
+            if (st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v1][i]].size() > maxedgevalence1)
+                maxedgevalence1 = st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v1][i]].size();
+        
+        if (maxedgevalence0 == maxedgevalence1) // same max edge valence, use their midpoint
+            pos = (x0 + x1) / 2;
+        else if (maxedgevalence0 < maxedgevalence1)
+            pos = x1;
+        else
+            pos = x0;
+        
+        return true;
+        
+    } else if ((label0 & ~label1) == 0)
+    {
+        // label0 is a proper subset of label1 (since label0 != label1)
+        pos = x1;
+        
+        return true;
+        
+    } else if ((label1 & ~label0) == 0)
+    {
+        // label1 is a proper subset of label0
+        pos = x0;
+        
+        return true;
+        
+    } else
+    {
+        // label0 and label1 are not subset of each other
+        int newlabel = label0 | label1;
+        assert(label0 != newlabel); // not subset of each other
+        assert(label1 != newlabel);
+        
+        assert(!((label0 & (1 << 0)) != 0 && (label0 & (1 << 3)) != 0)); // can't have conflicting constraints in label0 and label1 already
+        assert(!((label0 & (1 << 1)) != 0 && (label0 & (1 << 4)) != 0));
+        assert(!((label0 & (1 << 2)) != 0 && (label0 & (1 << 5)) != 0));
+        assert(!((label1 & (1 << 0)) != 0 && (label1 & (1 << 3)) != 0));
+        assert(!((label1 & (1 << 1)) != 0 && (label1 & (1 << 4)) != 0));
+        assert(!((label1 & (1 << 2)) != 0 && (label1 & (1 << 5)) != 0));
+        
+        bool conflict = false;
+        if ((newlabel & (1 << 0)) != 0 && (newlabel & (1 << 3)) != 0) conflict = true;
+        if ((newlabel & (1 << 1)) != 0 && (newlabel & (1 << 4)) != 0) conflict = true;
+        if ((newlabel & (1 << 2)) != 0 && (newlabel & (1 << 5)) != 0) conflict = true;
+        
+        if (conflict)
+        {
+            // the two vertices are on opposite walls (conflicting constraints). Can't collapse this edge (which shouldn't have become a collapse candidate in the first place)
+            return false;
+        }
+        
+        pos = (x0 + x1) / 2;
+        pos = enforceBBWallConstraint(pos, newlabel);
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool MeanCurvatureMultiDriver::generate_split_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
+{
+    pos = (st.get_position(v0) + st.get_position(v1)) / 2;
+    
+    return true;
+}
+
+ElTopo::Vec3c MeanCurvatureMultiDriver::generate_collapsed_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1)
+{
+    ElTopo::Vec3d x0 = st.get_position(v0);
+    ElTopo::Vec3d x1 = st.get_position(v1);
+    
+    int constraint0 = onBBWall(x0);
+    int constraint1 = onBBWall(x1);
+    
+    assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
+    assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
+    assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
+    assert(((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]);
+    assert(((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]);
+    assert(((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2]);
+    
+    ElTopo::Vec3c result;  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
+    int result_constraint = (constraint0 | constraint1);
+    result[0] = ((result_constraint & (1 << 0)) || (result_constraint & (1 << 3)));
+    result[1] = ((result_constraint & (1 << 1)) || (result_constraint & (1 << 4)));
+    result[2] = ((result_constraint & (1 << 2)) || (result_constraint & (1 << 5)));
+    
+    return result;
+}
+
+ElTopo::Vec3c MeanCurvatureMultiDriver::generate_split_solid_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, const ElTopo::Vec3c & label0, const ElTopo::Vec3c & label1)
+{
+    ElTopo::Vec3d x0 = st.get_position(v0);
+    ElTopo::Vec3d x1 = st.get_position(v1);
+    
+    int constraint0 = onBBWall(x0);
+    int constraint1 = onBBWall(x1);
+    
+    assert(((constraint0 & (1 << 0)) || (constraint0 & (1 << 3))) == (bool)label0[0]);
+    assert(((constraint0 & (1 << 1)) || (constraint0 & (1 << 4))) == (bool)label0[1]);
+    assert(((constraint0 & (1 << 2)) || (constraint0 & (1 << 5))) == (bool)label0[2]);
+    assert(((constraint1 & (1 << 0)) || (constraint1 & (1 << 3))) == (bool)label1[0]);
+    assert(((constraint1 & (1 << 1)) || (constraint1 & (1 << 4))) == (bool)label1[1]);
+    assert(((constraint1 & (1 << 2)) || (constraint1 & (1 << 5))) == (bool)label1[2]);
+    
+    ElTopo::Vec3c result;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
+    int result_constraint = (constraint0 & constraint1);
+    result[0] = ((result_constraint & (1 << 0)) || (result_constraint & (1 << 3)));
+    result[1] = ((result_constraint & (1 << 1)) || (result_constraint & (1 << 4)));
+    result[2] = ((result_constraint & (1 << 2)) || (result_constraint & (1 << 5)));
+    
+    return result;
+    
+}
+
+bool MeanCurvatureMultiDriver::generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower)
+{
+    int original_constraint = onBBWall(st.get_position(oldv));
+    
+    pos_upper = enforceBBWallConstraint(pos_upper, original_constraint);
+    pos_lower = enforceBBWallConstraint(pos_lower, original_constraint);
+    
+    return true;
+}
+
+bool MeanCurvatureMultiDriver::generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b)
+{
+    int original_constraint = onBBWall(st.get_position(oldv));
+    
+    pos_a = enforceBBWallConstraint(pos_a, original_constraint);
+    pos_b = enforceBBWallConstraint(pos_b, original_constraint);
+    
+    return true;
+}
+
+bool MeanCurvatureMultiDriver::solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e)
+{
+    int constraint0 = onBBWall(st.get_position(st.m_mesh.m_edges[e][0]));
+    int constraint1 = onBBWall(st.get_position(st.m_mesh.m_edges[e][1]));
+    
+    if (constraint0 & constraint1)  // edge is completely inside a wall
+        return true;
+    else
+        return false;
+}
+
