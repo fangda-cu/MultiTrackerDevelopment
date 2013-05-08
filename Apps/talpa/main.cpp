@@ -1937,7 +1937,7 @@ int main(int argc, char **argv)
         std::cout << "    $ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
         std::cout << "  <executable> <scriptfile> <outputbasedirectory> record" << std::endl;
         std::cout << "  <executable> <scriptfile> <outputbasedirectory> playback" << std::endl;
-        std::cout << "  <executable> <scriptfile> <outputbasedirectory> <frameno>" << std::endl;
+        std::cout << "  <executable> <scriptfile *in output dir*> <outputbasedirectory> <integer frame number>" << std::endl;
         return 0;
     }
     
