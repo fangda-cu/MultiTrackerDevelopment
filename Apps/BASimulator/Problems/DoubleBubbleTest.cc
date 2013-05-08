@@ -3094,6 +3094,7 @@ std::vector<std::string> explode(const std::string & s, char delim)
 
 void DoubleBubbleTest::setupScene12() 
 {
+  // Zalesak test reference: http://www.frankpetterson.com/publications/sl-pls/sl-pls.pdf
   //vertices
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> undeformed(shellObj);
@@ -3108,7 +3109,8 @@ void DoubleBubbleTest::setupScene12()
   std::vector<Vec3d> obj_vs;
   std::vector<Vec3i> obj_fs;
 //  std::ifstream objfile("assets/doublebubbletest/zalesak.obj");
-  std::ifstream objfile("assets/doublebubbletest/zalesak_multiphase.obj");
+//  std::ifstream objfile("assets/doublebubbletest/zalesak_multiphase.obj");
+  std::ifstream objfile("assets/doublebubbletest/zalesak_disc_multiphase.obj");
   
   // OBJ loader
   while (!objfile.eof())
@@ -3149,7 +3151,7 @@ void DoubleBubbleTest::setupScene12()
   {
     vertList.push_back(shellObj->addVertex());
     velocities[vertList[i]] = Vec3d(0, 0, 0);
-    positions[vertList[i]] = obj_vs[i] / 200 + Vec3d(0.5, 0.5, 0.5);  // scale the model back to be within [0, 1]. note that remeshing resolution should be at least 0.1 to be high enough to preserve the sharp features in this model.
+    positions[vertList[i]] = obj_vs[i] / 10 + Vec3d(0.5, 0.5, 0.75);  // scale the model back to be within [0, 1]. note that remeshing resolution should be at least 0.1 to be high enough to preserve the sharp features in this model.
     undeformed[vertList[i]] = positions[vertList[i]];
   }
   
@@ -3165,12 +3167,9 @@ void DoubleBubbleTest::setupScene12()
   // put a few seeds for each region, and decide face labels using visibility. for all convex regions, one seed for each region is enough.
   // regions unlabeled in the end will be assigned label 0.
   std::vector<std::pair<Vec3d, int> > seeds;
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.4, 0.3), 1)); 
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.2, 0.4, 0.5), 2)); 
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.4, 0.7), 3)); 
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.6, 0.3), 4)); 
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.2, 0.6, 0.5), 5)); 
-  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.6, 0.7), 6));
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.4, 0.5, 0.75), 1));
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.5, 0.88), 2));
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.6, 0.5, 0.75), 3));
   
   // the loops here are unoptimized.
   for (size_t i = 0; i < obj_fs.size(); i++)
@@ -3225,7 +3224,7 @@ void DoubleBubbleTest::setupScene12()
       }
     }
   }
-    
+  
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
   DeformableObject::face_iter fIt;

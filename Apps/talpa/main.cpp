@@ -90,6 +90,8 @@
 #include <gluvi.h> 
 #endif
 
+#include "Recording.h"
+
 using namespace ElTopo;
 
 // ---------------------------------------------------------
@@ -138,6 +140,7 @@ struct hack_camera
 
 
 SurfTrack* g_surf = NULL;        // The dynamic surface
+
 
 
 std::vector<Vec3d> renderable_vertices;
@@ -681,6 +684,13 @@ namespace {
         {
             sim->m_currently_advancing_simulation = true;
             
+            if (g_recording.isRecording())
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.log() << "Begin time step" << std::endl;
+                g_recording.recordSurfTrack(*st);
+            }
+            
             //
             // Advance frame
             //
@@ -696,8 +706,17 @@ namespace {
             
             std::cout << " --------------- end frame " << frame_stepper->get_frame() << " --------------- \n" << std::endl;
             
-            // update frame stepper      
+            // update frame stepper
             frame_stepper->next_frame();
+            
+            g_recording.setCurrentFrame(frame_stepper->get_frame());
+            
+            if (g_recording.isRecording())
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.log() << "End time step" << std::endl;
+                g_recording.recordSurfTrack(*st);
+            }
             
             sim->m_currently_advancing_simulation = false;
             
@@ -964,6 +983,88 @@ namespace {
     
     void keyboard(unsigned char key, int, int )
     {
+        if (g_recording.isPlaybackOn())
+        {
+            unsigned char k = key;
+            if (k == '[')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f - 1);
+                
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st);
+                update_renderable_objects();
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f - 1);
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == ']')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f + 1);
+                
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st);
+                update_renderable_objects();
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f + 1);
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '{')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f - 1);
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f - 1);
+                std::cout << "current time: " << ss.str() << " (frame " << g_recording.currentFrame() << std::endl;
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '}')
+            {
+                int f = g_recording.currentFrame();
+                g_recording.setCurrentFrame(f + 1);
+                
+                std::stringstream ss;
+                ss << frame_stepper->dt() * (f + 1);
+                std::cout << "current time: " << ss.str() << " (frame " << g_recording.currentFrame() << std::endl;
+                status_text_widget->text = ss.str();
+                glutPostRedisplay();
+                
+            } else if (k == '.')
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st, 1);
+                update_renderable_objects();
+
+                glutPostRedisplay();
+            } else if (k == ',')
+            {
+                ElTopo::SurfTrack * st = g_surf;
+                g_recording.loadRecording(*st, -1);
+                update_renderable_objects();
+                
+                glutPostRedisplay();
+            } else if (k == '>')
+            {
+                int f = g_recording.currentStep();
+                g_recording.setCurrentStep(f + 10);
+                std::cout << "current step: " << g_recording.currentStep() << std::endl;
+                glutPostRedisplay();
+            } else if (k == '<')
+            {
+                int f = g_recording.currentStep();
+                g_recording.setCurrentStep(f - 10);
+                std::cout << "current step: " << g_recording.currentStep() << std::endl;
+                glutPostRedisplay();
+            }
+            
+        }
         
         if(key == 'q')
         {
@@ -1754,6 +1855,65 @@ namespace {
         
         
     }
+
+    class MainMeshEventCallback : public SurfTrack::MeshEventCallback
+    {
+    public:
+        void collapse(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "collapse---" << std::endl;
+            g_recording.log() << "Collapse edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void split(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "split---" << std::endl;
+            g_recording.log() << "Split edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void flip(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "flip---" << std::endl;
+            g_recording.log() << "Flip edge " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void t1(const ElTopo::SurfTrack & st, size_t e)
+        {
+//            std::cout << "t1---" << std::endl;
+            g_recording.log() << "T1 pop vertex " << e << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void facesplit(const ElTopo::SurfTrack & st, size_t f)
+        {
+//            std::cout << "face split---" << std::endl;
+            g_recording.log() << "Split face " << f << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1)
+        {
+//            std::cout << "snap---" << std::endl;
+            g_recording.log() << "Snap vertex " << v0 << " to vertex " << v1 << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        void smoothing(const ElTopo::SurfTrack & st)
+        {
+//            std::cout << "smooth---" << std::endl;
+            g_recording.log() << "Null space smoothing " << std::endl;
+            g_recording.recordSurfTrack(st);
+        }
+        
+        std::ostream & log()
+        {
+            return g_recording.log();
+        }
+    };
+    
     
 }  // unnamed namespace
 
@@ -1768,12 +1928,16 @@ int main(int argc, char **argv)
     
     std::cout << "Talpa: Demo applications of El Topo" << std::endl;
     std::cout << "-----------------------------------" << std::endl << std::endl;
-    
-    if( argc < 2 )
+
+    if ( argc < 2 )
     {
-        std::cout << "Usage: <executable> <scriptfile> <outputbasedirectory>" << std::endl;
-        std::cout << "e.g.: " << std::endl;
-        std::cout << "$ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
+        std::cout << "Usage: " << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory>" << std::endl;
+        std::cout << "    e.g.: " << std::endl;
+        std::cout << "    $ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory> record" << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory> playback" << std::endl;
+        std::cout << "  <executable> <scriptfile> <outputbasedirectory> <frameno>" << std::endl;
         return 0;
     }
     
@@ -1785,22 +1949,39 @@ int main(int argc, char **argv)
        std::cout << "Using current folder as base output folder.\n";
     }
     else if(argc == 3) {
-       
        strcpy( g_base_output_path, argv[2] );
        std::cout << "Using " << g_base_output_path << " as output folder.\n";
     }
     else if(argc == 4) {
-        strcpy( g_base_output_path, argv[2] );
-        char start_frame[256]; //what frame to start at if we are resuming
-        strcpy( start_frame, argv[3]);
-        g_resume_frame = atoi(start_frame);
-        std::cout << "Attempting resume from frame " << g_resume_frame << std::endl;
-        resuming = true;
+       strcpy( g_base_output_path, argv[2] );
+       std::cout << "Using " << g_base_output_path << " as output folder.\n";
+
+       std::string command(argv[3]);
+       if (command == "record")
+       {
+          std::cout << "Starting in 'record' mode.\n";
+          g_recording.turnOnRecording();
+          g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+       } 
+       else if (command == "playback")
+       {
+          std::cout << "Starting in 'playback' mode.\n";
+          g_recording.turnOnPlayback();
+          g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+       }
+       else {
+          char start_frame[256]; //what frame to start at if we are resuming
+          strcpy( start_frame, argv[3]);
+          g_resume_frame = atoi(start_frame);
+          std::cout << "Attempting resume from frame " << g_resume_frame << std::endl;
+          resuming = true;
+       }
     }
     else if(argc > 4)
     {
-      std::cout << "Unrecognized command-line arguments.\n";
+      std::cout << "Unrecognized command-line pattern.\n";
     }
+    
     
 #ifdef USE_GUI
     pthread_mutexattr_t mta;
@@ -1857,8 +2038,13 @@ int main(int argc, char **argv)
 
        write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
     
+
        driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
     }
+
+    MainMeshEventCallback mmec;
+    g_surf->m_mesheventcallback = &mmec;
+    
     //
     // Now start
     //
