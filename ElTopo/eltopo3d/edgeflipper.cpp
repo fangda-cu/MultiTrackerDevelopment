@@ -794,7 +794,7 @@ bool EdgeFlipper::flip_pass( )
                Vec3d off2 = pos_vert_0 - pos_3rd_1;
                Vec3d off3 = pos_vert_1 - pos_3rd_1;
                double m2 = mag(off2), m3 = mag(off3);
-               if(m2 == 2 || m3 == 3) continue;
+               if(m2 == 0 || m3 == 0) continue;
                double angle1 = acos( dot(off2, off3) / (m2*m3) );
 
                //if the sum of the opposing angles exceeds 180, then we should flip (according to the Delaunay criterion)
