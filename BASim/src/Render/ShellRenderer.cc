@@ -232,7 +232,7 @@ bool junctionNeighbor(const DeformableObject & mesh, FaceHandle f)
     
 int onBBWall(const Vec3d & pos)
 {
-    static const Scalar WALL_THRESHOLD = 1e-8;
+    static const Scalar WALL_THRESHOLD = 1e-6;
   
     int walls = 0;
     if (pos.x() < 0 + WALL_THRESHOLD)
