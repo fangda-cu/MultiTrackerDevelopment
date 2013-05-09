@@ -43,6 +43,7 @@ namespace Gluvi
 bool write_binary_file( const ElTopo::NonDestructiveTriMesh &mesh,  const std::vector<ElTopo::Vec3d> &x, const std::vector<double> &masses, double curr_t, const char *filename_format, ...);
 bool write_binary_file_with_velocities( const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, const std::vector<double> &masses, const std::vector<ElTopo::Vec3d> &v, double curr_t, const char *filename_format, ...);
 bool write_binary_file_with_newpositions( const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, const std::vector<double> &masses, const std::vector<ElTopo::Vec3d> &new_positions, double curr_t, const char *filename_format, ...);
+
 bool read_binary_file( ElTopo::NonDestructiveTriMesh &mesh, std::vector<ElTopo::Vec3d> &x, std::vector<double> &masses, double& curr_t, const char *filename_format, ...);
 bool read_binary_file_with_velocities( ElTopo::NonDestructiveTriMesh &mesh, std::vector<ElTopo::Vec3d> &x, std::vector<double> &masses, std::vector<ElTopo::Vec3d> &v, double& curr_t, const char *filename_format, ...);
 bool read_binary_file_with_newpositions( ElTopo::NonDestructiveTriMesh &mesh, std::vector<ElTopo::Vec3d> &x, std::vector<double> &masses, std::vector<ElTopo::Vec3d> &new_positions, double& curr_t, const char *filename_format, ...);

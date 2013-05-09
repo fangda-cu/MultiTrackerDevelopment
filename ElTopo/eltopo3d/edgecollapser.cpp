@@ -399,7 +399,7 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
        for(size_t j = 0; j < triangles_incident_to_edge.size(); ++j) {
           if(triangles_incident_to_edge[j] == moving_triangles[i]) {
              irrelevant_tri = true;
-             continue;
+             break;
           }
        }
 
@@ -999,6 +999,23 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   
   ///////////////////////////////////////////////////////////////////////
   
+  //try to collapse based on small angles
+  size_t vertex_a = m_surf.m_mesh.m_edges[edge_index][0];
+  size_t vertex_b = m_surf.m_mesh.m_edges[edge_index][1];
+  Vec3d a = m_surf.get_position(vertex_a);
+  Vec3d b = m_surf.get_position(vertex_b);
+  for(size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size(); ++i) {
+     size_t tri_id = m_surf.m_mesh.m_edge_to_triangle_map[edge_index][i];
+     Vec3st tri = m_surf.m_mesh.m_tris[tri_id];
+     size_t vertex_c = m_surf.m_mesh.get_third_vertex(edge_index, tri_id);
+     Vec3d c = m_surf.get_position(vertex_c);
+     
+     //The current angle is less than our threshold, so try to collapse
+     double cur_angle = acos( dot( normalized(b-c), normalized(a-c) ) );
+     if(rad2deg(cur_angle) < m_surf.m_min_triangle_angle)
+        return true;
+  }
+
   current_length = m_surf.get_edge_length(edge_index);
   if ( m_use_curvature )
   {

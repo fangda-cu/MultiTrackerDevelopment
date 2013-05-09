@@ -852,7 +852,7 @@ inline const std::vector<Vec2i>& NonDestructiveTriMesh::get_triangle_labels() co
     return m_triangle_labels;
 }
 
-// Return a const reference to the specified triangle
+// Return a const reference to the specified triangle's label
 //
 inline const Vec2i& NonDestructiveTriMesh::get_triangle_label( size_t index ) const
 {

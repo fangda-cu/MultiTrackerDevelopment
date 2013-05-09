@@ -23,7 +23,7 @@ using namespace ElTopo;
 
 bool write_binary_file( const NonDestructiveTriMesh &mesh, 
                        const std::vector<Vec3d> &x,
-                       const std::vector<double> &masses, 
+                       const std::vector<double> &masses,
                        double curr_t, 
                        const char *filename_format, ...)
 {
@@ -59,6 +59,13 @@ bool write_binary_file( const NonDestructiveTriMesh &mesh,
       outfile << tri[0];
       outfile << tri[1];
       outfile << tri[2];      
+   }
+
+   for ( unsigned int t = 0; t < mesh.num_triangles(); ++t )
+   {
+      const Vec2i& label_pair = mesh.get_triangle_label(t);
+      outfile << label_pair[0];
+      outfile << label_pair[1];
    }
    
    outfile.close();
@@ -197,7 +204,7 @@ bool write_binary_file_with_newpositions( const NonDestructiveTriMesh &mesh,
 
 bool read_binary_file( NonDestructiveTriMesh &mesh, 
                       std::vector<Vec3d> &x, 
-                      std::vector<double> &masses, 
+                      std::vector<double> &masses,
                       double& curr_t, 
                       const char *filename_format, ...)
 {
@@ -215,6 +222,7 @@ bool read_binary_file( NonDestructiveTriMesh &mesh,
    unsigned int nverts;
    infile >> nverts;
    x.resize( nverts );
+   std::cout << "Num vertices: " << nverts << std::endl;
    for ( unsigned int i = 0; i < nverts; ++i )
    {
       infile >> x[i][0];
@@ -236,6 +244,15 @@ bool read_binary_file( NonDestructiveTriMesh &mesh,
       infile >> mesh.m_tris[t][0];
       infile >> mesh.m_tris[t][1];
       infile >> mesh.m_tris[t][2];
+   }
+   
+   mesh.m_triangle_labels.resize( ntris );
+   for ( unsigned int t = 0; t < ntris; ++t )
+   {
+      Vec2i label;
+      infile >> label[0];
+      infile >> label[1];
+      mesh.m_triangle_labels[t] = label;
    }
    
    infile.close();

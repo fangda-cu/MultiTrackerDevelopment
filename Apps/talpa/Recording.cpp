@@ -220,7 +220,7 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
         m_if.clear();
     }
     
-    assert(m_current_step < m_step_pos.size());
+    assert(m_current_step < (int)m_step_pos.size());
     //  std::cout << "Loading step " << (m_current_step + next) % m_step_pos.size() << std::endl;
     m_if.seekg(m_step_pos[(m_current_step + m_step_pos.size() + next) % m_step_pos.size()]);
     m_if.read((char *)&m_current_step, sizeof (m_current_step));

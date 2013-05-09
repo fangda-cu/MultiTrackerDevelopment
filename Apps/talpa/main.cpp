@@ -114,6 +114,7 @@ namespace ElTopo {
 
 char g_output_path[256];  // Where to write output data
 char g_base_output_path[256];  // Where to write output data
+int g_resume_frame;
 
 //extern unsigned int g_fluid_render_type;
 
@@ -166,7 +167,7 @@ namespace {
     void advance_sim( double dt );
     void advance_frame();
     void run_simulation( );
-    void set_up_output_path( );
+    void set_up_output_path( bool resuming );
     
 #ifdef USE_GUI
     enum { RAY_HIT_VERTEX, RAY_HIT_EDGE, RAY_HIT_TRIANGLE, RAY_HIT_NOTHING };
@@ -184,7 +185,7 @@ namespace {
     void init_gui( const ScriptInit& script_init );
 #endif
     
-    void init_simulation( char *script_filename );
+    void init_simulation( char *script_filename, bool resuming );
     
     // ---------------------------------------------------------
     // Variables local to this file
@@ -603,9 +604,13 @@ namespace {
             // file output
             //
             
-           /* char binary_filename[256];
-            sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   */
+            char binary_filename[256];
+            sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );  
+            std::vector<double> scalar_masses(g_surf->m_masses.size());
+            for(size_t i = 0; i < scalar_masses.size(); ++i)
+               scalar_masses[i] = g_surf->m_masses[i][0];
+
+            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename ); 
             
             char stats_filename[256];
             sprintf( stats_filename, "%s/aaa-stats.txt", g_output_path );      
@@ -618,19 +623,33 @@ namespace {
         std::cout << " -------------- end sim step -------------- \n" << std::endl;
         
         // dump one OBJ file per region pair
+        std::vector<Vec2i> region_pairs;
         for (int i = 0; i < region_count; i++)
         {
            for (int j = i + 1; j < region_count; j++)
            {
-              std::stringstream name;
-              name << std::setfill('0');
-              name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
-
-              //Disabled for speed.
-              write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
-              //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+              region_pairs.push_back(Vec2i(i,j));
            }
+        }
+        
+        int length = region_pairs.size();
+        //Christopher learns how to use OpenMP. Fun!
+        #pragma omp parallel
+        {
+           #pragma omp for
+           for (int t = 0; t < length; t++)
+           {
+              Vec2i cur_pair = region_pairs[t];
+              int i = cur_pair[0], j = cur_pair[1];
 
+               std::stringstream name;
+               name << std::setfill('0');
+               name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
+
+               //Disabled for speed.
+               write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+               //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+           }
         }
 
         double sim_step_time = get_time_in_seconds() - start_time;
@@ -760,7 +779,7 @@ namespace {
             strcpy( filename, sisc_script_directory );
             strcat( filename, sisc_script_filenames[i].c_str() );
             
-            init_simulation( filename );
+            init_simulation( filename, false );
             
             g_stats.clear();
             
@@ -893,7 +912,7 @@ namespace {
             
             // If first frame, output initial screen cap
             
-            if ( frame_stepper->get_frame() == 0 )
+            if ( frame_stepper->get_frame() == 0 || frame_stepper->get_frame() == g_resume_frame+1)
             {
                 // output initial conditions
                 char sgi_filename[256];
@@ -1140,8 +1159,12 @@ namespace {
             pthread_mutex_lock( &surf_mutex );   
             char binary_filename[256];
             sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            //TODO Fix this to support Fang's new vector masses.
-            //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+            
+            std::vector<double> masses(g_surf->m_masses.size());
+            for(size_t i = 0; i< g_surf->m_masses.size(); ++i)
+               masses[i] = g_surf->m_masses[i][0];
+
+            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), masses, sim->m_curr_t, binary_filename );   
             std::cout << "binary file written" << std::endl;      
             pthread_mutex_unlock( &surf_mutex );   
         }
@@ -1179,16 +1202,22 @@ namespace {
             std::cout << "running: " << (sim->m_running ? "yes" : "no") << std::endl;
         }
         
-        //   if (key == 'h')
-        //   {
-        //      pthread_mutex_lock( &surf_mutex );   
-        //      char v_binary_filename[256];
-        //      sprintf( v_binary_filename, "%s/pre-improve.bin", g_output_path );      
-        //      read_binary_file( g_surf->m_mesh, , g_surf->m_masses, sim->m_curr_t, v_binary_filename );   
-        //      g_surf->m_newpositions.resize( g_surf->get_num_vertices() );      
-        //      g_surf->improve_mesh();
-        //      pthread_mutex_unlock( &surf_mutex );   
-        //   }   
+         //if (key == 'h')
+         //{
+         //   pthread_mutex_lock( &surf_mutex );   
+         //   char v_binary_filename[256];
+         //   sprintf( v_binary_filename, "%s/pre-improve.bin", g_output_path );      
+         //   std::vector<double> scalar_masses;
+         //   std::vector<Vec3d> positions;
+         //   read_binary_file( g_surf->m_mesh, positions, scalar_masses, sim->m_curr_t, v_binary_filename );   
+         //   for(size_t i = 0; i < g_surf->m_masses.size(); ++i){
+         //      g_surf->m_masses[i] = Vec3d(scalar_masses[i],scalar_masses[i],scalar_masses[i]);
+         //   }
+         //   g_surf->pm_positions = positions;
+         //   g_surf->pm_newpositions = positions;      
+         //   //g_surf->improve_mesh();
+         //   pthread_mutex_unlock( &surf_mutex );   
+         //}   
         
         
         if ( key == 'Z' )
@@ -1196,56 +1225,57 @@ namespace {
             run_all_sisc_examples( "./sisc-scripts/" );
         }
         
-        if ( key == 'c' )
-        {
-            std::cout << "loading meshes" << std::endl;
-            
-            //g_surf->m_positions.clear();
-            
-            double dt;
-            std::vector<Vec3d> xs;
-            //TODO Fix this
-            //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
-            g_surf->set_all_positions(xs);
-            
-            NonDestructiveTriMesh temp_mesh;
-            std::vector<Vec3d> new_xs;
-            //TODO Fix this
-            //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
-            g_surf->set_all_newpositions(new_xs);
-            
-            // TEMP: unique-ify
-            std::vector< Vec3st > tris;
-            for ( unsigned int i = 0; i < temp_mesh.get_triangles().size(); ++i )
-            {
-                bool found = false;
-                for ( unsigned int j = 0; j < tris.size(); ++j )
-                {
-                    if ( tris[j] == temp_mesh.get_triangle(i) )
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if ( !found )
-                {
-                    tris.push_back( temp_mesh.get_triangle(i) );
-                }
-            }
-            
-            if ( dt == 0.0 ) { dt = 1.0; }
-            
-            std::vector<Vec2i> dummy_labels(tris.size(), Vec2i(0,1));
-            g_surf->m_mesh.clear();
-            g_surf->m_mesh.replace_all_triangles( tris, dummy_labels );
-            g_surf->defrag_mesh();      
-            
-            std::cout << "integrating" << std::endl;
-            
-            double actual_dt;
-            g_surf->integrate( dt, actual_dt );      
-        }
+        //if ( key == 'c' )
+        //{
+        //    std::cout << "loading meshes" << std::endl;
+        //    
+        //    //g_surf->m_positions.clear();
+        //    
+        //    double dt;
+        //    std::vector<Vec3d> xs;
+        //    //TODO Fix this
+        //    //read_binary_file( g_surf->m_mesh, xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/current.bin" );
+        //    g_surf->set_all_positions(xs);
+        //    
+        //    NonDestructiveTriMesh temp_mesh;
+        //    std::vector<Vec3d> new_xs;
+        //    //TODO Fix this
+        //    //read_binary_file( temp_mesh, new_xs, g_surf->m_masses, dt, "/Users/tyson/scratch/tbrochu/collisiondebug/predicted.bin" );
+        //    g_surf->set_all_newpositions(new_xs);
+        //    
+        //    // TEMP: unique-ify
+        //    std::vector< Vec3st > tris;
+        //    for ( unsigned int i = 0; i < temp_mesh.get_triangles().size(); ++i )
+        //    {
+        //        bool found = false;
+        //        for ( unsigned int j = 0; j < tris.size(); ++j )
+        //        {
+        //            if ( tris[j] == temp_mesh.get_triangle(i) )
+        //            {
+        //                found = true;
+        //                break;
+        //            }
+        //        }
+        //        
+        //        if ( !found )
+        //        {
+        //            tris.push_back( temp_mesh.get_triangle(i) );
+        //        }
+        //    }
+        //    
+        //    if ( dt == 0.0 ) { dt = 1.0; }
+        //    
+        //    std::vector<Vec2i> dummy_labels(tris.size(), Vec2i(0,1));
+        //    g_surf->m_mesh.clear();
+        //    g_surf->m_mesh.replace_all_triangles( tris, dummy_labels );
+        //    g_surf->defrag_mesh();      
+        //    
+        //    std::cout << "integrating" << std::endl;
+        //    
+        //    double actual_dt;
+        //    g_surf->integrate( dt, actual_dt );      
+        //}
+        
                 
         timer_advance_frame(0);
         
@@ -1635,7 +1665,7 @@ namespace {
     
     // ---------------------------------------------------------
     
-    void set_up_output_path( )
+    void set_up_output_path( bool resuming )
     {
         
         DIR *dp;
@@ -1668,8 +1698,15 @@ namespace {
         {
             std::cout << "Couldn't open the specified output directory" << std::endl;
         }
-        
-        sprintf( g_output_path, "%s/run%04d", g_output_path, max_dir + 1 );
+
+        if(!resuming) {
+           //use the next number
+           sprintf( g_output_path, "%s/run%04d", g_output_path, max_dir + 1 );
+        }
+        else {
+           //use the current number
+           sprintf( g_output_path, "%s", g_output_path, max_dir );
+        }
         std::cout << "Output path: " << g_output_path << std::endl;
         
         char mkdir_command[1024];
@@ -1690,7 +1727,7 @@ namespace {
     ///
     // ---------------------------------------------------------
     
-    void init_simulation( char *script_filename )
+    void init_simulation( char *script_filename, bool resuming )
     {
         
         SurfTrackInitializationParameters init_params;
@@ -1702,17 +1739,22 @@ namespace {
         
         ScriptInit script_init;
         script_init.parse_script( script_filename );
-        
-        if ( script_init.output_path_is_relative )
-        {
-           std::cout << "Base path: " << g_base_output_path << std::endl;
-           std::cout << "Relative path: " << script_init.output_path.c_str() << std::endl;
 
-            snprintf( g_output_path, 256, "%s/%s", g_base_output_path, script_init.output_path.c_str() );
+        if(!resuming) {
+           if ( script_init.output_path_is_relative )
+           {
+              std::cout << "Base path: " << g_base_output_path << std::endl;
+              std::cout << "Relative path: " << script_init.output_path.c_str() << std::endl;
+
+               snprintf( g_output_path, 256, "%s/%s", g_base_output_path, script_init.output_path.c_str() );
+           }
+           else
+           {
+               snprintf( g_output_path, 256, "%s", script_init.output_path.c_str() );
+           }
         }
-        else
-        {
-            snprintf( g_output_path, 256, "%s", script_init.output_path.c_str() );
+        else {
+           snprintf( g_output_path, 256, "%s", g_base_output_path );
         }
         
         region_count = script_init.region_count;
@@ -1742,17 +1784,48 @@ namespace {
             
             frame_stepper->frame_count = curr_frame;
         }
+
+        if (resuming) {
+           //figure out the time to start from
+           frame_stepper->frame_count = g_resume_frame;
+           sim->m_curr_t = script_init.frame_dt * g_resume_frame;
+           frame_stepper->next_frame();
+           std::cout << "Resuming from:\n";
+           std::cout << "curr_t: " << sim->m_curr_t << std::endl;
+           std::cout << "curr_frame: " << g_resume_frame << std::endl; 
+
+        }
         
         
         // init SurfTrack
-        //std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
+
         std::vector<Vec3d> vector_masses(script_init.masses.size());
         for(size_t i = 0; i < script_init.masses.size(); ++i)
            vector_masses[i] = Vec3d(script_init.masses[i],script_init.masses[i],script_init.masses[i]);
 
-        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
         
-        std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
+        if(!resuming) {
+           g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, vector_masses, script_init.surf_track_params );   
+        }
+        else {
+           char v_binary_filename[256];
+           sprintf( v_binary_filename, "%s/frame%04d.bin", g_output_path, g_resume_frame); 
+           std::cout << "Resume filename: " << v_binary_filename << std::endl;
+           std::vector<double> scalar_masses;
+           std::vector<Vec3d> positions;
+           NonDestructiveTriMesh mesh;
+           std::vector<Vec2i> labels;
+           std::vector<Vec3d> vector_masses;
+           read_binary_file( mesh, positions, scalar_masses, sim->m_curr_t, v_binary_filename );   
+           for(size_t i = 0; i < scalar_masses.size(); ++i){
+              vector_masses.push_back(Vec3d(scalar_masses[i],scalar_masses[i],scalar_masses[i]));
+           }
+
+           g_surf = new SurfTrack(positions, mesh.m_tris, mesh.m_triangle_labels, vector_masses, script_init.surf_track_params);
+           
+        }
+
+        std::vector<Vec3d> remesh_vels(g_surf->pm_positions.size(), Vec3d(0,0,0));
         g_surf->set_all_remesh_velocities(remesh_vels);
 
         g_surf->defrag_mesh();
@@ -1864,39 +1937,51 @@ int main(int argc, char **argv)
         std::cout << "    $ ./talpa_release curlnoise-parameters.txt /var/tmp/" << std::endl;
         std::cout << "  <executable> <scriptfile> <outputbasedirectory> record" << std::endl;
         std::cout << "  <executable> <scriptfile> <outputbasedirectory> playback" << std::endl;
+        std::cout << "  <executable> <scriptfile *in output dir*> <outputbasedirectory> <integer frame number>" << std::endl;
         return 0;
     }
     
     // set path for outputting obj, bin files, etc.
-    
-    if ( argc > 2 )
+    bool resuming = false;
+    if ( argc == 2 )
     {
-        strcpy( g_base_output_path, argv[2] );
+       strcpy( g_base_output_path, "./" );
+       std::cout << "Using current folder as base output folder.\n";
     }
-    else
+    else if(argc == 3) {
+       strcpy( g_base_output_path, argv[2] );
+       std::cout << "Using " << g_base_output_path << " as output folder.\n";
+    }
+    else if(argc == 4) {
+       strcpy( g_base_output_path, argv[2] );
+       std::cout << "Using " << g_base_output_path << " as output folder.\n";
+
+       std::string command(argv[3]);
+       if (command == "record")
+       {
+          std::cout << "Starting in 'record' mode.\n";
+          g_recording.turnOnRecording();
+          g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+       } 
+       else if (command == "playback")
+       {
+          std::cout << "Starting in 'playback' mode.\n";
+          g_recording.turnOnPlayback();
+          g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
+       }
+       else {
+          char start_frame[256]; //what frame to start at if we are resuming
+          strcpy( start_frame, argv[3]);
+          g_resume_frame = atoi(start_frame);
+          std::cout << "Attempting resume from frame " << g_resume_frame << std::endl;
+          resuming = true;
+       }
+    }
+    else if(argc > 4)
     {
-        // argc == 2
-        strcpy( g_base_output_path, "./" );
+      std::cout << "Unrecognized command-line pattern.\n";
     }
     
-    //////////////////////
-    // FD 20130418
-    if (argc > 3)
-    {
-        std::string command(argv[3]);
-        if (command == "record")
-        {
-            g_recording.turnOnRecording();
-            g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
-            
-        } else if (command == "playback")
-        {
-            g_recording.turnOnPlayback();
-            g_recording.setRecordingName(std::string(g_base_output_path) + "/rec");
-        }
-    }
-    
-    //////////////////////
     
 #ifdef USE_GUI
     pthread_mutexattr_t mta;
@@ -1914,43 +1999,49 @@ int main(int argc, char **argv)
     // Initialize the simulation using the script file
     //
     
-    init_simulation( argv[1] );
+    init_simulation( argv[1], resuming );
     
     
     //
     // Make a new directory for output
     //
     
-    set_up_output_path();
+    set_up_output_path(resuming);
     
     //
     // Make a copy of the input script in the output directory
     //
+    if(!resuming) {
+       char* script_filename = argv[1];
+       std::ifstream original_file_stream( script_filename );
+       assert( original_file_stream.good() );
     
-    char* script_filename = argv[1];
-    std::ifstream original_file_stream( script_filename );
-    assert( original_file_stream.good() );
+       char script_copy_filename[256];
+       snprintf( script_copy_filename, 256, "%s/aaa-script.txt", g_output_path );
     
-    char script_copy_filename[256];
-    snprintf( script_copy_filename, 256, "%s/aaa-script.txt", g_output_path );
+       char command[1024];
+       sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
+       printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
+       bool ok = system(command) == 0;
+       if(!ok)
+          printf("System call failed\n");
     
-    char command[1024];
-    sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
-    printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
-    bool ok = system(command) == 0;
-    if(!ok)
-       printf("System call failed\n");
+       srand( 1 );
     
-    srand( 1 );
+       // write frame 0
+       char binary_filename[256];
+       sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
+
+       std::vector<double> scalar_masses(g_surf->m_masses.size());
+       for(size_t i = 0; i < scalar_masses.size(); ++i)
+          scalar_masses[i] = g_surf->m_masses[i][0];
+
+       write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
     
-    // write frame 0
-    char binary_filename[256];
-    sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-    //TODO Fix this.
-    //write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
-    
-    driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
-    
+
+       driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
+    }
+
     MainMeshEventCallback mmec;
     g_surf->m_mesheventcallback = &mmec;
     
