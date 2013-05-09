@@ -181,8 +181,8 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
         m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
         m_max_volume_change = initial_parameters.m_max_volume_change * avg_length * avg_length * avg_length;
         
-        m_t1transition.m_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance;
-        m_collapser.m_t1_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance;
+        m_t1transition.m_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance * 2;
+        m_collapser.m_t1_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance * 2;
 
     }
     else
@@ -197,8 +197,8 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
         m_max_edge_length = initial_parameters.m_max_edge_length;
         m_max_volume_change = initial_parameters.m_max_volume_change;  
 
-        m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance;
-        m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance;
+        m_t1transition.m_pull_apart_distance = initial_parameters.m_pull_apart_distance * 2;
+        m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance * 2;
     }
     
 
