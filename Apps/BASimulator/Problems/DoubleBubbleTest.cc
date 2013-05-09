@@ -443,7 +443,7 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
-  static const double WALL_THRESHOLD = 1e-8;
+  static const double WALL_THRESHOLD = 1e-6;
   
   int walls = 0;
   if (pos.x() < 0 + WALL_THRESHOLD)
@@ -1021,7 +1021,7 @@ void DoubleBubbleTest::updateBBWallConstraints()
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
   
-    static const double WALL_THRESHOLD = 1e-8;
+    static const double WALL_THRESHOLD = 1e-6;
 
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
