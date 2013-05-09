@@ -48,7 +48,6 @@ public:
     ///
     EdgeFlipper( SurfTrack& surf, double edge_flip_min_length_change ) :
     m_surf( surf ),
-    m_edge_flip_min_length_change( edge_flip_min_length_change ),
     m_use_Delaunay_criterion(false)
     {}
     
@@ -62,10 +61,6 @@ private:
     /// The mesh this object operates on
     /// 
     SurfTrack& m_surf;
-    
-    /// Minimum edge length improvement in order to flip an edge
-    ///
-    double m_edge_flip_min_length_change;
     
     /// Delaunay criterion vs. valence regularity
     ///
@@ -88,7 +83,7 @@ private:
 
     /// Check whether the edge meets the Delaunay criterion in the warped space (i.e. accounting for anisotropy)
     ///
-    bool is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 );
+    bool is_Delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 );
 
     int edge_count_bordering_region_pair(size_t vertex, Vec2i region_pair);
 

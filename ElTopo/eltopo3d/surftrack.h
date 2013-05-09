@@ -129,10 +129,6 @@ struct SurfTrackInitializationParameters
     /// boolean, whether to allow vertices to move during improvement
     int m_perform_smoothing;
     
-    /// Minimum edge length improvement in order to flip an edge
-    //
-    double m_edge_flip_min_length_change;
-    
     /// Elements within this distance will trigger a merge attempt   
     ///
     double m_merge_proximity_epsilon;
@@ -599,10 +595,6 @@ public:
     /// Collision epsilon to use during mesh improvement operations
     ///
     double m_improve_collision_epsilon;
-    
-    /// Minimum edge length improvement in order to flip an edge
-    ///
-    double m_edge_flip_min_length_change;
     
     /// Maximum volume change allowed when flipping or collapsing an edge
     ///

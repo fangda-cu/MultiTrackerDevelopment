@@ -572,10 +572,10 @@ void EdgeFlipper::getQuadric(size_t vertex, Mat33d& A) {
     }
 }
 
-bool EdgeFlipper::is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 ) 
+bool EdgeFlipper::is_Delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 ) 
 {
     //std::cout << "Checking Delaunay criteria.\n";
-    // Per Jiao et al. 2010, "4.3 Anisotropic edge flipping"
+    // per Jiao et al. 2010, "4.3 Anisotropic edge flipping"
     // section 4.3, Anisotropic edge flipping
 
     //compute the quadric tensors at the four vertices
@@ -840,13 +840,6 @@ bool EdgeFlipper::flip_pass( )
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             }
-            
-            //bool should_flip = !is_delaunay_anisotropic(i, triangle_a, triangle_b, third_vertex_0, third_vertex_1);
-            //
-            //if( should_flip ) {
-            //    //std::cout << "Requesting a flip\n";
-            //    flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
-            //}
             
             flip_occurred |= flipped;            
         }

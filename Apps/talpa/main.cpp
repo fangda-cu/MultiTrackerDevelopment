@@ -284,7 +284,6 @@ namespace {
         options.m_min_curvature_multiplier = g_surf->m_collapser.m_min_curvature_multiplier;
         options.m_max_curvature_multiplier = g_surf->m_splitter.m_max_curvature_multiplier;
         options.m_allow_vertex_movement = g_surf->m_allow_vertex_movement;
-        options.m_edge_flip_min_length_change = g_surf->m_edge_flip_min_length_change;
         options.m_merge_proximity_epsilon = g_surf->m_merge_proximity_epsilon;
         options.m_subdivision_scheme = g_surf->m_subdivision_scheme;
         

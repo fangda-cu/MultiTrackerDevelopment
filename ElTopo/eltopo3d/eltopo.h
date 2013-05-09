@@ -85,9 +85,6 @@ extern "C" {
         /// boolean, whether to perform vertex position smoothing
         int m_perform_smoothing;
         
-        /// Minimum edge length improvement in order to flip an edge
-        double m_edge_flip_min_length_change;
-        
         /// Elements within this distance will trigger a merge attempt   
         double m_merge_proximity_epsilon;
         
