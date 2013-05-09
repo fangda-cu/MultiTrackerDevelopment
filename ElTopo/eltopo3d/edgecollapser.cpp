@@ -828,7 +828,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
-    if ( normal_inversion && !m_surf.m_aggressive_mode  )
+    if ( normal_inversion )//&& (edge_len >= m_t1_pull_apart_distance) )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -840,7 +840,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position);
 
-    if ( bad_angle )
+    if ( bad_angle )//&& edge_len >= m_t1_pull_apart_distance )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
