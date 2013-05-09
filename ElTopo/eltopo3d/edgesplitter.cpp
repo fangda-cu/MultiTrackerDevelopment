@@ -602,7 +602,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   for(size_t i = 0; i < other_verts.size(); ++i)
     other_vert_pos.push_back(m_surf.get_position(other_verts[i]));
 
-  double min_current_angle = 0;
+  double min_current_angle = 2*M_PI;
   for(size_t i = 0; i < incident_tris.size(); ++i) {
      min_current_angle = min( min_current_angle, min_triangle_angle( va, vb, other_vert_pos[i] ) );
   }
