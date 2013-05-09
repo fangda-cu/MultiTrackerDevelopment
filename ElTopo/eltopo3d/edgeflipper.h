@@ -46,7 +46,7 @@ public:
     
     /// Constructor
     ///
-    EdgeFlipper( SurfTrack& surf, double edge_flip_min_length_change ) :
+    EdgeFlipper( SurfTrack& surf ) :
     m_surf( surf ),
     m_use_Delaunay_criterion(false)
     {}
