@@ -752,70 +752,91 @@ bool EdgeFlipper::flip_pass( )
             }
             
             //don't flip if one of the faces is all solid
-            if(m_surf.triangle_is_all_solid(triangle_a) || m_surf.triangle_is_all_solid(triangle_b))
+            if(m_surf.triangle_is_all_solid(triangle_a) || m_surf.triangle_is_all_solid(triangle_b)) {
               continue;
+            }
 
-            // Don't flip edge on a degenerate triangle
+            // Don't flip edge on a degenerate/deleted triangles
+            if ( m_mesh.triangle_is_deleted(triangle_a) || m_mesh.triangle_is_deleted(triangle_b) )
+                continue;
+
             const Vec3st& tri_a = m_mesh.get_triangle( triangle_a );
             const Vec3st& tri_b = m_mesh.get_triangle( triangle_b );
-            
-            if (   tri_a[0] == tri_a[1] 
-                || tri_a[1] == tri_a[2] 
-                || tri_a[2] == tri_a[0] 
-                || tri_b[0] == tri_b[1] 
-                || tri_b[1] == tri_b[2] 
-                || tri_b[2] == tri_b[0] )
-            {
-                continue;
-            }
-            
+
             size_t third_vertex_0 = m_mesh.get_third_vertex( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], tri_a );
             size_t third_vertex_1 = m_mesh.get_third_vertex( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], tri_b );
             
-            if ( third_vertex_0 == third_vertex_1 )
-            {
+            if ( third_vertex_0 == third_vertex_1 ) {
                 continue;
             }
             
-            bool flipped = false;
-            
-           
-            bool need_valence_flip = false;
-            
-            //Here we treat non-manifold vertices as being on boundaries, and boundaries as boundaries.
-            //so their optimal valence is 4 instead of 6.
-            //See e.g. https://code.google.com/p/stacker/source/browse/trunk/GraphicsLibrary/Remeshing/LaplacianRemesher.h
             size_t vert_0 = m_mesh.m_edges[i][0];
             size_t vert_1 = m_mesh.m_edges[i][1];
+
+            bool flipped = false;
+           
+            bool flip_required = false;
+
+            if(m_use_Delaunay_criterion) {
+
+               //compute the angles that oppose the edge
+               Vec3d pos_3rd_0 = m_surf.get_position(third_vertex_0);
+               Vec3d pos_3rd_1 = m_surf.get_position(third_vertex_1);
+               Vec3d pos_vert_0 = m_surf.get_position(vert_0);
+               Vec3d pos_vert_1 = m_surf.get_position(vert_1);
+
+               Vec3d off0 = pos_vert_0 - pos_3rd_0;
+               Vec3d off1 = pos_vert_1 - pos_3rd_0;
+               double m0 = mag(off0), m1 = mag(off1);
+               if(m0 == 0 || m1 == 0) continue;
+               double angle0 = acos( dot(off0,off1) / (m0*m1) );
+
+               Vec3d off2 = pos_vert_0 - pos_3rd_1;
+               Vec3d off3 = pos_vert_1 - pos_3rd_1;
+               double m2 = mag(off2), m3 = mag(off3);
+               if(m2 == 2 || m3 == 3) continue;
+               double angle1 = acos( dot(off2, off3) / (m2*m3) );
+
+               //if the sum of the opposing angles exceeds 180, then we should flip (according to the Delaunay criterion)
+               //Delaunay apparently maximizes the minimum angle in the triangulation
+               flip_required = angle0 + angle1 > M_PI;
+            }
+            else {
+               //Flip based on valences instead.
+               //per e.g. "A Remeshing Approach to Multiresolution Modeling"
+
+               //Here we treat non-manifold vertices as being on boundaries, and boundaries as boundaries.
+               //so their optimal valence is 4 instead of 6.
+               //See e.g. https://code.google.com/p/stacker/source/browse/trunk/GraphicsLibrary/Remeshing/LaplacianRemesher.h
+
             
-            int opt_val_a = m_mesh.is_vertex_nonmanifold(third_vertex_0)?4:(m_mesh.m_is_boundary_vertex[third_vertex_0]?4:6), 
-               opt_val_b = m_mesh.is_vertex_nonmanifold(third_vertex_1)?4:(m_mesh.m_is_boundary_vertex[third_vertex_1]?4:6),
-               opt_val_0 = m_mesh.is_vertex_nonmanifold(vert_0)?4:(m_mesh.m_is_boundary_vertex[vert_0]?4:6), 
-               opt_val_1 = m_mesh.is_vertex_nonmanifold(vert_1)?4:(m_mesh.m_is_boundary_vertex[vert_1]?4:6);
+               int opt_val_a = m_mesh.is_vertex_nonmanifold(third_vertex_0)?4:(m_mesh.m_is_boundary_vertex[third_vertex_0]?4:6), 
+                  opt_val_b = m_mesh.is_vertex_nonmanifold(third_vertex_1)?4:(m_mesh.m_is_boundary_vertex[third_vertex_1]?4:6),
+                  opt_val_0 = m_mesh.is_vertex_nonmanifold(vert_0)?4:(m_mesh.m_is_boundary_vertex[vert_0]?4:6), 
+                  opt_val_1 = m_mesh.is_vertex_nonmanifold(vert_1)?4:(m_mesh.m_is_boundary_vertex[vert_1]?4:6);
 
-            int val_a, val_b, val_0, val_1;
-            Vec2i region_pair = m_mesh.get_triangle_label(triangle_a); //doesn't matter which triangle we consider.
-            val_0 = edge_count_bordering_region_pair(vert_0, region_pair);
-            val_1 = edge_count_bordering_region_pair(vert_1, region_pair);
-            val_a = edge_count_bordering_region_pair(third_vertex_0, region_pair);
-            val_b = edge_count_bordering_region_pair(third_vertex_1, region_pair);
+               int val_a, val_b, val_0, val_1;
+               Vec2i region_pair = m_mesh.get_triangle_label(triangle_a); //doesn't matter which triangle we consider.
+               val_0 = edge_count_bordering_region_pair(vert_0, region_pair);
+               val_1 = edge_count_bordering_region_pair(vert_1, region_pair);
+               val_a = edge_count_bordering_region_pair(third_vertex_0, region_pair);
+               val_b = edge_count_bordering_region_pair(third_vertex_1, region_pair);
 
-            int score_before = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
+               int score_before = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
 
-            //now work out the valences after
-            val_a++; val_b++;
-            val_0--; val_1--;
+               //now work out the valences after
+               val_a++; val_b++;
+               val_0--; val_1--;
 
-            int score_after = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
+               int score_after = sqr(val_a-opt_val_a) + sqr(val_b-opt_val_b)  + sqr(val_0-opt_val_0) + sqr(val_1-opt_val_1);
                
-            need_valence_flip = score_before > score_after;
+               flip_required = score_before > score_after;
             
-            double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
-            double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
+               double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
+               double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
+            }
             
-            //threshold the distance drop to prevent rapid flipping back and forth.
-            //if ( potential_length < current_length - m_edge_flip_min_length_change)
-            if ( need_valence_flip )
+            if ( flip_required )
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             }

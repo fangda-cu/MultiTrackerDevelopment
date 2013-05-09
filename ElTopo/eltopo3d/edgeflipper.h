@@ -48,13 +48,14 @@ public:
     ///
     EdgeFlipper( SurfTrack& surf, double edge_flip_min_length_change ) :
     m_surf( surf ),
-    m_edge_flip_min_length_change( edge_flip_min_length_change )
+    m_edge_flip_min_length_change( edge_flip_min_length_change ),
+    m_use_Delaunay_criterion(false)
     {}
     
     /// Flip all non-delaunay edges
     ///
     bool flip_pass();
-    
+
     
 private:
 
@@ -66,6 +67,10 @@ private:
     ///
     double m_edge_flip_min_length_change;
     
+    /// Delaunay criterion vs. valence regularity
+    ///
+    bool m_use_Delaunay_criterion; 
+
     /// Check whether the new triangles created by flipping an edge introduce any intersection
     ///
     bool flip_introduces_collision(size_t edge_index, 
