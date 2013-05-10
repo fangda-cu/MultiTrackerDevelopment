@@ -930,6 +930,8 @@ void SurfTrack::improve_mesh( )
          
       }
 
+      m_aggressive_mode = false;
+
       assert_no_bad_labels();
       
 
