@@ -633,7 +633,7 @@ namespace {
         
         int length = region_pairs.size();
         
-        //#pragma omp parallel
+        #pragma omp parallel
         {
            #pragma omp for schedule(dynamic, 1)
            for (int t = 0; t < length; t++)
