@@ -797,6 +797,19 @@ bool EdgeFlipper::flip_pass( )
                if(m2 == 0 || m3 == 0) continue;
                double angle1 = acos( dot(off2, off3) / (m2*m3) );
 
+               if(m_surf.m_aggressive_mode) {
+                  //skip any triangles that don't have fairly bad angles.
+                  double min_angle = min_triangle_angle(pos_vert_0, pos_vert_1, pos_3rd_0);
+                  min_angle = min(min_angle, min_triangle_angle(pos_vert_0, pos_vert_1, pos_3rd_1));
+                  if(min_angle > m_surf.m_min_triangle_angle)
+                     continue;
+
+                  double max_angle = max_triangle_angle(pos_vert_0, pos_vert_1, pos_3rd_0);
+                  max_angle = min(max_angle, max_triangle_angle(pos_vert_0, pos_vert_1, pos_3rd_1));
+                  if(max_angle < m_surf.m_max_triangle_angle)
+                     continue;
+               }
+
                //if the sum of the opposing angles exceeds 180, then we should flip (according to the Delaunay criterion)
                //Delaunay apparently maximizes the minimum angle in the triangulation
                flip_required = angle0 + angle1 > M_PI;

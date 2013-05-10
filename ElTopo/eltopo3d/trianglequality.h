@@ -236,6 +236,7 @@ inline double max_triangle_angle( const Vec3d& a, const Vec3d& b, const Vec3d& c
     return max( angle_a, angle_b, angle_c );   
 }
 
+
 // ---------------------------------------------------------
 ///
 /// Compute the aspect ratio of the given triangle

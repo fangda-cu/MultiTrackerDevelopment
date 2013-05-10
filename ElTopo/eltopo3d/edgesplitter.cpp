@@ -371,8 +371,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   for(size_t i = 0; i < incident_tris.size(); ++i) {
     tri_areas.push_back(m_surf.get_triangle_area(incident_tris[i]));
     
-    // Splitting degenerate triangles causes problems
-    if(tri_areas[i] < m_surf.m_min_triangle_area && !ignore_bad_angles) {
+    // Splitting near-degenerate triangles can cause problems - but ignore this if we're being aggressive
+    if(tri_areas[i] < m_surf.m_min_triangle_area && !ignore_bad_angles && !m_surf.m_aggressive_mode) {
       g_stats.add_to_int( "EdgeSplitter:split_edge_incident_to_tiny_triangle", 1 );
       return false;
     }
@@ -587,12 +587,18 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   //now we need to do some final checks, and then proceed.
 
   //Don't allow splitting to create edges shorter than half the minimum.
-  
-  const Vec3d& va = m_surf.get_position(vertex_a);
-  const Vec3d& vb = m_surf.get_position(vertex_b);
-  if(mag(new_vertex_proposed_final_position-va) < 0.5*m_surf.m_min_edge_length ||
-     mag(new_vertex_proposed_final_position-vb) < 0.5*m_surf.m_min_edge_length)
-     return false;
+   const Vec3d& va = m_surf.get_position(vertex_a);
+   const Vec3d& vb = m_surf.get_position(vertex_b);
+   if(!m_surf.m_aggressive_mode) {
+     if(mag(new_vertex_proposed_final_position-va) < 0.5*m_surf.m_min_edge_length ||
+        mag(new_vertex_proposed_final_position-vb) < 0.5*m_surf.m_min_edge_length)
+        return false;
+  }
+  else { //if we're being aggressive, only stop if we're getting really extreme.
+     if(mag(new_vertex_proposed_final_position-va) < m_surf.m_hard_min_edge_len ||
+        mag(new_vertex_proposed_final_position-vb) < m_surf.m_hard_min_edge_len)
+        return false;
+  }
 
   // --------------
 
@@ -816,9 +822,16 @@ bool EdgeSplitter::edge_is_splittable( size_t edge_index )
 
   //if not remeshing boundary edges, skip those too
   if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
-
-  if(m_surf.get_edge_length(edge_index) < m_surf.m_min_edge_length)
-     return false;
+  
+  if(m_surf.m_aggressive_mode) {
+     //only disallow splitting if the edge is smaller than a quite small bound.
+     if(m_surf.get_edge_length(edge_index) < m_surf.m_hard_min_edge_len)
+        return false;
+  }
+  else {
+     if(m_surf.get_edge_length(edge_index) < m_surf.m_min_edge_length)
+        return false;
+  }
 
   return true;
 
@@ -861,27 +874,15 @@ bool EdgeSplitter::large_angle_split_pass()
       
       double angle0 = rad2deg( acos( dot( normalized(edge_point0-opposite_point0), normalized(edge_point1-opposite_point0) ) ) );
     
-
       // if an angle is above the max threshold, split the edge
 
-      if ( angle0 > m_surf.m_large_triangle_angle_to_split )
+      //if aggressive, use hard max, otherwise use soft max
+      if ( !m_surf.m_aggressive_mode && angle0 > m_surf.m_large_triangle_angle_to_split ||
+           angle0 > m_surf.m_max_triangle_angle)
       {
         if (!edge_is_splittable(e))
           continue;
         
-        ///////////////////////////////////////////////////////////////////////
-        // FD 20121229
-        //
-//        // This test ensures the resulting triangles of this split will not have
-//        // an even larger interior angle. The test essentially checks the critical
-//        // condition where the resulting triangle corresponding to the larger one
-//        // of the two edges around the original large angle is similar to the
-//        // original triangle, thus they have the same large interior angle.
-//        
-//        if (mag(edge_point0 - opposite_point0) > 0.7071 * edge_length || mag(edge_point1 - opposite_point0) > 0.7071 * edge_length)
-//          continue;
-        
-        ///////////////////////////////////////////////////////////////////////
         
         ///////////////////////////////////////////////////////////////////////
         // FD 20130106
@@ -928,50 +929,51 @@ bool EdgeSplitter::split_pass()
         std::cout << "---------------------- Edge Splitter: splitting ----------------------" << std::endl;
     }
     
+    // whether a split operation was successful in this pass
+    bool split_occurred = false;
+
     assert( m_max_edge_length != UNINITIALIZED_DOUBLE );
     
     NonDestructiveTriMesh& mesh = m_surf.m_mesh;
     std::vector<SortableEdge> sortable_edges_to_try;
     
-    for( size_t i = 0; i < mesh.m_edges.size(); i++ )
-    {    
-        if ( !edge_is_splittable(i) ) { continue; }
+    //only do length-based splitting in regular mode.
+    if(!m_surf.m_aggressive_mode) {
+       for( size_t i = 0; i < mesh.m_edges.size(); i++ )
+       {    
+           if ( !edge_is_splittable(i) ) { continue; }
         
-        bool should_split = edge_length_needs_split(i);
-        if(should_split)
-            sortable_edges_to_try.push_back( SortableEdge( i, m_surf.get_edge_length(i)) );
-    }
+           bool should_split = edge_length_needs_split(i);
+           if(should_split)
+               sortable_edges_to_try.push_back( SortableEdge( i, m_surf.get_edge_length(i)) );
+       }
     
     
-    //
-    // sort in ascending order, then iterate backwards to go from longest edge to shortest
-    //
+       //
+       // sort in ascending order, then iterate backwards to go from longest edge to shortest
+       //
     
-    // whether a split operation was successful in this pass
+       std::sort( sortable_edges_to_try.begin(), sortable_edges_to_try.end() );
     
-    bool split_occurred = false;
+       std::vector<SortableEdge>::reverse_iterator iter = sortable_edges_to_try.rbegin();
     
-    std::sort( sortable_edges_to_try.begin(), sortable_edges_to_try.end() );
-    
-    std::vector<SortableEdge>::reverse_iterator iter = sortable_edges_to_try.rbegin();
-    
-    for ( ; iter != sortable_edges_to_try.rend(); ++iter )
-    {
-        size_t longest_edge = iter->m_edge_index;
+       for ( ; iter != sortable_edges_to_try.rend(); ++iter )
+       {
+           size_t longest_edge = iter->m_edge_index;
         
-        if ( !edge_is_splittable(longest_edge) ) { continue; }
+           if ( !edge_is_splittable(longest_edge) ) { continue; }
         
-        bool should_split = edge_length_needs_split(longest_edge);
+           bool should_split = edge_length_needs_split(longest_edge);
         
-        if(should_split) {
-           size_t result_vert;
-           bool result = split_edge(longest_edge, result_vert);
+           if(should_split) {
+              size_t result_vert;
+              bool result = split_edge(longest_edge, result_vert);
 
-           split_occurred |= result;
-        }
+              split_occurred |= result;
+           }
 
+       }
     }
-    
     
     // Now split to reduce large angles
     bool large_angle_split_occurred = large_angle_split_pass();

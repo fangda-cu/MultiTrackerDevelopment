@@ -14,6 +14,7 @@
 #include <mat.h>
 #include <nondestructivetrimesh.h>
 #include <surftrack.h>
+#include "trianglequality.h"
 
 // ========================================================
 //  NULL-space smoothing functions
@@ -222,6 +223,12 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     }
     
     const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[v];
+    
+    //if we're being aggressive, instead do naive Laplacian smoothing of the vertex and then return.
+    if(m_surf.m_aggressive_mode) {
+       displacement = get_smoothing_displacement_naive(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids);
+       return;
+    }
     
     //identify vertices that are folded to be near-coplanar. (i.e. fail to be identified by Jiao's quadric)
     bool regularize_folded_feature = false;
@@ -605,6 +612,42 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
 }
 
 
+//Basic laplacian smoothing (area-weighted)
+Vec3d MeshSmoother::get_smoothing_displacement_naive( size_t v, 
+                                               const std::vector<size_t>& triangles,
+                                               const std::vector<double>& triangle_areas, 
+                                               const std::vector<Vec3d>& triangle_normals, 
+                                               const std::vector<Vec3d>& triangle_centroids) const 
+{
+
+   std::vector< Vec3d > N;
+   std::vector< double > W;
+
+   for ( size_t i = 0; i < triangles.size(); ++i )
+   {
+      size_t triangle_index = triangles[i];
+      N.push_back( triangle_normals[triangle_index] );
+      W.push_back( triangle_areas[triangle_index] );
+   }
+
+   Vec3d t(0,0,0);      // displacement
+   double sum_areas = 0;
+
+   for ( size_t i = 0; i < triangles.size(); ++i )
+   {
+      double area = triangle_areas[triangles[i]];
+      sum_areas += area;
+      Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+      t += area * c;
+   }
+
+   t /= sum_areas;
+
+   return t;
+}
+
+
+
 // --------------------------------------------------------
 ///
 /// NULL-space smoothing
@@ -646,13 +689,50 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
     displacements.resize( m_surf.get_num_vertices(), Vec3d(0) );
     
     double max_displacement = 1e-30;
-    for ( size_t i = 0; i < m_surf.get_num_vertices(); ++i )
-    {
-        if ( !m_surf.vertex_is_all_solid(i) )
-        {
-            null_space_smooth_vertex( i, triangle_areas, triangle_normals, triangle_centroids, displacements[i] );
-            max_displacement = max( max_displacement, mag( displacements[i] ) );
-        }
+    if(!m_surf.m_aggressive_mode)  {
+       
+       //in standard mode, smooth all vertices with null space smoothing
+       for ( size_t i = 0; i < m_surf.get_num_vertices(); ++i )
+       {
+          if ( !m_surf.vertex_is_all_solid(i) )
+          {
+             null_space_smooth_vertex( i, triangle_areas, triangle_normals, triangle_centroids, displacements[i] );
+             max_displacement = max( max_displacement, mag( displacements[i] ) );
+          }
+       }
+    }
+    else {
+       
+       //in aggressive mode, identify only the triangles with bad angles, and smooth all of their vertices (with naive Laplacian smoothing)
+       std::vector<bool> smoothed_already(m_surf.get_num_vertices(), false);
+       for(size_t i = 0; i < m_surf.m_mesh.num_triangles(); ++i) {
+          
+          Vec3st tri = m_surf.m_mesh.m_tris[i];
+          Vec3d v0 = m_surf.get_position(tri[0]);
+          Vec3d v1 = m_surf.get_position(tri[1]);
+          Vec3d v2 = m_surf.get_position(tri[2]);
+          Vec3d angles;
+          triangle_angles(v0, v1, v2, angles[0], angles[1], angles[2]);
+          
+          //switch angle modes
+          angles[0] = rad2deg(angles[0]); angles[1] = rad2deg(angles[1]); angles[2] = rad2deg(angles[2]);
+
+          if(angles[0] < m_surf.m_min_triangle_angle || angles[0] > m_surf.m_max_triangle_angle ||
+             angles[1] < m_surf.m_min_triangle_angle || angles[1] > m_surf.m_max_triangle_angle ||
+             angles[2] < m_surf.m_min_triangle_angle || angles[2] > m_surf.m_max_triangle_angle) 
+          {
+             //std::cout << "Bad triangle angles: " << angles << std::endl;
+             for(int j = 0; j < 3; ++j) {
+                size_t v = tri[j];
+                if ( !m_surf.vertex_is_all_solid(v) && !smoothed_already[v])
+                {
+                   null_space_smooth_vertex(v, triangle_areas, triangle_normals, triangle_centroids, displacements[i]);
+                   max_displacement = max( max_displacement, mag( displacements[v] ) );
+                   smoothed_already[v] = true;
+                }
+             }
+          }
+       }
     }
     
     // compute maximum dt

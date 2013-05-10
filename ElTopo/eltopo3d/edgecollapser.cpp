@@ -467,6 +467,8 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    // rank 1, 2, 3 = smooth, ridge, peak
    // if the vertex ranks don't match, keep the higher rank vertex
 
+   //TODO: We should eliminate the use of the term "rank", since we are technically no longer using ranks to determine features
+
    int keep_incident_features = m_surf.vertex_feature_edge_count(vertex_to_keep);
    int delete_incident_features = m_surf.vertex_feature_edge_count(vertex_to_delete);
 
@@ -484,10 +486,16 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
     //  2. both have feature edges, and the edge is a feature, and one of the two vertices has exactly two feature edges
     bool large_threshold = ((keep_rank == 1 || delete_rank == 1) || (((keep_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_keep)) || (delete_rank == 2 && m_surf.vertex_feature_is_smooth_ridge(vertex_to_delete))) && m_surf.edge_is_feature(edge)));
     
+    large_threshold = large_threshold || m_surf.m_aggressive_mode; //if we are in aggressive mode, use the large threshold
+
     double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
     if (!large_threshold && len >= m_t1_pull_apart_distance)
         return false;
         
+    //in aggressive mode, don't split only if the edge is very very small.
+    if(m_surf.m_aggressive_mode && len < m_surf.m_hard_min_edge_len)
+       return false;
+
    // boundary vertices have precedence
    if (keep_vert_is_boundary) keep_rank = 4;
    if (del_vert_is_boundary) delete_rank = 4;
@@ -630,13 +638,20 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   ///////////////////////////////////////////////////////////////////////
   // FD 20130102
   //
-  // do not collapse the edge if the two vertices are moving apart
+  // do not collapse the edge if the two vertices are moving apart (unless we're in aggressive mode)
   
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete) - rel_vel;
   double edge_len = mag(edge_vec);
   
-  if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && collapse_will_produce_irregular_junction(edge))
+  
+  bool causes_irregular = collapse_will_produce_irregular_junction(edge);
+  
+  //disallow irregular configurations from being created if T1's are turned off
+  if(!m_surf.m_t1_transition_enabled && causes_irregular)
+     return false;
+
+  if ((dot(rel_vel, edge_vec) > 0 || edge_len >= m_t1_pull_apart_distance) && causes_irregular && !m_surf.m_aggressive_mode)
   {
     if (m_surf.m_verbose)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
@@ -800,7 +815,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool volume_change = collapse_edge_introduces_volume_change( vertex_to_delete, edge, vertex_new_position );
 
-    if ( volume_change )
+    if ( volume_change && !m_surf.m_aggressive_mode)
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -814,7 +829,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
-    if ( normal_inversion && (edge_len >= m_t1_pull_apart_distance) )
+    if ( normal_inversion && !m_surf.m_aggressive_mode  )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -826,7 +841,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position);
 
-    if ( bad_angle && edge_len >= m_t1_pull_apart_distance )
+    if ( bad_angle )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );

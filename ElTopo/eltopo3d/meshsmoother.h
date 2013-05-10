@@ -82,7 +82,15 @@ private:
       const std::vector<Vec3d>& triangle_normals, 
       const std::vector<Vec3d>& triangle_centroids) const;
 
+   //this version uses dihedral-angle-based feature detection
    Vec3d get_smoothing_displacement_dihedral( size_t v, 
+      const std::vector<size_t>& triangles,
+      const std::vector<double>& triangle_areas, 
+      const std::vector<Vec3d>& triangle_normals, 
+      const std::vector<Vec3d>& triangle_centroids) const;
+
+   //this version does vanilla area-weighted smoothing, rather than tangential/null-space smoothing
+   Vec3d get_smoothing_displacement_naive( size_t v, 
       const std::vector<size_t>& triangles,
       const std::vector<double>& triangle_areas, 
       const std::vector<Vec3d>& triangle_normals, 

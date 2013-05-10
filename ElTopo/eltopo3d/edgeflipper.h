@@ -55,6 +55,9 @@ public:
     ///
     bool flip_pass();
 
+    /// Delaunay criterion vs. valence regularity
+    ///
+    bool m_use_Delaunay_criterion; 
     
 private:
 
@@ -62,9 +65,7 @@ private:
     /// 
     SurfTrack& m_surf;
     
-    /// Delaunay criterion vs. valence regularity
-    ///
-    bool m_use_Delaunay_criterion; 
+    
 
     /// Check whether the new triangles created by flipping an edge introduce any intersection
     ///

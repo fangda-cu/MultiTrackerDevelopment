@@ -544,7 +544,7 @@ public:
     void assert_no_degenerate_triangles();
     
     /// Fire an assert if any triangles get bad enough to produce NaN's or zero/180 degree angles.
-    void assert_no_geometrically_degenerate_triangles();
+    bool any_triangles_with_bad_angles();
 
     //
     // Member variables
@@ -624,6 +624,9 @@ public:
     ///
     double m_max_triangle_angle;
     
+    /// Some weaker bounds to use in aggressive mode.
+    ///
+    double m_hard_min_edge_len, m_hard_max_edge_len;
 
     /// Split triangles with angles greater than this.
     ///
@@ -656,6 +659,10 @@ public:
     /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
     ///
     bool m_remesh_boundaries;
+
+    /// Flag that dictates whether to aggressively pursue good angles for only the worst offenders.
+    /// 
+    bool m_aggressive_mode;
 
     /// boolean, whether to allow vertices to move during collapses (i.e. use points other than the endpoints)
     int m_allow_vertex_movement_during_collapse;
