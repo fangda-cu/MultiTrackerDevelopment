@@ -250,6 +250,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     triangle_labels.reserve(mesh.num_triangles());
 
     const std::vector<Vec3st>& tris = mesh.get_triangles();
+    
     for ( size_t i = 0; i < tris.size(); ++i )
     {
         Vec2i label;
@@ -302,8 +303,8 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     //
     // Primary space displacement - to get normal component
     //
-    
-    for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
+    //#pragma omp parallel for
+    for ( int p = 0; p < (int)surf.get_num_vertices(); ++p )
     {
 
        if(nonmanifold_stationary) {
@@ -409,7 +410,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     double beta = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
     adaptive_dt *= beta;
-    
+
     for(size_t i = 0; i < surf.get_num_vertices(); i++)
     {
         new_positions[i] = surf.get_position(i) + beta * displacements[i];

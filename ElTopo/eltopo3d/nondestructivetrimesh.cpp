@@ -556,8 +556,8 @@ void NonDestructiveTriMesh::verify_orientation( )
 
 size_t NonDestructiveTriMesh::get_edge_index(size_t vtx0, size_t vtx1) const
 {
-    assert( vtx0 < m_vertex_to_edge_map.size() );
-    assert( vtx1 < m_vertex_to_edge_map.size() );
+    //assert( vtx0 < m_vertex_to_edge_map.size() );
+    //assert( vtx1 < m_vertex_to_edge_map.size() );
     
     const std::vector<size_t>& edges0 = m_vertex_to_edge_map[vtx0];
     const std::vector<size_t>& edges1 = m_vertex_to_edge_map[vtx1];
@@ -568,9 +568,6 @@ size_t NonDestructiveTriMesh::get_edge_index(size_t vtx0, size_t vtx1) const
        if(!edge_is_deleted(edge0)) {
           std::vector<size_t>::const_iterator it = std::find(edges1.begin(), edges1.end(), edge0);
           if(it != edges1.end()) {
-             assert( ( m_edges[edge0][0] == vtx0 && m_edges[edge0][1] == vtx1 ) ||
-                ( m_edges[edge0][1] == vtx0 && m_edges[edge0][0] == vtx1 ) );
-
              return edge0;
           }
        }

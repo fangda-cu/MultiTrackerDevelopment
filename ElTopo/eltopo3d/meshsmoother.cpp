@@ -435,8 +435,8 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
       return Vec3d(0,0,0);
 
    //Do an eigen-decomposition to find the medial quadric, a la Jiao
-   static std::vector< Vec3d > N;
-   static std::vector< double > W;
+   std::vector< Vec3d > N;
+   std::vector< double > W;
    N.resize(triangles.size());
    W.resize(triangles.size());
    
@@ -492,6 +492,12 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
       
       //Determine the normal per Jiao's approach 
       //->using the medial quadric (see Identification of C1 and C2 Discontinuities for Surface Meshes in CAD, equation 2)
+
+      //TODO Try other, less expensive normals to see if we can bring down the cost without sacrificing quality.
+      //     Alternately, is there an equivalent normal to Jiao's that doesn't require an eigendecomposition?
+      
+      //TODO Apply smoothing selectively only if the geometry is worse than some threshold? Likewise
+      //     can we adjust the collision detection/response used here to be localized?
 
       Vec3d Jiao_b(0,0,0);
       for ( size_t i = 0; i < N.size(); ++i )
@@ -692,7 +698,8 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
     if(!m_surf.m_aggressive_mode)  {
        
        //in standard mode, smooth all vertices with null space smoothing
-       for ( size_t i = 0; i < m_surf.get_num_vertices(); ++i )
+       //#pragma omp parallel for 
+       for ( int i = 0; i < m_surf.get_num_vertices(); ++i )
        {
           if ( !m_surf.vertex_is_all_solid(i) )
           {

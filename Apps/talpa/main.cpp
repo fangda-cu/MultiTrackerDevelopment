@@ -632,10 +632,10 @@ namespace {
         }
         
         int length = region_pairs.size();
-        //Christopher learns how to use OpenMP. Fun!
-        #pragma omp parallel
+        
+        //#pragma omp parallel
         {
-           #pragma omp for
+           #pragma omp for schedule(dynamic, 1)
            for (int t = 0; t < length; t++)
            {
               Vec2i cur_pair = region_pairs[t];
@@ -650,7 +650,7 @@ namespace {
                //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
            }
         }
-
+        
         double sim_step_time = get_time_in_seconds() - start_time;
         g_stats.add_to_double( "total_sim_time", sim_step_time );
         

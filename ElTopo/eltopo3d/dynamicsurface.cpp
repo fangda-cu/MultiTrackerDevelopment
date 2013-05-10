@@ -1670,12 +1670,13 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     //      check_static_broad_phase_is_up_to_date();
     //   }
     
-   static std::vector<size_t> edge_candidates(50); //keep the same one across iterations to save allocations(?)
-   edge_candidates.clear();
-   
-    for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
+    
+    //#pragma omp parallel for schedule(guided)
+    for ( int i = 0; i < (int)m_mesh.num_triangles(); ++i )
     {
         
+       std::vector<size_t> edge_candidates(50);
+
         bool get_solid_edges = !triangle_is_all_solid(i);
         edge_candidates.clear();
         Vec3d low, high;
@@ -1687,9 +1688,10 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
         //skip deleted triangles
         if(m_mesh.triangle_is_deleted(i)) continue;
         
-        assert( m_mesh.get_edge_index( triangle[0], triangle[1] ) != m_mesh.m_edges.size() );
-        assert( m_mesh.get_edge_index( triangle[1], triangle[2] ) != m_mesh.m_edges.size() );
-        assert( m_mesh.get_edge_index( triangle[2], triangle[0] ) != m_mesh.m_edges.size() );
+        //These assertions are expensive...
+        //assert( m_mesh.get_edge_index( triangle[0], triangle[1] ) != m_mesh.m_edges.size() );
+        //assert( m_mesh.get_edge_index( triangle[1], triangle[2] ) != m_mesh.m_edges.size() );
+        //assert( m_mesh.get_edge_index( triangle[2], triangle[0] ) != m_mesh.m_edges.size() );
         
         for ( size_t j = 0; j < edge_candidates.size(); ++j )
         {
@@ -1725,8 +1727,10 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
                 std::cout << "t0: " << t0 << std::endl;
                 std::cout << "t1: " << t1 << std::endl;
                 std::cout << "t2: " << t2 << std::endl;            
-                
-                intersections.push_back( Intersection( edge_candidates[j], i ) );
+                //#pragma omp critical 
+                {
+                  intersections.push_back( Intersection( edge_candidates[j], i ) );
+                }
             }
             
         }
