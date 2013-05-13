@@ -362,10 +362,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   assert( edge_is_splittable(edge) );
 
   NonDestructiveTriMesh& mesh = m_surf.m_mesh;
-    
-    bool eoi = (!ignore_bad_angles && use_specified_point);
-    std::cout << "eoi 0" << std::endl;
-    
+
   // --------------
   // Collect all the triangles around the edge
 
@@ -381,7 +378,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     }
   }
   
-    std::cout << "eoi 1" << std::endl;
 
   // --------------
   // convert each incident triangle abc into a pair of triangles aec, ebc
@@ -459,7 +455,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      use_average_point = true;
   }
   
-    std::cout << "eoi 2" << std::endl;
 
   // If we have chosen smooth subd, it may introduce intersections or normal flips, 
   // and if so we will fall back to midpoint
@@ -586,8 +581,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 
   }
   
-    std::cout << "eoi 3" << std::endl;
-    
   // --------------
 
   //At this stage, we have chosen the point we want to stick with and it is collision-safe.
@@ -601,8 +594,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      mag(new_vertex_proposed_final_position-vb) < 0.5*m_surf.m_min_edge_length)
      return false;
 
-    std::cout << "eoi 4" << std::endl;
-    
   // --------------
 
   // Check angles on new triangles
@@ -630,8 +621,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
       return false;
     }
   }
-    
-    std::cout << "eoi 5" << std::endl;
 
   double max_current_angle = 0;
   for(size_t i = 0; i < incident_tris.size(); ++i) {
@@ -658,8 +647,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
       return false;
     }
   }
-    
-    std::cout << "eoi 6" << std::endl;
 
   // --------------
   
@@ -756,7 +743,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   //store the resulting vertex as output.
   result_vert = vertex_e;
 
-    std::cout << "eoi 8" << std::endl;
   return true;
 
 }
