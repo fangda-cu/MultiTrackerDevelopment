@@ -823,17 +823,20 @@ bool EdgeSplitter::edge_length_needs_split(size_t edge_index) {
 
 bool EdgeSplitter::edge_is_splittable( size_t edge_index )
 {
-
+    std::cout << "s1";
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
 //  if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
 
+    std::cout << "s2";
   //if not remeshing boundary edges, skip those too
   if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
 
+    std::cout << "s3";
   if(m_surf.get_edge_length(edge_index) < m_surf.m_min_edge_length)
      return false;
 
+    std::cout << "s4";
   return true;
 
 }
