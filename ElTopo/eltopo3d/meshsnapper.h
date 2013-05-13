@@ -50,7 +50,7 @@ public:
     
     /// Mesh snapper constructor.  Takes a SurfTrack object.
     ///
-    MeshSnapper( SurfTrack& surf );
+    MeshSnapper( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, int max_curvature_multiplier );
 
     /// Collapse all proximal vertices
     ///

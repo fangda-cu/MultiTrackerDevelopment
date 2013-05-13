@@ -39,9 +39,9 @@ extern RunStats g_stats;
 ///
 // --------------------------------------------------------
 
-MeshSnapper::MeshSnapper( SurfTrack& surf ) :
+MeshSnapper::MeshSnapper( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, int max_curvature_multiplier ) :
    m_surf( surf ), 
-   m_edgesplitter(surf, false, false, 0), 
+   m_edgesplitter(surf, use_curvature, remesh_boundaries, max_curvature_multiplier),
    m_facesplitter(surf),
    m_edge_threshold(0.3),
    m_face_threshold(0.25)
