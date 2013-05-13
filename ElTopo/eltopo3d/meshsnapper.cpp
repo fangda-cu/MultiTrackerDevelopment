@@ -551,6 +551,9 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    check_point_triangle_proximity(v_pos, 
       t0_pos, t1_pos, t2_pos,
       dist, s0, s1, s2, normal );
+    
+    if (dist < 1e-5)
+        std::cout << "!!!" << std::endl;
 
    //Depending on the barycentric coordinates, either snap to one of the face vertices,
    //split an edge and snap to it, or split the face and snap to it.
@@ -581,7 +584,10 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
          m_surf.m_mesheventcallback->log() << "attempting to snap to e12: " << split_point << std::endl;
         
        if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
+       {
+           std::cout << "edge split fail" << std::endl;
          return false;
+       }
 
        snapping_vertex = result_vertex;
       }
@@ -603,7 +609,10 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
             m_surf.m_mesheventcallback->log() << "attempting to snap to e02: " << split_point << std::endl;
         
          if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
+         {
+             std::cout << "edge split fail" << std::endl;
             return false;
+         }
          
          snapping_vertex = result_vertex;
       }
@@ -619,7 +628,10 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
           m_surf.m_mesheventcallback->log() << "attempting to snap to e01: " << split_point << std::endl;
            
       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
+      {
+          std::cout << "edge split fail" << std::endl;
          return false;
+      }
       
       snapping_vertex = result_vertex;
    }
