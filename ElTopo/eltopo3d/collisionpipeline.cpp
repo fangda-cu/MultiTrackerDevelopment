@@ -215,6 +215,26 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     // friction not implemented
     assert(m_friction_coefficient == 0);
     
+    bool b = true;
+    b &= (v0[0] == v0[0]);
+    b &= (v0[1] == v0[1]);
+    b &= (v0[2] == v0[2]);
+    b &= (v1[0] == v1[0]);
+    b &= (v1[1] == v1[1]);
+    b &= (v1[2] == v1[2]);
+    b &= (v2[0] == v2[0]);
+    b &= (v2[1] == v2[1]);
+    b &= (v2[2] == v2[2]);
+    b &= (v3[0] == v3[0]);
+    b &= (v3[1] == v3[1]);
+    b &= (v3[2] == v3[2]);
+    if (!b)
+    {
+        std::cout << "denom = " << denom << " normal = " << normal << " s = " << s0 << " " << s1 << " " << s2 << " " << s3 << " i = " << i << std::endl;
+        std::cout << "mass = " << m_surface.m_masses[e0] << "; " << m_surface.m_masses[e1] << "; " << m_surface.m_masses[e2] << "; " << m_surface.m_masses[e3] << "; " << std::endl;
+    }
+    assert(b);
+    
     m_surface.set_newposition( e0, m_surface.get_position(e0) + dt * m_surface.m_velocities[e0] );
     m_surface.set_newposition( e1, m_surface.get_position(e1) + dt * m_surface.m_velocities[e1] );
     m_surface.set_newposition( e2, m_surface.get_position(e2) + dt * m_surface.m_velocities[e2] );

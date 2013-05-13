@@ -502,6 +502,16 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   dynamic_surface.set_all_newpositions( vert_new );
     
+    for (size_t i = 0; i < dynamic_surface.m_mesh.nv(); i++)
+    {
+        assert(dynamic_surface.get_position(i)[0] == dynamic_surface.get_position(i)[0]);
+        assert(dynamic_surface.get_position(i)[1] == dynamic_surface.get_position(i)[1]);
+        assert(dynamic_surface.get_position(i)[2] == dynamic_surface.get_position(i)[2]);
+        assert(dynamic_surface.get_newposition(i)[0] == dynamic_surface.get_newposition(i)[0]);
+        assert(dynamic_surface.get_newposition(i)[1] == dynamic_surface.get_newposition(i)[1]);
+        assert(dynamic_surface.get_newposition(i)[2] == dynamic_surface.get_newposition(i)[2]);
+    }
+    
 //    for (size_t i = 0; i < vert_old.size(); i++)
 //        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
 //    for (size_t i = 0; i < vert_new.size(); i++)
