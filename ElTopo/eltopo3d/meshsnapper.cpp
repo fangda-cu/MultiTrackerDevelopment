@@ -583,6 +583,12 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
        if (m_surf.m_mesheventcallback)
          m_surf.m_mesheventcallback->log() << "attempting to snap to e12: " << split_point << std::endl;
         
+          if (!m_edgesplitter.edge_is_splittable(edge_to_split))
+          {
+              if (m_surf.m_mesh.edge_is_deleted(edge_to_split)) std::cout << "edge not splittable: 1" << std::endl;
+              if (!m_edgesplitter.m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_to_split]) std::cout << "edge not splittable: 2" << std::endl;
+              if (m_surf.get_edge_length(edge_to_split) < m_surf.m_min_edge_length) std::cout << "edge not splittable: 3" << std::endl;
+          }
        if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
        {
            std::cout << "edge split fail" << std::endl;
@@ -608,6 +614,12 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
          if (m_surf.m_mesheventcallback)
             m_surf.m_mesheventcallback->log() << "attempting to snap to e02: " << split_point << std::endl;
         
+          if (!m_edgesplitter.edge_is_splittable(edge_to_split))
+          {
+              if (m_surf.m_mesh.edge_is_deleted(edge_to_split)) std::cout << "edge not splittable: 1" << std::endl;
+              if (!m_edgesplitter.m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_to_split]) std::cout << "edge not splittable: 2" << std::endl;
+              if (m_surf.get_edge_length(edge_to_split) < m_surf.m_min_edge_length) std::cout << "edge not splittable: 3" << std::endl;
+          }
          if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
          {
              std::cout << "edge split fail" << std::endl;
@@ -627,6 +639,12 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       if (m_surf.m_mesheventcallback)
           m_surf.m_mesheventcallback->log() << "attempting to snap to e01: " << split_point << std::endl;
            
+       if (!m_edgesplitter.edge_is_splittable(edge_to_split))
+       {
+           if (m_surf.m_mesh.edge_is_deleted(edge_to_split)) std::cout << "edge not splittable: 1" << std::endl;
+           if (!m_edgesplitter.m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_to_split]) std::cout << "edge not splittable: 2" << std::endl;
+           if (m_surf.get_edge_length(edge_to_split) < m_surf.m_min_edge_length) std::cout << "edge not splittable: 3" << std::endl;
+       }
       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
       {
           std::cout << "edge split fail" << std::endl;
