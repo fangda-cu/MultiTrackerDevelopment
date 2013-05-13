@@ -43,6 +43,11 @@ void check_point_edge_proximity(bool update, const Vec3d &x0, const Vec3d &x1, c
         distance=mag(normal);
         normal*=normal_multiplier/(distance+1e-30);
     }
+    
+    if(distance == 0)
+    {
+        std::cout << "x0 = " << x0 << " x1 = " << x1 << " x2 = " << x2 << std::endl;
+    }
 }
 
 void check_point_edge_proximity( bool update, const Vec2d &x0, const Vec2d &x1, const Vec2d &x2,
