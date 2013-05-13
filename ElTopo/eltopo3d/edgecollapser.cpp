@@ -185,8 +185,53 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
         return true;
     }
     
-    return false;
+    // Also check proximity: if any proximity check returns zero distance, this collapse cannot be allowed either.
+    // Because the CCD above is geometrically exact, it sometimes returns different result than the proximity check below (proximity
+    //  distance = 0, but CCD says no collision). If distance is 0, the subsequent proximity handling will produce NaNs, so it is
+    //  problematic too.
+
+    for (size_t i = 0; i < collision_candidates.size(); i++)
+    {
+        const Vec3st & candidate = collision_candidates[i];
+        if (candidate[2] == 1)
+        {
+            // edge-edge
+            Vec2st e0 = m_surf.m_mesh.m_edges[candidate[0]];
+            Vec2st e1 = m_surf.m_mesh.m_edges[candidate[1]];
+            
+            if (e0[0] == e0[1]) continue;
+            if (e1[0] == e1[1]) continue;
+            
+            if (e0[0] != e1[0] && e0[0] != e1[1] && e0[1] != e1[0] && e0[1] != e1[1])
+            {
+                double distance, s0, s2;
+                Vec3d normal;
+                check_edge_edge_proximity(m_surf.get_newposition(e0[0]), m_surf.get_newposition(e0[1]), m_surf.get_newposition(e1[0]), m_surf.get_newposition(e1[1]), distance, s0, s2, normal);
+                if (distance == 0)
+                    return true;
+            }
+            
+        } else
+        {
+            // point-triangle
+            size_t t = candidate[0];
+            const Vec3st & tri = m_surf.m_mesh.get_triangle(t);
+            size_t v = candidate[1];
+            
+            if (tri[0] == tri[1]) continue;
+            
+            if (tri[0] != v && tri[1] != v && tri[2] != v)
+            {
+                double distance, s1, s2, s3;
+                Vec3d normal;
+                check_point_triangle_proximity(m_surf.get_newposition(v), m_surf.get_newposition(tri[0]), m_surf.get_newposition(tri[1]), m_surf.get_newposition(tri[2]), distance, s1, s2, s3, normal);
+                if (distance == 0)
+                    return true;
+            }
+        }
+    }
     
+    return false;    
 }
 
 
