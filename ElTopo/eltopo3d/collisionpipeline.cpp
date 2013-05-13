@@ -492,6 +492,33 @@ void CollisionPipeline::process_proximity_candidates( double dt,
                                                m_surface.get_position(tri[2]),
                                                distance, s1, s2, s3, normal );
                 
+                if (distance == 0)
+                {
+                    double s1, s2, s3;
+                    ElTopo::Vec3d normal;
+                    double rel_disp;
+                    
+                    ElTopo::Vec3d a = m_surface.get_position(tri[0]);
+                    ElTopo::Vec3d b = m_surface.get_position(tri[1]);
+                    ElTopo::Vec3d c = m_surface.get_position(tri[2]);
+                    ElTopo::Vec3d d = m_surface.get_position(v);
+                    bool col = ElTopo::point_triangle_collision(d, d, 0, a, a, 1, b, b, 2, c, c, 3, s1, s2, s3, normal, rel_disp);
+                    std::cout << "collision = " << col << std::endl;
+                    std::cout << "s = " << s1 << " " << s2 << " " << s3 << std::endl;
+                    std::cout << "normal = " << normal << " rel_disp = " << rel_disp << std::endl;
+                    ElTopo::Vec3d x1 = a;
+                    ElTopo::Vec3d x2 = b;
+                    ElTopo::Vec3d x3 = c;
+                    ElTopo::Vec3d x0 = d;
+                    std::cout << "cross = " << cross(x3 - x2, x0 - x2) << std::endl;
+                    Vec3d dx(x3-x2);
+                    double m2=mag2(dx);
+                    double s=clamp(dot(x3-x0, dx)/m2, 0., 1.);
+                    normal=x0-(s*x2+(1-s)*x3);
+                    std::cout << "normal = " << normal << " mag = " << mag(normal) << std::endl;
+                }
+
+                
                 if ( distance < m_surface.m_proximity_epsilon )
                 {
                     
