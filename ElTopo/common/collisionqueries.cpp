@@ -1,5 +1,6 @@
 #include <collisionqueries.h>
 #include <commonoptions.h>
+#include "ccd_wrapper.h"
 
 namespace ElTopo {
 
@@ -44,10 +45,6 @@ void check_point_edge_proximity(bool update, const Vec3d &x0, const Vec3d &x1, c
         normal*=normal_multiplier/(distance+1e-30);
     }
     
-    if(distance == 0)
-    {
-        std::cout << "x0 = " << x0 << " x1 = " << x1 << " x2 = " << x2 << std::endl;
-    }
 }
 
 void check_point_edge_proximity( bool update, const Vec2d &x0, const Vec2d &x1, const Vec2d &x2,
@@ -307,6 +304,10 @@ void check_point_triangle_proximity(const Vec3d &x0, const Vec3d &x1, const Vec3
                 s1=s; s2=0; s3=1-s;
             }
         }
+    }    
+    if(distance == 0)
+    {
+        std::cout << "x0 = " << x0 << " x1 = " << x1 << " x2 = " << x2 << " x3 = " << x3 << " s = " << s1 << " " << s2 << " " << s3 << std::endl;
     }
 }
 
