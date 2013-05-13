@@ -199,6 +199,12 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
   if (!isRecording())
     return;
   
+#ifdef _MSC_VER
+    _mkdir(outputdirectory.c_str());
+#else
+    mkdir(outputdirectory.c_str(), 0755);
+#endif
+
   if (!m_of.is_open())
   {
     std::stringstream filename;
@@ -3078,7 +3084,21 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       std::cout << "current step: " << g_recording.currentStep() << std::endl;
       glutPostRedisplay();
     }
+  }
     
+  if (k == 'r' || k == 'R')
+  {
+    if (!g_recording.isRecording())
+    {
+      if (!g_recording.isPlaybackOn())
+      {
+        g_recording.turnOnRecording();
+        g_recording.setRecordingName(outputdirectory + "/rec");
+      }
+    } else
+    {
+      g_recording.turnOffRecording();
+    }
   }
     
   if (k == 'n')
