@@ -76,7 +76,8 @@ public:
 
   void beforeEndStep();
   void afterStartStep();
-  
+  void afterEndStep();
+    
 protected:
   void Setup();
   void AtEachTimestep();

@@ -1113,6 +1113,18 @@ void DoubleBubbleTest::afterStartStep()
   }
 }
 
+void DoubleBubbleTest::afterEndStep()
+{
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "After endStep" << std::endl;
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
+    
+}
+
 void DoubleBubbleTest::beforeEndStep()
 {
   updateBBWallConstraints();

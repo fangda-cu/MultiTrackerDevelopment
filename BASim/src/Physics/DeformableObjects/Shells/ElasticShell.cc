@@ -869,6 +869,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   std::cout << "Completed endStep\n";
 
+  if (m_stepping_callback)
+    m_stepping_callback->afterEndStep();
+    
 }
 
 

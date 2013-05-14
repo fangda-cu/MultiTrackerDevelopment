@@ -33,6 +33,7 @@ public:
   public:
     virtual void beforeEndStep() = 0;
     virtual void afterStartStep() = 0;
+    virtual void afterEndStep() = 0;
   };
   
 public:
