@@ -63,25 +63,32 @@ void NormalDriverMulti::set_predicted_vertex_positions( const SurfTrack& surf, s
         Vec3d normal(0,0,0);
         double sum_areas = 0.0;
         double speed;
+        bool any_moving = false;
         for ( unsigned int j = 0; j < surf.m_mesh.m_vertex_to_triangle_map[i].size(); ++j )
         {
            size_t tri = surf.m_mesh.m_vertex_to_triangle_map[i][j];
            Vec2i label = surf.m_mesh.get_triangle_label(tri);
            double area = surf.get_triangle_area( tri );
            if(label[0] == expanding_surface || label[1] == expanding_surface) {
-              Vec3d tri_normal = surf.get_triangle_normal_by_region(tri, expanding_surface);   
-              normal += tri_normal * area;
-              sum_areas += area;
+              Vec3d tri_normal = surf.get_triangle_normal(tri);   
               speed = speed_matrix[label[0]][label[1]]; //let's assume all speeds are the same.
+              normal += tri_normal * area * speed;
+              sum_areas += area;
+              any_moving = true;
            }
         }
 
-        //normal /= sum_areas;
-        normal /= mag(normal);
-        
-        double switch_speed = (current_t >= 1.0) ? -speed : speed;
-        velocities[i] = switch_speed * normal;
-        displacements[i] = adaptive_dt * velocities[i];
+        normal /= sum_areas;
+        if(any_moving) {
+           normal /= mag(normal);
+
+           velocities[i] = normal;
+           displacements[i] = adaptive_dt * velocities[i];
+        }
+        else {
+           velocities[i] = Vec3d(0,0,0);
+           displacements[i] = adaptive_dt * velocities[i];
+        }
     }
     
     double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );

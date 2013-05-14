@@ -492,15 +492,6 @@ namespace {
             el_topo_wrapper_static_operations();
 #else
             {         
-                // Improve
-                std::cout << "Improve\n";
-                double pre_improve_time = get_time_in_seconds();
-                //for(int i = 0; i < 3; ++i)
-                g_surf->improve_mesh();
-                double post_improve_time = get_time_in_seconds();
-                g_stats.add_to_double( "total_improve_time", post_improve_time - pre_improve_time );
-                
-                g_stats.add_per_frame_double( "frame_improve_time", frame_stepper->get_frame(), post_improve_time - pre_improve_time );
 
                 // Topology changes
                 std::cout << "Topology\n";
@@ -508,14 +499,22 @@ namespace {
                 g_surf->topology_changes();
                 double post_topology_time = get_time_in_seconds();
                 g_stats.add_to_double( "total_topology_time", post_topology_time - pre_topology_time );
-                
                 g_stats.add_per_frame_double( "frame_topo_time", frame_stepper->get_frame(), post_topology_time - pre_topology_time );
                 
+
+                // Improve
+                std::cout << "Improve\n";
+                double pre_improve_time = get_time_in_seconds();
+                g_surf->improve_mesh();
+                double post_improve_time = get_time_in_seconds();
+                g_stats.add_to_double( "total_improve_time", post_improve_time - pre_improve_time );
+                g_stats.add_per_frame_double( "frame_improve_time", frame_stepper->get_frame(), post_improve_time - pre_improve_time );
+
+
                 std::cout << "Defrag\n";
                 double pre_defrag_time = get_time_in_seconds();
                 g_surf->defrag_mesh();
                 double post_defrag_time = get_time_in_seconds();
-                
                 g_stats.add_per_frame_double( "frame_defrag_time", frame_stepper->get_frame(), post_defrag_time - pre_defrag_time );
                 
                 // Update driver
@@ -987,6 +986,7 @@ namespace {
             unsigned char k = key;
             if (k == '[')
             {
+               std::cout << "Attempting to step back in recording.\n";
                 int f = g_recording.currentFrame();
                 g_recording.setCurrentFrame(f - 1);
                 
@@ -1001,13 +1001,21 @@ namespace {
                 
             } else if (k == ']')
             {
+               std::cout << "Attempting to step forward in recording.\n";
                 int f = g_recording.currentFrame();
+                std::cout << "Cur frame: " << f << std::endl;
                 g_recording.setCurrentFrame(f + 1);
+                std::cout << "Getting the surface: " << std::endl;
                 
                 ElTopo::SurfTrack * st = g_surf;
+                std::cout << "Loading recording" << std::endl;
                 g_recording.loadRecording(*st);
+                
+                std::cout << "Update objects.\n";
+
                 update_renderable_objects();
                 
+                std::cout << "Fiddling with widgets" << std::endl;
                 std::stringstream ss;
                 ss << frame_stepper->dt() * (f + 1);
                 status_text_widget->text = ss.str();

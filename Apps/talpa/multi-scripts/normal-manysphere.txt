@@ -22,8 +22,8 @@ surftrack_parameters
    max_volume_change 0.0002
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
-   merge_proximity 0.001
-   repulsion_proximity 0.0001
+   merge_proximity 0.01
+   repulsion_proximity 0.001
    friction_coefficient 0.0
    perform_improvement 1
    allow_topology_changes 1

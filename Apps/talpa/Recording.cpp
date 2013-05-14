@@ -178,19 +178,27 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
 
 void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
 {
-    if (!isPlaybackOn())
+    if (!isPlaybackOn()) {
+       std::cout << "Playback is not enabled\n";
         return;
+    }
     
     if (!m_if.is_open())
     {
         std::stringstream filename;
         filename << m_recording_name << "_" << m_current_frame << ".rec";
+        std::cout << "Asking for file: " << m_recording_name << "_" << m_current_frame << ".rec\n";
+
         m_if.open(filename.str().c_str());
         
         if (!m_if.is_open())
         {
             std::cout << "Requested recording frame not found!" << std::endl;
             return;
+        }
+        else if(!m_if.good()) {
+           std::cout << "open but good() failed.\n";
+           return;        
         }
         
         m_step_pos.clear();
@@ -218,6 +226,9 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
         
         m_if.seekg(m_step_pos.front());
         m_if.clear();
+    }
+    else {
+       std::cout << "m_if was open\n";
     }
     
     assert(m_current_step < (int)m_step_pos.size());
