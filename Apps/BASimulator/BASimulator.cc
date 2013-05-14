@@ -394,7 +394,8 @@ void reshape(int w, int h)
     window_height = h;
 
     Camera& c = controller.getCamera();
-    c.setPerspective(60, 1);
+//    c.setPerspective(60, 1);
+    c.setOrthographic(-0.8, 0.8, -0.8, 0.8);
     Scalar radius = controller.getBoundingRadius();
     c.setZClipping(0.01 * radius, 3 * radius);
     c.setViewport(w, h);
