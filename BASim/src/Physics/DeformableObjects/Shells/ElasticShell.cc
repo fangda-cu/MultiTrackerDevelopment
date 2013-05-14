@@ -1312,7 +1312,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
       continue;
     }
     VertexHandle v = m_obj->addVertex();
-    ElTopo::Vec3d x = surface_tracker.get_newposition(i);
+    ElTopo::Vec3d x = surface_tracker.get_position(i);
     setVertexPosition(v, Vec3d(x[0], x[1], x[2]));
     setVertexVelocity(v, Vec3d(0, 0, 0));
     vert_numbers[v] = i;
