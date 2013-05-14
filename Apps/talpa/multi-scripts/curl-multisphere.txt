@@ -1,8 +1,8 @@
 
 relative_output_path curlnoise
 
-frame_dt 0.02
-sim_dt 0.02
+frame_dt 0.04
+sim_dt 0.04
 end_sim_t 30
 
 sisc_curl_noise_simulation
@@ -10,18 +10,6 @@ sisc_curl_noise_simulation
 )
 
 region_count 5
-
-faceoff_simulation
-(
-   speedvector [0 -0.2 -0.2 -0.2 -0.2 
-		   0.2 0 0 0 0 
-		   0.2 0 0 0 0
-		   0.2 0 0 0 0
-		   0.2 0 0 0 0 ]
-   expanding_surface 0
-   smooth_using_all 0
-   reverse_time 100
-)
 
 surftrack_parameters
 (

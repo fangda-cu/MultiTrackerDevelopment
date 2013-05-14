@@ -1,5 +1,5 @@
 
-relative_output_path faceoffmanysphere
+relative_output_path normalmanysphere
 
 frame_dt 0.005
 sim_dt 0.005
@@ -7,18 +7,16 @@ end_sim_t 6.0
 
 region_count 4
 
-faceoff_simulation
+normal_simulation
 (
    speedvector [0 0.2 0.2 0.2 -0.2 0 0 0 -0.2 0 0 0 -0.2 0 0 0]
    expanding_surface 0
-   smooth_using_all 0
-   reverse_time 1.3
 )
 
 surftrack_parameters
 (
    use_fraction 1
-   feature_min_edge_length 0.1
+   feature_min_edge_length 0.6
    min_edge_length 0.6
    max_edge_length 1.4
    max_volume_change 0.0002

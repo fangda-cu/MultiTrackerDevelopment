@@ -17,6 +17,7 @@
 #include <iomesh.h>
 #include "drivers/meancurvature.h"
 #include "drivers/normaldriver.h"
+#include "drivers/normaldriver_multi.h"
 #include "drivers/sisccurlnoisedriver.h"
 #include <subdivisionscheme.h>
 #include <sstream>
@@ -170,10 +171,56 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 
 void ScriptInit::parse_normal( const ParseTree& normal_sim_branch )
 {
+   double speed;
+
+   std::vector<std::vector<double> > speed_matrix(region_count, std::vector<double>(region_count, 0));
+   if(normal_sim_branch.get_number( "speed", speed ) ) { //default two-material case.
+      speed_matrix[0][0] = 0;
+      speed_matrix[1][1] = 0;
+
+      speed_matrix[0][1] = speed;
+      speed_matrix[1][0] = -speed;
+   }
+   else {
+
+      const Array1d* data = normal_sim_branch.get_vector( "speedvector");
+      if(data->size() != region_count * region_count)
+         std::cout << "Error: speed matrix must have length equal to region_count^2\n";
+      for(int i = 0; i < region_count; ++i) {
+         for(int j = 0; j < region_count; ++j) {
+            speed_matrix[i][j] = data->at(i + j*region_count);
+         }
+      }
+
+      for(int i = 0; i < region_count; ++i) {
+         assert(speed_matrix[i][i] == 0);
+      }
+      //could also check that the matrix is skew-symmetric (opposing values across the diagonal are negative to each other)
+
+   }
+
+   //check which is the expanding surface for offsetting in the case where the intersection curve is moving
+   int expanding_surf = -1;
+   normal_sim_branch.get_int("expanding_surface", expanding_surf);
+   if(expanding_surf != -1)
+      std::cout << "Region " << expanding_surf << " is set to be expanded into.\n";
+   else {
+      std::cout << "Need to specify which region to expand into.\n";
+      exit(-1);
+   }
+
+   NormalDriverMulti* d = new NormalDriverMulti( speed_matrix, expanding_surf );
+
+   driver_list.push_back(d);
+
+   /*
+   //Old two-phase code.
+
     double speed;
     normal_sim_branch.get_number( "speed", speed );
     //driver = new NormalDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
     driver_list.push_back(new NormalDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 ));
+    */
 }
 
 // ---------------------------------------------------------
