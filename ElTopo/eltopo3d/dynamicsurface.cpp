@@ -1741,7 +1741,7 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
 ///
 // ---------------------------------------------------------
 
-void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
+bool DynamicSurface::mesh_is_intersection_free(bool degeneracy_counts_as_intersection)
 {
     
     std::vector<Intersection> intersections;
@@ -1762,12 +1762,17 @@ void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as
                                       get_position(triangle[2]), triangle[2],
                                       true, true );
         
-        assert( false );
+        return false;
         
     }
     
+    return true;
 }
 
+void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
+{
+    assert(mesh_is_intersection_free(degeneracy_counts_as_intersection));
+}
 
 // ---------------------------------------------------------
 ///

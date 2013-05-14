@@ -356,6 +356,7 @@ public:
     /// Fire an assert if the mesh contains a self-intersection. Uses m_positions as the vertex locations.
     ///
     void assert_mesh_is_intersection_free( bool degeneracy_counts_as_intersection );              
+    bool mesh_is_intersection_free( bool degeneracy_counts_as_intersection );
     
     /// Using m_newpositions as the vertex locations, fire an assert if the mesh contains a self-intersection.
     ///

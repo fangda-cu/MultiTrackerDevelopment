@@ -3150,6 +3150,12 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
       std::cout << "FOI: " << f.idx() << ": " << v0.idx() << " (" << shell->getVertexPosition(v0) << "), " << v1.idx() << " (" << shell->getVertexPosition(v1) << "), " << v2.idx() << " (" << shell->getVertexPosition(v2) << ")" << std::endl;
     }
+  } else if (k == 't')
+  {
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      bool mif = st->mesh_is_intersection_free(false);
+      std::cout << "mesh intersection free? " << mif << std::endl;
+      delete st;
   }
   
 }
