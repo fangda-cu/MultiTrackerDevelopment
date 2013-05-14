@@ -1311,6 +1311,9 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     surface_tracker.improve_mesh();
   }
   
+    if (m_mesheventcallback)
+        m_mesheventcallback->flip(surface_tracker, 4);
+    
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
   // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
   
@@ -1357,6 +1360,9 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     face_numbers[f] = i;
     reverse_trimap[i] = f;
   }
+    
+    if (m_mesheventcallback)
+        m_mesheventcallback->flip(surface_tracker, 5);
     
     if (m_stepping_callback)
         m_stepping_callback->endStep(11);

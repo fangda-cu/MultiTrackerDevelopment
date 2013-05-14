@@ -897,6 +897,9 @@ void SurfTrack::improve_mesh( )
          i++;
       }
 //        m_verbose = false;
+        
+        if (m_mesheventcallback)
+            m_mesheventcallback->flip(*this, 1);
       
       // null-space smoothing
       if ( m_perform_smoothing)
@@ -908,6 +911,8 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
 
+        if (m_mesheventcallback)
+            m_mesheventcallback->flip(*this, 2);
 
       ////////////////////////////////////////////////////////////
       
@@ -920,6 +925,9 @@ void SurfTrack::improve_mesh( )
         assert_mesh_is_intersection_free( false );
       }      
     }
+    
+    if (m_mesheventcallback)
+        m_mesheventcallback->flip(*this, 3);
     
   if (m_mesheventcallback)
     m_mesheventcallback->log() << "Improve mesh finished" << std::endl;
