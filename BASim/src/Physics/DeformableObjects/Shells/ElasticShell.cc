@@ -839,11 +839,17 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
+    if (m_stepping_callback)
+        m_stepping_callback->endStep(1);
+    
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
     remesh(timestep);
 
+      if (m_stepping_callback)
+          m_stepping_callback->endStep(2);
+      
     //Relabel DOFs if necessary
     do_relabel = true;
   }
@@ -860,6 +866,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     only_twice++;
   }
 
+    if (m_stepping_callback)
+        m_stepping_callback->endStep(3);
+    
   if(do_relabel) {
     m_obj->computeDofIndexing();
   }
@@ -870,7 +879,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   std::cout << "Completed endStep\n";
 
   if (m_stepping_callback)
-    m_stepping_callback->afterEndStep();
+    m_stepping_callback->endStep(4);
     
 }
 
@@ -1348,6 +1357,9 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     face_numbers[f] = i;
     reverse_trimap[i] = f;
   }
+    
+    if (m_stepping_callback)
+        m_stepping_callback->endStep(11);
 
   
   std::cout << "El Topo performed " << surface_tracker.m_mesh_change_history.size() << " improvement operations:\n";
@@ -1404,6 +1416,9 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     
     std::cout << "minangle = " << minangle * 180 / M_PI << " maxangle = " << maxangle * 180 / M_PI << " minedge = " << minedge << " maxedge = " << maxedge << std::endl;
     
+    if (m_stepping_callback)
+        m_stepping_callback->endStep(12);
+    
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
   {
@@ -1434,6 +1449,8 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     if (m_obj->vertexIncidentEdges(*vit) == 0)
       m_obj->deleteVertex(*vit);
   
+    if (m_stepping_callback)
+        m_stepping_callback->endStep(13);
 
 }
 

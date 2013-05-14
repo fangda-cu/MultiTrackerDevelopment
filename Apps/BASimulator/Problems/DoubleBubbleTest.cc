@@ -1113,12 +1113,12 @@ void DoubleBubbleTest::afterStartStep()
   }
 }
 
-void DoubleBubbleTest::afterEndStep()
+void DoubleBubbleTest::endStep(int i)
 {
     if (g_recording.isRecording())
     {
         ElTopo::SurfTrack * st = mesh2surftrack();
-        g_recording.log() << "After endStep" << std::endl;
+        g_recording.log() << "endStep " << i << std::endl;
         g_recording.recordSurfTrack(*st);
         delete st;
     }
@@ -1322,7 +1322,7 @@ void DoubleBubbleTest::AfterStep()
     if (g_recording.isRecording())
     {
         ElTopo::SurfTrack * st = mesh2surftrack();
-        g_recording.log() << "After endStep" << std::endl;
+        g_recording.log() << "Begin afterStep" << std::endl;
         g_recording.recordSurfTrack(*st);
         delete st;
     }

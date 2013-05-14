@@ -76,7 +76,7 @@ public:
 
   void beforeEndStep();
   void afterStartStep();
-  void afterEndStep();
+  void endStep(int i);
     
 protected:
   void Setup();
