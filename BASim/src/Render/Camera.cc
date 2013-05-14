@@ -16,7 +16,7 @@ Camera::Camera()
   , m_eye(0,0,0)
   , m_up(0,1,0)
   , m_dir(0,0,-1)
-  , m_projMode(Camera::PERSPECTIVE)
+  , m_projMode(Camera::ORTHOGRAPHIC)
   , m_projParams(2)
   , m_zClipping(2)
 {

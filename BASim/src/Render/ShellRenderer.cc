@@ -281,10 +281,6 @@ void ShellRenderer::keyboard(unsigned char key, int x, int y)
         allinvisible = false;
     for (size_t i = 0; i < m_region_visible.size(); i++)
       m_region_visible[i] = allinvisible;
-    m_region_visible[2] = true;
-    m_region_visible[4] = true;
-    m_region_visible[6] = true;
-    m_region_visible[8] = true;
     glutPostRedisplay();
   } else if (key == 'b' || key == 'B')
   {
