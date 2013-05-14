@@ -869,7 +869,15 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 
 void DoubleBubbleTest::AtEachTimestep()
 {
-//  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "Begin time step" << std::endl;
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
+
+    //  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
 //    shellObj->deleteFace(triangulation_added_faces[i], false);
 //  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
 //    shellObj->deleteEdge(triangulation_added_edges[i], false);
@@ -1086,12 +1094,20 @@ void DoubleBubbleTest::updateBBWallConstraints()
 
 void DoubleBubbleTest::afterStartStep()
 {
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "After startStep" << std::endl;
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
+    
   updateBBWallConstraints();
   
   if (g_recording.isRecording())
   {
     ElTopo::SurfTrack * st = mesh2surftrack();
-    g_recording.log() << "Begin time step" << std::endl;
+    g_recording.log() << "Begin dynamics integration" << std::endl;
     g_recording.recordSurfTrack(*st);
     delete st;
   }
@@ -1255,7 +1271,7 @@ void DoubleBubbleTest::beforeEndStep()
   if (g_recording.isRecording())
   {
     ElTopo::SurfTrack * st = mesh2surftrack();
-    g_recording.log() << "End time step" << std::endl;
+    g_recording.log() << "End dynamics integration" << std::endl;
     g_recording.recordSurfTrack(*st);
     delete st;
   }
@@ -1291,6 +1307,14 @@ void DoubleBubbleTest::s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d &
 
 void DoubleBubbleTest::AfterStep()
 {
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "After endStep" << std::endl;
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
+    
 //  triangulation_added_vertices.clear();
 //  triangulation_added_edges.clear();
 //  triangulation_added_faces.clear();
@@ -1338,6 +1362,14 @@ void DoubleBubbleTest::AfterStep()
     }
     
   }
+
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "End time step" << std::endl;
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
 }
 
 void DoubleBubbleTest::setupScene1() 
