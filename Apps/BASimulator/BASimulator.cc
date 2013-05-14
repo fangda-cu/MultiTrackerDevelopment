@@ -395,7 +395,7 @@ void reshape(int w, int h)
 
     Camera& c = controller.getCamera();
 //    c.setPerspective(60, 1);
-    c.setOrthographic(-0.8, 0.8, -0.8, 0.8);
+    c.setOrthographic(-1.0 * w / h, 1.0 * w / h, -1.0, 1.0);
     Scalar radius = controller.getBoundingRadius();
     c.setZClipping(0.01 * radius, 3 * radius);
     c.setViewport(w, h);

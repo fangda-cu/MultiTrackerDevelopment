@@ -228,10 +228,17 @@ void Camera::applyViewport() const
 
 void Camera::applyCamera() const
 {
+    if (m_projMode == ORTHOGRAPHIC)
+    {
+        double scale = 3 / (getEye() - getViewCenter()).norm();
+        glScaled(scale, scale, 1);
+    }
+    
   Vec3d center = m_eye + m_dir;
   gluLookAt(m_eye[0], m_eye[1], m_eye[2],                       // Eye position
             center[0], center[1], center[2],              // Look-at position
             m_up[0], m_up[1], m_up[2]);                         // Up vector
+    
 }
 
 } // namespace BASim
