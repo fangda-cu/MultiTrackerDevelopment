@@ -33,7 +33,7 @@
 #include <vec.h>
 #include <vector>
 #include <wallclocktime.h>
-
+#include "Timer.h"
 
 // ---------------------------------------------------------
 //  Global externs
@@ -849,6 +849,7 @@ void SurfTrack::improve_mesh( )
       
       //std::cout << "Collapse\n";
       // edge collapsing
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/collapse1").start();
       int i;
       i = 0;
       while ( m_collapser.collapse_pass() ) {
@@ -857,11 +858,13 @@ void SurfTrack::improve_mesh( )
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
       }
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/collapse1").stop();
       
       ////////////////////////////////////////////////////////////
       
       // edge splitting
       
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/split").start();
       i = 0;
       //std::cout << "Split\n";
       while ( m_splitter.split_pass() ) {
@@ -869,25 +872,31 @@ void SurfTrack::improve_mesh( )
           m_mesheventcallback->log() << "Split pass " << i << " finished" << std::endl;
         i++;
       }
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/split").stop();
       
       //std::cout << "Flip\n";
       // edge flipping
-      m_flipper.flip_pass();		
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/flip").start();
+      m_flipper.flip_pass();
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/flip").stop();
 
       
       //std::cout << "Collapse\n";
       // edge collapsing
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/collapse2").start();
       i = 0;
       while ( m_collapser.collapse_pass() ) {
         if (m_mesheventcallback)
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
       }
-      
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/collapse2").stop();
+
       
 //        m_verbose = true;
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1").start();
       i = 0;
       //std::cout << "T1\n";
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
@@ -896,12 +905,14 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
          i++;
       }
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1").stop();
 //        m_verbose = false;
         
         if (m_mesheventcallback)
             m_mesheventcallback->flip(*this, 1);
       
       // null-space smoothing
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/smooth").start();
       if ( m_perform_smoothing)
       {
          //std::cout << "Smooth\n";
@@ -910,12 +921,14 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/smooth").stop();
 
         if (m_mesheventcallback)
             m_mesheventcallback->flip(*this, 2);
 
       ////////////////////////////////////////////////////////////
       
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/examine").start();
       assert_no_bad_labels();
       //assert_no_geometrically_degenerate_triangles();
 
@@ -924,6 +937,7 @@ void SurfTrack::improve_mesh( )
         //std::cout << "Checking collisions after remeshing.\n";
         assert_mesh_is_intersection_free( false );
       }      
+      CSim::TimerMan::timer("endStep/remesh/improve_mesh/examine").stop();
     }
     
     if (m_mesheventcallback)
