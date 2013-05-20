@@ -1867,7 +1867,7 @@ void DoubleBubbleTest::setupScene6()
 //    velocities[*vit] = Vec3d(0, 0, 0);
 //  }
     
-    std::ifstream objfile("/Users/fangda/Researches/BASim/DoubleBubble/mcf_gen/mcf_gen/500_2.OBJ");
+    std::ifstream objfile("/Users/fangda/Researches/BASim/DoubleBubble/mcf_gen/mcf_gen/500.OBJ");
     std::vector<Vec3d> obj_vs;
     std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
 
