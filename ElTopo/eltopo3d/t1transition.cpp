@@ -249,6 +249,9 @@ bool T1Transition::t1_pass()
         CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness").stop();
     }
     CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates").stop();
+    
+    CSim::TimerMan::timer("baseline").start();
+    CSim::TimerMan::timer("baseline").stop();
 
     CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/sort_candidates").start();
     // sort the candidate pairs according to the strength of the tensile force
