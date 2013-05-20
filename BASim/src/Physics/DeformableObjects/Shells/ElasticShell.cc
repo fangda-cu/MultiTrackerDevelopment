@@ -1397,11 +1397,29 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
   
   CSim::TimerMan::timer("endStep/remesh/clean_up").start();
   std::cout << "El Topo performed " << surface_tracker.m_mesh_change_history.size() << " improvement operations:\n";
-  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
-  {
-    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
-    std::cout << "Event type = " << event.m_type << std::endl;
-  }
+//  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
+//  {
+//    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
+//    std::cout << "Event type = " << event.m_type << std::endl;
+//  }
+    ElTopo::MeshUpdateEvent::EventType lastevent = ElTopo::MeshUpdateEvent::EDGE_CUT;
+    int lasteventrepetition = 0;
+    for (size_t i = 0; i < surface_tracker.m_mesh_change_history.size(); i++)
+    {
+        ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[i];
+        if (event.m_type != lastevent)
+        {
+            if (lasteventrepetition > 0)
+                std::cout << lasteventrepetition << " events of type " << lastevent << std::endl;
+            lastevent = event.m_type;
+            lasteventrepetition = 1;
+        } else
+        {
+            lasteventrepetition++;
+        }
+    }
+    if (lasteventrepetition > 0)
+        std::cout << lasteventrepetition << " events of type " << lastevent << std::endl;
 
     double minangle = M_PI;
     double maxangle = 0;
