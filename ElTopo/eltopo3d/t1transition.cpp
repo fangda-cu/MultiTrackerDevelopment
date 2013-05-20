@@ -199,8 +199,10 @@ bool T1Transition::t1_pass()
         //
         
         // construct the region graph
-        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph").start();
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_init").start();
         region_graph.assign(nregion, std::vector<int>(nregion, 0));
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_init").stop();
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph").start();
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
             Vec2i label = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[xj][i]);
