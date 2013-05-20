@@ -124,6 +124,7 @@ void TimerMan::report()
     std::vector<std::pair<int, int> > quotients;
     for (size_t i = 0; i < names.size(); i++)
     {
+        bool match = false;
         for (size_t j = 0; j < names.size(); j++)
         {
             if (i == j)
@@ -141,7 +142,10 @@ void TimerMan::report()
             
             // parent-child relation confirmed
             quotients.push_back(std::pair<int, int>(i, j));
+            match = true;
         }
+        if (match)
+            quotients.push_back(std::pair<int, int>(i, -1));
     }
     
     // pre-printing, detecting the table dimensions
@@ -153,19 +157,21 @@ void TimerMan::report()
     for (size_t i = 0; i < names.size(); i++)
     {
         Timer & t = timer(names[i]);
-        if (names[i].size() > maxnamelen)
-            maxnamelen = names[i].size();
+        maxnamelen = std::max(maxnamelen, names[i].size());
         snprintf(buffer, 99, "%d", t.count());
-        if (strlen(buffer) > maxcountlen)
-            maxcountlen = strlen(buffer);
+        maxcountlen = std::max(maxcountlen, strlen(buffer));
         snprintf(buffer, 99, "%8.6f", t.total() * total_scaling);
-        if (strlen(buffer) > maxtotallen)
-            maxtotallen = strlen(buffer);
+        maxtotallen = std::max(maxtotallen, strlen(buffer));
         snprintf(buffer, 99, "%8.6f", t.total() / t.count() * mean_scaling);
-        if (strlen(buffer) > maxmeanlen)
-            maxmeanlen = strlen(buffer);
+        maxmeanlen = std::max(maxmeanlen, strlen(buffer));
     }
-    
+  
+    for (size_t i = 0; i < quotients.size(); i++)
+    {
+        if (quotients[i].second < 0)
+            maxnamelen = std::max(maxnamelen, names[quotients[i].first].size() + 16);
+    }
+  
     size_t len = maxnamelen + 3 + maxcountlen + 3 + maxtotallen + 3 + maxmeanlen;
     snprintf(buffer, 99, "%%%lud", maxcountlen);
     std::string count_format(buffer);
@@ -198,8 +204,23 @@ void TimerMan::report()
     std::cout << "Percentage" << std::string(maxcountlen + 3 + maxtotallen - 10, ' ') << std::endl;
     for (size_t i = 0; i < quotients.size(); i++)
     {
-        snprintf(buffer, 99, "%6.2f%%", 100.0 * timer(names[quotients[i].second]).total() / timer(names[quotients[i].first]).total());
-        std::cout << names[quotients[i].second] << std::string(maxnamelen - names[quotients[i].second].size(), ' ') << " | ";
+        double childtime = 0;
+        std::string childname = "";
+        if (quotients[i].second < 0)
+        {
+            double sumtime = 0;
+            for (size_t j = 0; j < quotients.size(); j++)
+                if (quotients[j].first == (int)quotients[i].first && quotients[j].second >= 0)
+                    sumtime += timer(names[quotients[j].second]).total();
+            childtime = timer(names[quotients[i].first]).total() - sumtime;
+            childname = names[quotients[i].first] + "/unaccounted_for";
+        } else
+        {
+            childtime = timer(names[quotients[i].second]).total();
+            childname = names[quotients[i].second];
+        }
+        snprintf(buffer, 99, "%6.2f%%", 100.0 * childtime / timer(names[quotients[i].first]).total());
+        std::cout << childname << std::string(maxnamelen - childname.size(), ' ') << " | ";
         std::cout << buffer << std::endl;
     }
     std::cout << std::string(len, '=') << std::endl;
