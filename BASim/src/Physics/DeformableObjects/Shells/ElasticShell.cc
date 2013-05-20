@@ -15,6 +15,7 @@
 
 #include "surftrack.h"
 #include "subdivisionscheme.h"
+#include "Timer.h"
 
 #include <algorithm>
 #include <numeric>
@@ -706,6 +707,8 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
+  
+  CSim::TimerMan::timer("endStep").start();
     
 //    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
 //    {
@@ -713,8 +716,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 //        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
 //    }
 
+  CSim::TimerMan::timer("endStep/beforeEndStep").start();
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
+  CSim::TimerMan::timer("endStep/beforeEndStep").stop();
   
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
@@ -758,8 +763,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
+  CSim::TimerMan::timer("endStep/resolveCollisions").start();
   if(m_do_eltopo_collisions)
     resolveCollisions(timestep);
+  CSim::TimerMan::timer("endStep/resolveCollisions").stop();
   
   //Ground plane penalty force.
   if(m_ground_collisions) {
@@ -845,7 +852,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
+    CSim::TimerMan::timer("endStep/remesh").start();
     remesh(timestep);
+    CSim::TimerMan::timer("endStep/remesh").stop();
 
       if (m_stepping_callback)
           m_stepping_callback->endStep(2);
@@ -881,6 +890,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   if (m_stepping_callback)
     m_stepping_callback->endStep(4);
     
+    CSim::TimerMan::timer("endStep").stop();
+
 }
 
 
@@ -1124,6 +1135,8 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 
 void ElasticShell::remesh(Scalar timestep, bool initial)
 {
+  CSim::TimerMan::timer("endStep/remesh/prep").start();
+  
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
   {
@@ -1211,6 +1224,10 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
   tri_labels.reserve(m_obj->nt());
   masses.reserve(m_obj->nv());
 
+  CSim::TimerMan::timer("endStep/remesh/prep").stop();
+
+  CSim::TimerMan::timer("endStep/remesh/copy1").start();
+  
   //walk through vertices, create linear list, store numbering
   int id = 0;
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
@@ -1274,7 +1291,10 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
 
   std::cout << "Calling surface improvement\n";
   
-  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
+  CSim::TimerMan::timer("endStep/remesh/copy1").stop();
+  
+  CSim::TimerMan::timer("endStep/remesh/st_constuction").start();
+  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters );
   surface_tracker.m_solid_vertices_callback = this;
   surface_tracker.m_mesheventcallback = m_mesheventcallback;
   surface_tracker.set_all_remesh_velocities(vert_vel);
@@ -1305,10 +1325,15 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
             surface_tracker.remove_triangle(i);
         }
     }
-  
+  CSim::TimerMan::timer("endStep/remesh/st_constuction").stop();
+
   for(int i = 0; i < m_remeshing_iters; ++i) {
+    CSim::TimerMan::timer("endStep/remesh/topology_change").start();
     surface_tracker.topology_changes();
+    CSim::TimerMan::timer("endStep/remesh/topology_change").stop();
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh").start();
     surface_tracker.improve_mesh();
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh").stop();
   }
   
     if (m_mesheventcallback)
@@ -1317,6 +1342,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
   // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
   
+  CSim::TimerMan::timer("endStep/remesh/copy2").start();
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
     m_obj->deleteFace(*fit, true);
 
@@ -1360,7 +1386,8 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     face_numbers[f] = i;
     reverse_trimap[i] = f;
   }
-    
+  CSim::TimerMan::timer("endStep/remesh/copy2").stop();
+  
     if (m_mesheventcallback)
         m_mesheventcallback->flip(surface_tracker, 5);
     
@@ -1368,6 +1395,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
         m_stepping_callback->endStep(11);
 
   
+  CSim::TimerMan::timer("endStep/remesh/clean_up").start();
   std::cout << "El Topo performed " << surface_tracker.m_mesh_change_history.size() << " improvement operations:\n";
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
   {
@@ -1457,6 +1485,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
   
     if (m_stepping_callback)
         m_stepping_callback->endStep(13);
+  CSim::TimerMan::timer("endStep/remesh/clean_up").stop();
 
 }
 
