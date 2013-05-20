@@ -17,6 +17,7 @@
 #include <subdivisionscheme.h>
 #include <surftrack.h>
 #include <trianglequality.h>
+#include "Timer.h"
 
 
 // ---------------------------------------------------------
@@ -112,11 +113,13 @@ bool T1Transition::t1_pass()
     // a list of candidate directions
     std::vector<SortableDirectionCandidate> candidates;
     
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates").start();
     // loop through all the vertices
     for (size_t i = 0; i < mesh.nv(); i++)
     {
         size_t xj = i;
         
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_set").start();
         std::set<int> vertex_regions_set;
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
@@ -127,6 +130,7 @@ bool T1Transition::t1_pass()
         
         std::vector<int> vertex_regions;
         vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_set").stop();
         
         // cull away the interior vertices of manifold surface patches
         if (vertex_regions_set.size() < 3)
@@ -195,6 +199,7 @@ bool T1Transition::t1_pass()
         //
         
         // construct the region graph
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph").start();
         region_graph.assign(nregion, std::vector<int>(nregion, 0));
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
@@ -202,8 +207,10 @@ bool T1Transition::t1_pass()
             region_graph[label[0]][label[1]] = 1;
             region_graph[label[1]][label[0]] = 1;
         }
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph").stop();
         
         // find missing edges, as candidates of pull-apart
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness").start();
         std::vector<std::pair<double, std::pair<Vec2i, Vec3d> > > candidate_pairs;  // components: <tensile_force, <(A, B), pull_apart_direction> >
         for (size_t i = 0; i < vertex_regions.size(); i++)
         {
@@ -216,9 +223,16 @@ bool T1Transition::t1_pass()
                     Vec3d pull_apart_direction;
                     double pull_apart_tendency = 0;
                     if (m_velocity_field_callback)
+                    {
+                        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness/try_pull_apart_vel").start();
                         pull_apart_tendency = try_pull_vertex_apart_using_velocity_field(xj, A, B, pull_apart_direction);
-                    else
+                        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness/try_pull_apart_vel").stop();
+                    } else
+                    {
+                        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness/try_pull_apart_st").start();
                         pull_apart_tendency = try_pull_vertex_apart_using_surface_tension(xj, A, B, pull_apart_direction);
+                        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness/try_pull_apart_st").stop();
+                    }
                     
                     if (pull_apart_tendency > 0)
                     {
@@ -232,11 +246,16 @@ bool T1Transition::t1_pass()
                 }
             }
         }
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates/region_graph_completeness").stop();
     }
-    
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/find_candidates").stop();
+
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/sort_candidates").start();
     // sort the candidate pairs according to the strength of the tensile force
     std::sort(candidates.begin(), candidates.end());
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/sort_candidates").stop();
     
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates").start();
     // process the candidates from top
     for ( ; candidates.size() > 0; candidates.pop_back())
     {
@@ -337,6 +356,7 @@ bool T1Transition::t1_pass()
                 A_edges.push_back(edge);
         }
         
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/CCD").start();
         if (vertex_pseudo_motion_introduces_collision(xj, original_position, b_desired_position))
         {
             if (m_surf.m_verbose)
@@ -351,7 +371,9 @@ bool T1Transition::t1_pass()
                 std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
             continue;
         }
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/CCD").stop();
         
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/check_intersection").start();
         // check intersection in the final configuration
         const std::vector<Vec3d> & x = m_surf.get_positions();
         bool collision = false;
@@ -457,7 +479,9 @@ bool T1Transition::t1_pass()
                 std::cout << "Vertex popping: collision introduced." << std::endl;
             continue;
         }
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/check_intersection").stop();
         
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/pull_apart").start();
         // pull apart
         std::vector<size_t> verts_to_delete;
         std::vector<Vec3d> verts_to_create;
@@ -549,8 +573,10 @@ bool T1Transition::t1_pass()
         
         if (m_surf.m_mesheventcallback)
             m_surf.m_mesheventcallback->t1(m_surf, xj);
+        CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates/pull_apart").stop();
         
     }
+    CSim::TimerMan::timer("endStep/remesh/improve_mesh/t1/process_candidates").stop();
   
     return pop_occurred;
 }
@@ -668,7 +694,7 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
         }
         post_area += 0.5 * mag(cross(pos[1] - pos[0], pos[2] - pos[0]));
     }
-    
+
     double area_diff = (pre_area - post_area);
     
     return area_diff;
