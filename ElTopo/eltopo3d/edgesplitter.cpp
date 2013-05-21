@@ -864,15 +864,25 @@ bool EdgeSplitter::large_angle_split_pass()
     // get triangles incident to the edge
     std::vector<size_t> incident_tris = mesh.m_edge_to_triangle_map[e];
     for(size_t t = 0; t < incident_tris.size(); ++t) {
+      if(mesh.triangle_is_deleted(incident_tris[t]))
+         continue;
+
       const Vec3st& tri0 = mesh.get_triangle(incident_tris[t]);
     
+      
       // get vertex opposite the edge for each triangle
       size_t opposite0 = mesh.get_third_vertex( e, tri0 );
     
       // compute the angle at each opposite vertex
       const Vec3d& opposite_point0 = m_surf.get_position(opposite0);
-      
-      double angle0 = rad2deg( acos( dot( normalized(edge_point0-opposite_point0), normalized(edge_point1-opposite_point0) ) ) );
+      double acos_input = dot( normalized(edge_point0-opposite_point0), normalized(edge_point1-opposite_point0) );
+      if(acos_input != acos_input || acos_input <= -1 || acos_input >= 1) {
+         std::cout << "Value: " << acos_input << std::endl;
+         std::cout << "edgepoint0:" << edge_point0 << "  edge_point1: " << edge_point1 << "   Opp0:" << opposite_point0 << std::endl;
+         std::cout << "Difone: " << edge_point0-opposite_point0 <<  "  Diftwo: " << edge_point1-opposite_point0 << std::endl;
+         std::cout << "Left: " << mag(edge_point0-opposite_point0)  <<  "  Right: " << mag(edge_point1-opposite_point0) << std::endl;
+      }
+      double angle0 = rad2deg( acos( acos_input ) );
     
       // if an angle is above the max threshold, split the edge
 

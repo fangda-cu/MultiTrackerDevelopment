@@ -846,14 +846,16 @@ void SurfTrack::improve_mesh( )
       
       
       // edge splitting
-
+      std::cout << "Splits\n";
       while ( m_splitter.split_pass() ) {
         if (m_mesheventcallback)
           m_mesheventcallback->log() << "Split pass " << i << " finished" << std::endl;
         i++;
+        std::cout << "Splits\n";
       }
       
       // edge flipping
+      std::cout << "Flips\n";
       m_flipper.flip_pass();		
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
@@ -861,16 +863,20 @@ void SurfTrack::improve_mesh( )
       
       // edge collapsing
       i = 0;
+      std::cout << "Collapses\n";
       while ( m_collapser.collapse_pass() ) {
         if (m_mesheventcallback)
           m_mesheventcallback->log() << "Collapse pass " << i << " finished" << std::endl;
         i++;
+        std::cout << "Collapses\n";
       }
       
       // process t1 transitions (vertex separation)
       i = 0;
+      
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
+         std::cout << "T1's\n";
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "T1 pass " << i << " finished" << std::endl;
          i++;
@@ -880,6 +886,7 @@ void SurfTrack::improve_mesh( )
       // smoothing
       if ( m_perform_smoothing)
       {
+         std::cout << "Smoothing\n";
          m_smoother.null_space_smoothing_pass( 1.0 );
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
@@ -934,7 +941,7 @@ void SurfTrack::improve_mesh( )
 
       assert_no_bad_labels();
       
-
+      std::cout << "Done improvement\n" << std::endl;
       if ( m_collision_safety )
       {
         assert_mesh_is_intersection_free( false );

@@ -768,11 +768,13 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
         
         if ( !all_collisions_handled )
         {
+           std::cout << "Processing collisions in smoothing.\n";
             ImpactZoneSolver solver( m_surf );
             bool result = solver.inelastic_impact_zones(dt);
             
             if ( !result )
             {
+               std::cout << "IIZ failed, moving to RIZ.\n";
                 result = solver.rigid_impact_zones(dt);
             }
             
