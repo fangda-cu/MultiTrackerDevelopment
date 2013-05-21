@@ -60,6 +60,7 @@ ShellRenderer * g_shell_renderer = NULL;
 void Recording::writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st)
 {
   size_t n;
+
   n = st.m_mesh.nv();
   os.write((char *)&n, sizeof (size_t));
   for (size_t i = 0; i < n; i++)
@@ -212,6 +213,7 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
   }
   
   m_of.write((char *)&m_current_step, sizeof (m_current_step));
+  
   
   size_t loglen = m_log.str().size();
   m_of.write((char *)&loglen, sizeof (size_t));

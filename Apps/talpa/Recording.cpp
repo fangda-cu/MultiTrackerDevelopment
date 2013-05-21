@@ -155,7 +155,7 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
     {
         std::stringstream filename;
         filename << m_recording_name << "_" << m_current_frame << ".rec";
-        m_of.open(filename.str().c_str());
+        m_of.open(filename.str().c_str(), std::ios::binary);
         
         if (!m_of.is_open())
         {
@@ -164,8 +164,10 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
         }
     }
     
+    //Write step number 
     m_of.write((char *)&m_current_step, sizeof (m_current_step));
     
+    //Write description log
     size_t loglen = m_log.str().size();
     m_of.write((char *)&loglen, sizeof (size_t));
     m_of.write((char *)m_log.str().c_str(), loglen);
@@ -187,26 +189,23 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
     {
         std::stringstream filename;
         filename << m_recording_name << "_" << m_current_frame << ".rec";
-        std::cout << "Asking for file: " << m_recording_name << "_" << m_current_frame << ".rec\n";
-
-        m_if.open(filename.str().c_str());
+        
+        m_if.open(filename.str().c_str(), std::ios::binary);
         
         if (!m_if.is_open())
         {
             std::cout << "Requested recording frame not found!" << std::endl;
             return;
         }
-        else if(!m_if.good()) {
-           std::cout << "open but good() failed.\n";
-           return;        
-        }
         
         m_step_pos.clear();
         m_step_pos.push_back(m_if.tellg());
         while (!m_if.eof())
         {
+           
             int step = 0;
             m_if.read((char *)&step, sizeof (step));
+        
             /////////
             //      readSurfTrack(m_if, st);
             /////////
@@ -216,7 +215,9 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
             m_if.read((char *)&n, sizeof (n));  // skip vertices
             m_if.seekg(sizeof (double) * 3 * n, std::ios_base::cur);
             m_if.read((char *)&n, sizeof (n));  // skip faces
+            
             m_if.seekg((sizeof (size_t) * 3 + sizeof (int) * 2) * n, std::ios_base::cur);
+            
             /////////
             m_if.peek();
             if (!m_if.eof())
@@ -226,9 +227,6 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
         
         m_if.seekg(m_step_pos.front());
         m_if.clear();
-    }
-    else {
-       std::cout << "m_if was open\n";
     }
     
     assert(m_current_step < (int)m_step_pos.size());

@@ -986,7 +986,6 @@ namespace {
             unsigned char k = key;
             if (k == '[')
             {
-               std::cout << "Attempting to step back in recording.\n";
                 int f = g_recording.currentFrame();
                 g_recording.setCurrentFrame(f - 1);
                 
@@ -1001,21 +1000,14 @@ namespace {
                 
             } else if (k == ']')
             {
-               std::cout << "Attempting to step forward in recording.\n";
                 int f = g_recording.currentFrame();
-                std::cout << "Cur frame: " << f << std::endl;
                 g_recording.setCurrentFrame(f + 1);
-                std::cout << "Getting the surface: " << std::endl;
                 
                 ElTopo::SurfTrack * st = g_surf;
-                std::cout << "Loading recording" << std::endl;
                 g_recording.loadRecording(*st);
                 
-                std::cout << "Update objects.\n";
-
                 update_renderable_objects();
                 
-                std::cout << "Fiddling with widgets" << std::endl;
                 std::stringstream ss;
                 ss << frame_stepper->dt() * (f + 1);
                 status_text_widget->text = ss.str();
