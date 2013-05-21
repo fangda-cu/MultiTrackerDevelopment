@@ -80,7 +80,7 @@ void NormalDriverMulti::set_predicted_vertex_positions( const SurfTrack& surf, s
 
         normal /= sum_areas;
         if(any_moving) {
-           normal /= mag(normal);
+           //normal /= mag(normal);
 
            velocities[i] = normal;
            displacements[i] = adaptive_dt * velocities[i];
