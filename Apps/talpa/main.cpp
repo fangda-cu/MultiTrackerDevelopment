@@ -1792,7 +1792,6 @@ namespace {
            std::cout << "Resuming from:\n";
            std::cout << "curr_t: " << sim->m_curr_t << std::endl;
            std::cout << "curr_frame: " << g_resume_frame << std::endl; 
-
         }
         
         

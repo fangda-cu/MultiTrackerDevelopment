@@ -195,7 +195,8 @@ bool T1Transition::t1_pass()
         //
         
         // construct the region graph
-        region_graph.assign(nregion, std::vector<int>(nregion, 0));
+        //region_graph.assign(nregion, std::vector<int>(nregion, 0));
+        region_graph.resize(nregion); // Fang's big speedup
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
             Vec2i label = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[xj][i]);

@@ -203,7 +203,8 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
                                             const std::vector<Vec3d>& triangle_centroids, 
                                             Vec3d& displacement ) const
 {
-    
+    if(m_surf.m_mesh.vertex_is_deleted(v)) return;
+
     const NonDestructiveTriMesh& mesh = m_surf.m_mesh;
     
     if ( mesh.m_vertex_to_triangle_map[v].empty() )     
