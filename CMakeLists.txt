@@ -163,4 +163,4 @@ endif (BUILD_APPS)
 
 add_subdirectory (doc)
 
-add_subdirectory (VoronoiFluid)
+#add_subdirectory (VoronoiFluid)

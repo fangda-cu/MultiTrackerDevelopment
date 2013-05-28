@@ -1,6 +1,5 @@
 add_definitions(-D__BIG_ENDIAN__)
 add_definitions(-DUSE_FORTRAN_BLAS)
-add_definitions(-DNO_GUI)
 
 set (Directories
  .
