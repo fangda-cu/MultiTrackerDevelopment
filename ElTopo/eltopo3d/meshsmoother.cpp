@@ -734,7 +734,7 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
                 size_t v = tri[j];
                 if ( !m_surf.vertex_is_all_solid(v) && !smoothed_already[v])
                 {
-                   null_space_smooth_vertex(v, triangle_areas, triangle_normals, triangle_centroids, displacements[i]);
+                   null_space_smooth_vertex(v, triangle_areas, triangle_normals, triangle_centroids, displacements[v]);
                    max_displacement = max( max_displacement, mag( displacements[v] ) );
                    smoothed_already[v] = true;
                 }

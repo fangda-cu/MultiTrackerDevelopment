@@ -533,13 +533,12 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
     large_threshold = large_threshold || m_surf.m_aggressive_mode; //if we are in aggressive mode, use the large threshold
 
     double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
-    if (!large_threshold && len >= m_t1_pull_apart_distance)
+    if (!large_threshold && len >= m_t1_pull_apart_distance) {
+       if(m_surf.m_verbose)
+          std::cout << "!large thresh and len >= t1_dist\n";
         return false;
+    }
         
-    //in aggressive mode, don't split only if the edge is very very small.
-    if(m_surf.m_aggressive_mode && len < m_surf.m_hard_min_edge_len)
-       return false;
-
    // boundary vertices have precedence
    if (keep_vert_is_boundary) keep_rank = 4;
    if (del_vert_is_boundary) delete_rank = 4;
@@ -873,7 +872,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
-    if ( normal_inversion )//&& (edge_len >= m_t1_pull_apart_distance) )
+    if ( normal_inversion && !m_surf.m_aggressive_mode)//&& (edge_len >= m_t1_pull_apart_distance) )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
@@ -885,7 +884,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position);
 
-    if ( bad_angle )//&& edge_len >= m_t1_pull_apart_distance )
+    if ( bad_angle && !m_surf.m_aggressive_mode )//&& edge_len >= m_t1_pull_apart_distance )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
