@@ -65,8 +65,8 @@ m_use_fraction( false ),
 m_min_edge_length( UNINITIALIZED_DOUBLE ),     // <- Don't allow instantiation without setting these parameters
 m_max_edge_length( UNINITIALIZED_DOUBLE ),     // <-
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   // <-
-m_min_triangle_angle( 3.0 ),
-m_max_triangle_angle( 177.0 ),
+m_min_triangle_angle( 2.0 ),
+m_max_triangle_angle( 178.0 ),
 m_large_triangle_angle_to_split(135.0),
 m_use_curvature_when_splitting( false ),
 m_use_curvature_when_collapsing( false ),
@@ -146,7 +146,7 @@ m_defragged_vertex_map(),
 m_solid_vertices_callback(NULL),
 m_mesheventcallback(NULL),
 m_aggressive_mode(false),
-m_hard_min_edge_len(0.005*initial_parameters.m_min_edge_length), 
+m_hard_min_edge_len(0.05*initial_parameters.m_min_edge_length), 
 m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
 {
     
@@ -582,9 +582,8 @@ void SurfTrack::assert_no_degenerate_triangles( )
 
 bool SurfTrack::any_triangles_with_bad_angles( )
 {
-
+   
    // for each triangle on the surface
-   bool any_bad = false;
    for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
    {
       Vec3st tri = m_mesh.m_tris[i];
@@ -609,11 +608,8 @@ bool SurfTrack::any_triangles_with_bad_angles( )
       //if any triangles are outside our bounds, we have to keep going.
 
       if(rad2deg(min_angle) < m_min_triangle_angle || rad2deg(max_angle) >= m_max_triangle_angle) {
-         any_bad = true;
-         //std::cout << "Bad triangle:" << v0 << " and " << v1 << " and " << v2 << std::endl;
-         return false;
+         return true;
       }
-      
    }
    
    
@@ -898,7 +894,7 @@ void SurfTrack::improve_mesh( )
       //potentially at the expense of some shape deterioration. (aka. BEAST MODE!!1!1!!) 
       
       m_aggressive_mode = true;
-
+      //m_verbose = true;
       i = 0;
       while(any_triangles_with_bad_angles()) {
          //enter aggressive mode
@@ -938,6 +934,7 @@ void SurfTrack::improve_mesh( )
       }
 
       m_aggressive_mode = false;
+      //m_verbose = false;
 
       assert_no_bad_labels();
       

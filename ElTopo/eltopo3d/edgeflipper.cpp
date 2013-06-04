@@ -259,82 +259,84 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // if both triangle normals agree before flipping, make sure they agree after flipping
-    if ( dot( m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1) ) > 0.0 && 
-         m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) ==
-         m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)) )
-    {
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri0) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );  
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri1) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );   
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri1) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri0) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
-            return false;
-        }
-    } else if (dot(m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1)) < 0.0 && 
-               m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) !=
-               m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)))
-    {
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri0) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );  
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri1) ) > 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );   
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri1) ) > 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
-            return false;
-        }
-        
-        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri0) ) < 0.0 )
-        {
-            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
-            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
-            return false;
-        }
+    if(!m_surf.m_aggressive_mode) {
+       if ( dot( m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1) ) > 0.0 && 
+          m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) ==
+          m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)) )
+       {
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );  
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri1) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );   
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri1) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
+             return false;
+          }
+       } else if (dot(m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1)) < 0.0 && 
+          m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) !=
+          m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)))
+       {
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );  
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri1) ) > 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );   
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri1) ) > 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+             return false;
+          }
+
+          if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+          {
+             if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
+             return false;
+          }
+       }
     }
     
     ////////////////////////////////////////////////////////////
