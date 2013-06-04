@@ -924,9 +924,9 @@ void SurfTrack::improve_mesh( )
          if(!any_triangles_with_bad_angles()) 
             break;
 
-         m_smoother.null_space_smoothing_pass( 1.0 );
-         if (m_mesheventcallback)
-            m_mesheventcallback->log() << "Aggressive smoothing pass " << i << " finished" << std::endl;
+//         m_smoother.null_space_smoothing_pass( 1.0 );
+//         if (m_mesheventcallback)
+//            m_mesheventcallback->log() << "Aggressive smoothing pass " << i << " finished" << std::endl;
 
          i++;
          //start dumping warning messages if we're doing a lot of iterations.
