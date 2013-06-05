@@ -670,6 +670,21 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 {
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
+   
+   if (m_surf.m_aggressive_mode)
+   {
+      std::vector<size_t> incident_triangles;
+      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep].size(); i++)
+         incident_triangles.push_back(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]);
+      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete].size(); i++)
+         incident_triangles.push_back(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete][i]);
+      bool bad_angle = false;
+      for (size_t i = 0; i < incident_triangles.size(); i++)
+         if (m_surf.triangle_with_bad_angle(incident_triangles[i]))
+            bad_angle = true;
+      if (!bad_angle)   // do not collapse in aggressive mode if none of the involved triangles have bad angles.
+         return false;
+   }
   
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
