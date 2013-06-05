@@ -898,7 +898,7 @@ void SurfTrack::improve_mesh( )
       m_aggressive_mode = true;
       //m_verbose = true;
       i = 0;
-      while(any_triangles_with_bad_angles()) {
+      while(any_triangles_with_bad_angles() && i < 100) {
          //enter aggressive mode
          
          std::cout << "Aggressive mesh improvement iteration #" << i << "." << std::endl;
