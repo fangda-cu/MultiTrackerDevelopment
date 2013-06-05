@@ -543,7 +543,8 @@ public:
     /// 
     void assert_no_degenerate_triangles();
     
-    /// Fire an assert if any triangles get bad enough to produce NaN's or zero/180 degree angles.
+    /// Detect any bad angle, i.e. out of range [m_min_triangle_angle, m_max_triangle_angle)
+    bool triangle_with_bad_angle(size_t triangle);
     bool any_triangles_with_bad_angles();
 
     //

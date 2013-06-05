@@ -582,37 +582,39 @@ void SurfTrack::assert_no_degenerate_triangles( )
 
 bool SurfTrack::any_triangles_with_bad_angles( )
 {
-   
    // for each triangle on the surface
    for ( size_t i = 0; i < m_mesh.num_triangles(); ++i )
-   {
-      Vec3st tri = m_mesh.m_tris[i];
-      if(m_mesh.triangle_is_deleted(i))
-         continue;
-      
-      assert(tri[0] != tri[1] && tri[1] != tri[2] && tri[0] != tri[2]);
-
-      Vec3d v0 = get_position(tri[0]);
-      Vec3d v1 = get_position(tri[1]);
-      Vec3d v2 = get_position(tri[2]);
-      
-      double min_angle = min_triangle_angle(v0,v1,v2);
-      double max_angle = max_triangle_angle(v0,v1,v2);
-      
-      //these simply must be true at all times
-      assert(min_angle >= 0);
-      assert(max_angle < 1.000001*M_PI);
-      assert(min_angle == min_angle);
-      assert(max_angle == max_angle);
-
-      //if any triangles are outside our bounds, we have to keep going.
-
-      if(rad2deg(min_angle) < m_min_triangle_angle || rad2deg(max_angle) >= m_max_triangle_angle) {
+      if (triangle_with_bad_angle(i))
          return true;
-      }
-   }
    
+   return false;
+}
    
+bool SurfTrack::triangle_with_bad_angle(size_t i)
+{
+   Vec3st tri = m_mesh.m_tris[i];
+   if (m_mesh.triangle_is_deleted(i))
+      return false;
+   
+   assert(tri[0] != tri[1] && tri[1] != tri[2] && tri[0] != tri[2]);
+
+   Vec3d v0 = get_position(tri[0]);
+   Vec3d v1 = get_position(tri[1]);
+   Vec3d v2 = get_position(tri[2]);
+   
+   double min_angle = min_triangle_angle(v0,v1,v2);
+   double max_angle = max_triangle_angle(v0,v1,v2);
+   
+   //these simply must be true at all times
+   assert(min_angle >= 0);
+   assert(max_angle < 1.000001*M_PI);
+   assert(min_angle == min_angle);
+   assert(max_angle == max_angle);
+
+   //if any triangles are outside our bounds, we have to keep going.
+
+   if (rad2deg(min_angle) < m_min_triangle_angle || rad2deg(max_angle) >= m_max_triangle_angle)
+      return true;
    return false;
 }
 
@@ -924,9 +926,9 @@ void SurfTrack::improve_mesh( )
          if(!any_triangles_with_bad_angles()) 
             break;
 
-         m_smoother.null_space_smoothing_pass( 1.0 );
-         if (m_mesheventcallback)
-            m_mesheventcallback->log() << "Aggressive smoothing pass " << i << " finished" << std::endl;
+//         m_smoother.null_space_smoothing_pass( 1.0 );
+//         if (m_mesheventcallback)
+//            m_mesheventcallback->log() << "Aggressive smoothing pass " << i << " finished" << std::endl;
 
          i++;
          //start dumping warning messages if we're doing a lot of iterations.
