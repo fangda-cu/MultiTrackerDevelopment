@@ -205,9 +205,12 @@ inline void triangle_angles(const Vec3d& a, const Vec3d& b, const Vec3d& c,
       angle_c = M_PI/2;
    }
 
-   angle_a = acos( dot( normalized(b-a), normalized(c-a) ) );
-   angle_b = acos( dot( normalized(a-b), normalized(c-b) ) );
-   angle_c = acos( dot( normalized(b-c), normalized(a-c) ) );   
+   angle_a = acos( std::max( -1.0, std::min( 1.0, dot( normalized(b-a), normalized(c-a) ) ) ) );
+   angle_b = acos( std::max( -1.0, std::min( 1.0, dot( normalized(a-b), normalized(c-b) ) ) ) );
+   angle_c = acos( std::max( -1.0, std::min( 1.0, dot( normalized(b-c), normalized(a-c) ) ) ) );
+   assert(angle_a == angle_a);
+   assert(angle_b == angle_b);
+   assert(angle_c == angle_c);
 }
 
 // ---------------------------------------------------------
