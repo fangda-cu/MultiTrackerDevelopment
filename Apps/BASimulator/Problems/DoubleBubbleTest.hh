@@ -19,7 +19,7 @@
 class Recording
 {
 public:
-  Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false) { }
+  Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false), m_playback(false), m_playback_simple(false) { }
   
   void setRecordingName(const std::string & name) { m_recording_name = name; }
   const std::string & recordingName() const { return m_recording_name; }
@@ -39,6 +39,8 @@ public:
   void turnOnPlayback() { m_playback = true; m_recording = false; }
   void turnOffPlayback() { m_playback = false; }
   bool isPlaybackOn() const { return m_playback; }
+  void setPlaybackSimple(bool s) { m_playback_simple = s; }
+  bool isPlaybackSimple() const { return m_playback_simple; }
   
 public:
   static void writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st);
@@ -54,7 +56,8 @@ protected:
   
   bool m_recording;
   bool m_playback;
-    
+  bool m_playback_simple;
+   
   std::vector<std::streampos> m_step_pos;
   
   std::ofstream m_of;
