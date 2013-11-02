@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <fstream>
 
+#define __LITTLE_ENDIAN__
+#undef __BIG_ENDIAN__
+
 #if defined(__BIG_ENDIAN__) && defined(__LITTLE_ENDIAN__)
 #if __BIG_ENDIAN__
 #undef __LITTLE_ENDIAN__

@@ -1921,6 +1921,35 @@ namespace {
 ///
 // ---------------------------------------------------------
 
+bool writeSurfTrack(std::ostream & os, SurfTrack & st)
+{
+    size_t n;
+    
+    n = st.m_mesh.nv();
+    os.write((char *)&n, sizeof (size_t));
+    for (size_t i = 0; i < n; i++)
+    {
+        ElTopo::Vec3d x = st.get_position(i);
+        os.write((char *)&(x[0]), sizeof (x[0]));
+        os.write((char *)&(x[1]), sizeof (x[1]));
+        os.write((char *)&(x[2]), sizeof (x[2]));
+    }
+    
+    n = st.m_mesh.nt();
+    os.write((char *)&n, sizeof (size_t));
+    for (size_t i = 0; i < n; i++)
+    {
+        ElTopo::Vec3st t = st.m_mesh.get_triangle(i);
+        os.write((char *)&(t[0]), sizeof (t[0]));
+        os.write((char *)&(t[1]), sizeof (t[1]));
+        os.write((char *)&(t[2]), sizeof (t[2]));
+        
+        ElTopo::Vec2i l = st.m_mesh.get_triangle_label(i);
+        os.write((char *)&(l[0]), sizeof (l[0]));
+        os.write((char *)&(l[1]), sizeof (l[1]));
+    }
+}
+
 int main(int argc, char **argv)
 {   
     
@@ -2027,14 +2056,24 @@ int main(int argc, char **argv)
        srand( 1 );
     
        // write frame 0
-       char binary_filename[256];
-       sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-
-       std::vector<double> scalar_masses(g_surf->m_masses.size());
-       for(size_t i = 0; i < scalar_masses.size(); ++i)
-          scalar_masses[i] = g_surf->m_masses[i][0];
-
-       write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );   
+//       char binary_filename[256];
+//       sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
+//
+//       std::vector<double> scalar_masses(g_surf->m_masses.size());
+//       for(size_t i = 0; i < scalar_masses.size(); ++i)
+//          scalar_masses[i] = g_surf->m_masses[i][0];
+//
+//       write_binary_file( g_surf->m_mesh, g_surf->get_positions(), scalar_masses, sim->m_curr_t, binary_filename );
+    
+        char binary_filename[256];
+        sprintf( binary_filename, "%s/frame%04d.rec", g_output_path, frame_stepper->get_frame() );
+        
+        std::vector<double> scalar_masses(g_surf->m_masses.size());
+        for(size_t i = 0; i < scalar_masses.size(); ++i)
+            scalar_masses[i] = g_surf->m_masses[i][0];
+        
+        std::ofstream ofs(binary_filename);
+        writeSurfTrack(ofs, *g_surf);
     
 
        driver_list[0]->write_to_disk( g_output_path, frame_stepper->get_frame() );
