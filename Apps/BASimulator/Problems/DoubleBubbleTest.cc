@@ -401,6 +401,7 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("record", "Generate a recording", false);
   AddOption("playback", "Playback a recording", false);
   AddOption("playback-path", "The path to the recording to playback", "");
+  AddOption("playback-simple", "true if playing back only one configuration stored per frame; false if playing back a multistep recording", false);
 
 }
 
@@ -494,7 +495,9 @@ void DoubleBubbleTest::Setup()
     
     g_obj_dump = GetBoolOpt("generate-OBJ");
     g_ply_dump = GetBoolOpt("generate-PLY");
-    
+  
+    g_recording.setPlaybackSimple(GetBoolOpt("playback-simple"));
+  
     if (g_obj_dump || g_ply_dump || g_recording.isRecording()){
 #ifdef _MSC_VER
         _mkdir(outputdirectory.c_str());
@@ -3017,11 +3020,26 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f - 1);
-    
-      ElTopo::SurfTrack * st = mesh2surftrack();
-      g_recording.loadRecording(*st);
-      surftrack2mesh(*st);
-      delete st;
+
+      if (g_recording.isPlaybackSimple())
+      {
+        std::stringstream name;
+        name << std::setfill('0');
+        name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
+        
+        std::ifstream fs(name.str().c_str());
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        Recording::readSurfTrack(fs, *st);
+        surftrack2mesh(*st);
+        fs.close();
+        
+      } else
+      {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.loadRecording(*st);
+        surftrack2mesh(*st);
+        delete st;
+      }
       
       setTime(getDt() * (f - 1));
       glutPostRedisplay();
@@ -3030,11 +3048,26 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     {
       int f = g_recording.currentFrame();
       g_recording.setCurrentFrame(f + 1);
-      
-      ElTopo::SurfTrack * st = mesh2surftrack();
-      g_recording.loadRecording(*st);
-      surftrack2mesh(*st);
-      delete st;
+
+      if (g_recording.isPlaybackSimple())
+      {
+        std::stringstream name;
+        name << std::setfill('0');
+        name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
+        
+        std::ifstream fs(name.str().c_str());
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        Recording::readSurfTrack(fs, *st);
+        surftrack2mesh(*st);
+        fs.close();
+        
+      } else
+      {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.loadRecording(*st);
+        surftrack2mesh(*st);
+        delete st;
+      }
       
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
