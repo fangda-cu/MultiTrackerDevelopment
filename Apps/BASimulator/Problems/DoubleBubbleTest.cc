@@ -1434,7 +1434,7 @@ void DoubleBubbleTest::setupScene1()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this, m_active_scene);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -3594,7 +3594,7 @@ void DoubleBubbleTest::setupScene14()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this, m_active_scene);
   shellObj->addModel(shell);
   
   //positions
