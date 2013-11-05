@@ -25,7 +25,7 @@ class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellStickyRepulsionForce;
 
-class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::SolidVerticesCallback {
+class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::SolidVerticesCallback, public ElTopo::T1Transition::VelocityFieldCallback {
 
 public:
   class SteppingCallback
@@ -36,7 +36,7 @@ public:
   };
   
 public:
-  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback = NULL);
+  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback = NULL, int doublebubble_scene = -1);
   ~ElasticShell();
 
   //*Inherited from PhysicalModel
@@ -175,6 +175,9 @@ public:
   bool generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower);
   bool generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b);
   bool solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e);
+  
+  // T1Transition::VelocityFieldCallback method
+  ElTopo::Vec3d sampleVelocity(ElTopo::Vec3d & pos);
   
   void extendMesh(Scalar current_time);
   void deleteRegion();
@@ -322,6 +325,10 @@ protected:
 
   // other callbacks
   ElTopo::SurfTrack::MeshEventCallback * m_mesheventcallback;
+  
+  // scene ID for double bubble tests, temporary
+  int m_doublebubble_scene;
+  
 };
 
 }

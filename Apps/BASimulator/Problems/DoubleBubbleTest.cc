@@ -1257,6 +1257,37 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
     }
   }
+  else if (m_active_scene == 14)
+  {
+    //zalesak disk test
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      Vec3d v;
+      Vec3d x = shell->getVertexPosition(*vit);
+      
+      // RK4
+      // -----------
+      // k1 = dt * f( t, x );
+      s14_cross_velocity(current_t, x, v);
+      Vec3d k1 = v;
+      
+      // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
+      s14_cross_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
+      Vec3d k2 = v;
+      
+      // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
+      s14_cross_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
+      Vec3d k3 = v;
+      
+      // k4 = dt * f( t + dt, x + k3 );
+      s14_cross_velocity(current_t + dt, x + dt * k3, v);
+      Vec3d k4 = v;
+      
+      v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
+      shell->setVertexVelocity(*vit, v);
+      shell->setVertexPosition(*vit, x + v * dt);
+    }
+  }
   
   if (g_recording.isRecording())
   {
@@ -1292,6 +1323,15 @@ void DoubleBubbleTest::s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d &
   double z = pos[2];
   
   out = Vec3d((z - 0.5), 0, -(x - 0.5));
+}
+
+void DoubleBubbleTest::s14_cross_velocity(double t, const Vec3d & pos, Vec3d & out)
+{
+  double x = pos[0];
+  double y = pos[1];
+  double z = pos[2];
+  
+  out = Vec3d((x - 0.5), -(y - 0.5), 0);
 }
 
 
@@ -1394,7 +1434,7 @@ void DoubleBubbleTest::setupScene1()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this, m_active_scene);
   shellObj->addModel(shell);
   
   //positions
@@ -3513,30 +3553,21 @@ void DoubleBubbleTest::setupScene14()
   }
   
   //create positions
-  positions[vertList[ 0]] = Vec3d(0,0,0);
-  positions[vertList[ 1]] = Vec3d(0,0,1);
-  positions[vertList[ 2]] = Vec3d(0,1,0);
-  positions[vertList[ 3]] = Vec3d(0,1,1);
+  double xsep = 0.03;
+  double ysep = 0.03;
+  double zsep = 0.04;
+  positions[vertList[ 0]] = Vec3d(0.5 - xsep,0.5 - ysep,0.5 - zsep);
+  positions[vertList[ 1]] = Vec3d(0.5 - xsep,0.5 - ysep,0.5 + zsep);
+  positions[vertList[ 2]] = Vec3d(0.5 - xsep,0.5 + ysep,0.5 - zsep);
+  positions[vertList[ 3]] = Vec3d(0.5 - xsep,0.5 + ysep,0.5 + zsep);
   
-  positions[vertList[ 4]] = Vec3d(1,0,0);
-  positions[vertList[ 5]] = Vec3d(1,0,1);
-  positions[vertList[ 6]] = Vec3d(1,1,0);
-  positions[vertList[ 7]] = Vec3d(1,1,1);
+  positions[vertList[ 4]] = Vec3d(0.5 + xsep,0.5 - ysep,0.5 - zsep);
+  positions[vertList[ 5]] = Vec3d(0.5 + xsep,0.5 - ysep,0.5 + zsep);
+  positions[vertList[ 6]] = Vec3d(0.5 + xsep,0.5 + ysep,0.5 - zsep);
+  positions[vertList[ 7]] = Vec3d(0.5 + xsep,0.5 + xsep,0.5 + zsep);
   
-  positions[vertList[ 8]] = Vec3d(0.3,0,0);
-  positions[vertList[ 9]] = Vec3d(0.3,0,1);
-  positions[vertList[10]] = Vec3d(0.3,1,0);
-  positions[vertList[11]] = Vec3d(0.3,1,1);
-  
-  positions[vertList[12]] = Vec3d(0.7,0,0);
-  positions[vertList[13]] = Vec3d(0.7,0,1);
-  positions[vertList[14]] = Vec3d(0.7,1,0);
-  positions[vertList[15]] = Vec3d(0.7,1,1);
-  
-  positions[vertList[16]] = Vec3d(0.3,0.5,0);
-  positions[vertList[17]] = Vec3d(0.3,0.5,1);
-  positions[vertList[18]] = Vec3d(0.7,0.5,0);
-  positions[vertList[19]] = Vec3d(0.7,0.5,1);
+  positions[vertList[ 8]] = Vec3d(0.5,0.5,0.5 - zsep);
+  positions[vertList[ 9]] = Vec3d(0.5,0.5,0.5 + zsep);
   
   for(int i = 0; i < 20; ++i)
     undeformed[vertList[i]] = positions[vertList[i]];
@@ -3545,30 +3576,16 @@ void DoubleBubbleTest::setupScene14()
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
   
   // face with x = 0.3
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[16], vertList[17]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[17], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[16], vertList[10], vertList[11]));  faceLabels[faceList.back()] = Vec2i(0,3);
-  faceList.push_back(shellObj->addFace(vertList[16], vertList[11], vertList[17]));  faceLabels[faceList.back()] = Vec2i(0,3);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 8], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 9], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,3);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 3], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,3);
   
   // face with x = 0.7
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[14], vertList[15]));  faceLabels[faceList.back()] = Vec2i(3,2);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[19]));  faceLabels[faceList.back()] = Vec2i(3,2);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[18], vertList[19]));  faceLabels[faceList.back()] = Vec2i(1,2);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[19], vertList[13]));  faceLabels[faceList.back()] = Vec2i(1,2);
-  
-  // face with y = 0.5
-  faceList.push_back(shellObj->addFace(vertList[16], vertList[17], vertList[19]));  faceLabels[faceList.back()] = Vec2i(1,3);
-  faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[16]));  faceLabels[faceList.back()] = Vec2i(1,3);
-  
-  // remove unused vertices
-  shellObj->deleteVertex(VertexHandle(vertList[0]));
-  shellObj->deleteVertex(VertexHandle(vertList[1]));
-  shellObj->deleteVertex(VertexHandle(vertList[2]));
-  shellObj->deleteVertex(VertexHandle(vertList[3]));
-  shellObj->deleteVertex(VertexHandle(vertList[4]));
-  shellObj->deleteVertex(VertexHandle(vertList[5]));
-  shellObj->deleteVertex(VertexHandle(vertList[6]));
-  shellObj->deleteVertex(VertexHandle(vertList[7]));
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 6], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(3,2);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 7], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(3,2);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 8], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,2);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 9], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,2);
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj);
@@ -3593,7 +3610,6 @@ void DoubleBubbleTest::setupScene14()
   shell->setFaceLabels(faceLabels);
   
 }
-
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
 {

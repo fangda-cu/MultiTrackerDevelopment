@@ -21,7 +21,7 @@
 
 namespace BASim {
   
-ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback) : 
+ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback, int doublebubble_scene) :
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
 //    m_undef_xi(object),
@@ -44,7 +44,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_do_eltopo_collisions(false),
 //    m_do_thickness_updates(true),
 //    m_momentum_conserving_remesh(false)
-    m_stepping_callback(stepping_callback)
+    m_stepping_callback(stepping_callback),
+    m_doublebubble_scene(doublebubble_scene)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -1153,7 +1154,10 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
   construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   construction_parameters.m_velocity_field_callback = NULL;
-    construction_parameters.m_pull_apart_distance = m_remesh_edge_min_len / 2;// (initial ? 0.1 : 0.02) * m_remesh_edge_min_len;
+  construction_parameters.m_pull_apart_distance = m_remesh_edge_min_len / 2;// (initial ? 0.1 : 0.02) * m_remesh_edge_min_len;
+  
+  if (m_doublebubble_scene == 14)
+    construction_parameters.m_velocity_field_callback = this; // this is only turned on for specific scenes
   
   ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
   ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
@@ -1462,6 +1466,17 @@ Vec3d ElasticShell::enforceBBWallConstraint(const Vec3d & input, int constraints
     output.z() = 1;
   
   return output;
+}
+
+ElTopo::Vec3d ElasticShell::sampleVelocity(ElTopo::Vec3d & pos)
+{
+  if (m_doublebubble_scene == 14)
+  {
+    return ElTopo::Vec3d(pos[0], -pos[1], 0);
+  } else
+  {
+    return ElTopo::Vec3d(0, 0, 0);
+  }
 }
 
 bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
