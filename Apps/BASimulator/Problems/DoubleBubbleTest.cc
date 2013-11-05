@@ -3067,8 +3067,9 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
         std::stringstream name;
         name << std::setfill('0');
         name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
-        
+
         std::ifstream fs(name.str().c_str());
+        assert(fs.is_open());
         ElTopo::SurfTrack * st = mesh2surftrack();
         Recording::readSurfTrack(fs, *st);
         surftrack2mesh(*st);
@@ -3095,8 +3096,9 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
         std::stringstream name;
         name << std::setfill('0');
         name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
-        
+
         std::ifstream fs(name.str().c_str());
+        assert(fs.is_open());
         ElTopo::SurfTrack * st = mesh2surftrack();
         Recording::readSurfTrack(fs, *st);
         surftrack2mesh(*st);
