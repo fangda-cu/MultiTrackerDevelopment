@@ -754,17 +754,24 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     
     // decide the final positions
     Vec3d xxj = m_surf.get_position(xj);
-//    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-//    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
-    Vec3d x_a = xxj + pull_apart_direction * m_pull_apart_distance;
-    Vec3d x_b = xxj - pull_apart_direction * m_pull_apart_distance;
   
-//    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
-    Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
-    Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
+    double divergence = 0;
+    if (!m_velocity_field_callback->sampleDirectionalDivergence(xxj, pull_apart_direction, divergence))
+    {
+      // resort to finite difference approximation if the velocity callback says it didn't implement the evaluation of directional divergence
+  //    Vec3d x_a = xxj + pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+  //    Vec3d x_b = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
+      Vec3d x_a = xxj + pull_apart_direction * m_pull_apart_distance;
+      Vec3d x_b = xxj - pull_apart_direction * m_pull_apart_distance;
     
-//    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
-    double divergence = dot(v_a - v_b, pull_apart_direction) / (m_pull_apart_distance * 2);
+  //    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
+      Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
+      Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
+      
+  //    double divergence = dot(v_a - v_b, pull_apart_direction) / (mean_edge_length * m_pull_apart_distance * 2);
+
+      divergence = dot(v_a - v_b, pull_apart_direction) / (m_pull_apart_distance * 2);
+    }
   
     return divergence;
 }

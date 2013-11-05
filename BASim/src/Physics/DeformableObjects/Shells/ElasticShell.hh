@@ -176,8 +176,9 @@ public:
   bool generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b);
   bool solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e);
   
-  // T1Transition::VelocityFieldCallback method
+  // T1Transition::VelocityFieldCallback methods
   ElTopo::Vec3d sampleVelocity(ElTopo::Vec3d & pos);
+  bool sampleDirectionalDivergence(const ElTopo::Vec3d & pos, const ElTopo::Vec3d & dir, double & output);
   
   void extendMesh(Scalar current_time);
   void deleteRegion();

@@ -1478,6 +1478,19 @@ ElTopo::Vec3d ElasticShell::sampleVelocity(ElTopo::Vec3d & pos)
     return ElTopo::Vec3d(0, 0, 0);
   }
 }
+  
+bool ElasticShell::sampleDirectionalDivergence(const ElTopo::Vec3d & pos, const ElTopo::Vec3d & dir, double & output)
+{
+  if (m_doublebubble_scene == 14)
+  {
+    output = dir[0] * dir[0] - dir[1] * dir[1];
+    return true;
+  } else
+  {
+    return false;
+  }
+}
+
 
 bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
 {

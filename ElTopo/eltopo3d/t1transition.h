@@ -50,8 +50,8 @@ public:
     class VelocityFieldCallback
     {
     public:
-        virtual Vec3d sampleVelocity(Vec3d & pos) = 0;
-        
+        virtual Vec3d sampleVelocity(Vec3d & pos) = 0;  // mandatory implementation
+        virtual bool sampleDirectionalDivergence(const Vec3d & pos, const Vec3d & dir, double & output) { return false; } // optional implementation; return false to notice the caller that it's not implemented, and that a finite difference approximation using sampleVelocity() is needed
     };
     
     
