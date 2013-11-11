@@ -1350,7 +1350,7 @@ void DoubleBubbleTest::AfterStep()
 //  triangulation_added_faces.clear();
 //  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
   
-  if (m_active_scene == 7)
+  if (m_active_scene == 7 || m_active_scene == 15)
   {
     int nregion = 0;
     for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
