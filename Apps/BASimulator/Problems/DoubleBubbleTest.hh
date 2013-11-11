@@ -138,6 +138,7 @@ public:
   
   void setupScene14();    // velocity field (x, -y) convergence test
   void setupScene15();  // double bubble test
+  void setupScene16();  // single bubble test
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
