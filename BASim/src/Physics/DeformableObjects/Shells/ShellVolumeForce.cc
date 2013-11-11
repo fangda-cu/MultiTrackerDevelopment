@@ -37,8 +37,9 @@ void outbin(int n)
 ShellVolumeForce::ShellVolumeForce( 
   ElasticShell& shell, 
   const std::string& name, 
-  Scalar strength )
-: ElasticShellForce(shell, name), m_strength(strength)
+  Scalar strength,
+  bool triangulate_walls)
+: ElasticShellForce(shell, name), m_strength(strength), m_triangulate_walls(triangulate_walls)
 {  
   computeRefPoint();
   
@@ -194,6 +195,9 @@ int ShellVolumeForce::onBBWall(const Vec3d & pos) const
   
 void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertices, std::vector<EdgeHandle> & new_edges, std::vector<FaceHandle> & new_faces) const
 {
+  if (!m_triangulate_walls)
+    return;
+  
   bool verbose = false;
   
   if (verbose) std::cout << "=========================================================================" << std::endl;

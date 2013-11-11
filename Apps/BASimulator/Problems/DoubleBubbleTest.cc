@@ -432,6 +432,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene12,
   &DoubleBubbleTest::setupScene13,
   &DoubleBubbleTest::setupScene14,
+  &DoubleBubbleTest::setupScene15,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -618,7 +619,7 @@ void DoubleBubbleTest::Setup()
   svf = NULL;
   if (vf_stiffness > 0)
   {
-    svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
+    svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness, (m_active_scene != 15));
     shell->addForce(svf);
       
     if (GetBoolOpt("volume-targeting"))
@@ -1287,6 +1288,13 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }
+  }
+  else if (m_active_scene == 15)
+  {
+    double volume = GetScalarOpt("shell-height");
+    svf->m_target_volumes[0] = 1 - 2 * volume;
+    svf->m_target_volumes[1] = volume;
+    svf->m_target_volumes[2] = volume;
   }
   
   if (g_recording.isRecording())
@@ -3589,6 +3597,101 @@ void DoubleBubbleTest::setupScene14()
   faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 8], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,2);
   faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 9], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,2);
   
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this, m_active_scene);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  //  shell->setEdgeUndeformed(undefAngle);
+  //  shell->setEdgeXis(edgeAngle);
+  //  shell->setEdgeVelocities(edgeVel);
+  
+  shell->setFaceLabels(faceLabels);
+  
+}
+
+void DoubleBubbleTest::setupScene15()
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  for(int i = 0; i < 12; ++i)
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0,0,0);
+  }
+  
+  //create positions
+  double w = GetScalarOpt("shell-width");
+  
+  positions[vertList[ 0]] = Vec3d(0.5 - w,0.5 - w,0.5 - w);
+  positions[vertList[ 1]] = Vec3d(0.5 - w,0.5 - w,0.5 + w);
+  positions[vertList[ 2]] = Vec3d(0.5 - w,0.5 + w,0.5 + w);
+  positions[vertList[ 3]] = Vec3d(0.5 - w,0.5 + w,0.5 - w);
+  
+  positions[vertList[ 4]] = Vec3d(0.5,    0.5 - w,0.5 - w);
+  positions[vertList[ 5]] = Vec3d(0.5,    0.5 - w,0.5 + w);
+  positions[vertList[ 6]] = Vec3d(0.5,    0.5 + w,0.5 + w);
+  positions[vertList[ 7]] = Vec3d(0.5,    0.5 + w,0.5 - w);
+  
+  positions[vertList[ 8]] = Vec3d(0.5 + w,0.5 - w,0.5 - w);
+  positions[vertList[ 9]] = Vec3d(0.5 + w,0.5 - w,0.5 + w);
+  positions[vertList[10]] = Vec3d(0.5 + w,0.5 + w,0.5 + w);
+  positions[vertList[11]] = Vec3d(0.5 + w,0.5 + w,0.5 - w);
+  
+  for(int i = 0; i < 12; ++i)
+    undeformed[vertList[i]] = positions[vertList[i]];
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 3], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 5], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(2,1);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 7], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(2,1);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 9], vertList[10]));  faceLabels[faceList.back()] = Vec2i(0,2);
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[11], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,2);
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 4], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 1], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 5], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 6], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[ 3], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 7], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 0], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 8], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 5], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 9], vertList[10]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[ 6], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[10], vertList[11]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 7], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[11], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 4], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(2,0);
+
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj);
   DeformableObject::face_iter fIt;

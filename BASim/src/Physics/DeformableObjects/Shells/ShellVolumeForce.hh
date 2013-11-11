@@ -29,7 +29,7 @@ class ShellVolumeForce : public ElasticShellForce {
 
 public:
 
-  ShellVolumeForce (ElasticShell& shell, const std::string& name = "ShellVolumeForce", Scalar strength = 0);
+  ShellVolumeForce (ElasticShell& shell, const std::string& name = "ShellVolumeForce", Scalar strength = 0, bool triangulate_walls = true);
   virtual ~ShellVolumeForce () {}
 
   std::string getName() const;
@@ -59,7 +59,8 @@ public:
   std::vector<Scalar> m_target_volumes;
   Vec3d m_ref_point;
   Scalar m_strength;
-
+  bool m_triangulate_walls;
+  
 };
 
 

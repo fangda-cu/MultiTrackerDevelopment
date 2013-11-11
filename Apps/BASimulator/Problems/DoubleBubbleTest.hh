@@ -137,6 +137,7 @@ public:
   void setupScene13();  // Enright test with a sphere, no four-way junctions
   
   void setupScene14();    // velocity field (x, -y) convergence test
+  void setupScene15();  // double bubble test
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
