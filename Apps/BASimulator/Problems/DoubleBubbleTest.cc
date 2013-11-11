@@ -1292,7 +1292,7 @@ void DoubleBubbleTest::beforeEndStep()
   else if (m_active_scene == 15)
   {
     double volume = GetScalarOpt("shell-height");
-    svf->m_target_volumes[0] = 1 - 2 * volume;
+    svf->m_target_volumes[0] = -2 * volume;
     svf->m_target_volumes[1] = volume;
     svf->m_target_volumes[2] = volume;
   }
