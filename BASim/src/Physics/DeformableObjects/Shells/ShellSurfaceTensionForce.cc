@@ -91,6 +91,7 @@ Scalar ShellSurfaceTensionForce::globalEnergy() const
 
 void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
 {
+//  std::cout << "SF energy = " << globalEnergy() << std::endl;
 
   std::vector<int> indices(9);
   std::vector<Vec3d> deformed(3);

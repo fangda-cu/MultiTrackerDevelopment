@@ -776,6 +776,8 @@ void ShellVolumeForce::globalForce( VecXd& force )  const
 {
   if (m_strength == 0) return;
   
+//  std::cout << "VF energy = " << globalEnergy() << std::endl;
+  
   DeformableObject & obj = m_shell.getDefoObj();
   
 //  std::cout << "ndof = " << force.size() << std::endl;
