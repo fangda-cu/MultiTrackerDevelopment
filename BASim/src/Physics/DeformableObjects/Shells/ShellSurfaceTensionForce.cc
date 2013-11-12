@@ -17,8 +17,9 @@ namespace BASim {
 ShellSurfaceTensionForce::ShellSurfaceTensionForce( 
   ElasticShell& shell, 
   const std::string& name, 
-  Scalar surf_coeff )
-: ElasticShellForce(shell, name), m_surface_tension_coeff(surf_coeff)
+  Scalar surf_coeff,
+  int active_scene)
+: ElasticShellForce(shell, name), m_surface_tension_coeff(surf_coeff), m_active_scene(active_scene)
 {
   
 }
@@ -63,7 +64,6 @@ adreal<NumSTDof,DO_HESS,Real> STEnergy(const ShellSurfaceTensionForce& mn, const
   //energy = 2*coeff*surface_area
   adrealST e(0);
   e += surf_coeff*len(cross(p[1] - p[0], p[2] - p[0]));  
-
 
   return e;
 }
@@ -112,6 +112,27 @@ void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
    
   }
   
+  if (m_active_scene == 8)
+  {
+    // special for the reuleaux tet test: constrain in-plane motion of wall vertices    
+    for (FaceIterator fit = m_shell.getDefoObj().faces_begin();fit != m_shell.getDefoObj().faces_end(); ++fit)
+    {
+      const FaceHandle& fh = *fit;
+     
+      bool valid = gatherDOFs(fh, deformed, indices);
+      if(!valid) continue;
+
+      for (int i = 0; i < 3; i++)
+      {
+        if (deformed[i].x() <= 0 || deformed[i].x() >= 1 || deformed[i].y() <= 0 || deformed[i].y() >= 1 || deformed[i].z() <= 0 || deformed[i].z() >= 1)
+        {
+          force[indices[i * 3 + 0]] = 0;
+          force[indices[i * 3 + 1]] = 0;
+          force[indices[i * 3 + 2]] = 0;
+        }
+      }
+    }
+  }
 }
 
 void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const

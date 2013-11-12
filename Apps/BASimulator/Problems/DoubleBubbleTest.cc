@@ -585,7 +585,7 @@ void DoubleBubbleTest::Setup()
   //Surface tension force
   if(surface_tension != 0) {
     //Viscous sheets-style surface tension
-    shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
+    shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension, m_active_scene));
     
     //Experimental piecewise linear surface tension
     //shell->addForce(new ShellLinearSurfaceTensionForce(*shell, "Surface Tension", surface_tension));

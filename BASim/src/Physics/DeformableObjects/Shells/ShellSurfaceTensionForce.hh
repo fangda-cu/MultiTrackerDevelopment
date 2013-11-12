@@ -30,7 +30,7 @@ class ShellSurfaceTensionForce : public ElasticShellForce {
 
 public:
 
-  ShellSurfaceTensionForce (ElasticShell& shell, const std::string& name = "ShellSurfaceTensionForce", Scalar surfCoeff = 0);
+  ShellSurfaceTensionForce (ElasticShell& shell, const std::string& name = "ShellSurfaceTensionForce", Scalar surfCoeff = 0, int active_scene = -1);
   virtual ~ShellSurfaceTensionForce () {}
 
   std::string getName() const;
@@ -50,6 +50,8 @@ public:
                        Eigen::Matrix<Scalar, 9, 9>& J) const;
   
   Scalar m_surface_tension_coeff;
+
+  int m_active_scene;
 
 };
 
