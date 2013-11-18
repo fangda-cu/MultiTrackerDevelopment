@@ -168,15 +168,27 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
     assert( initial_parameters.m_max_edge_length != UNINITIALIZED_DOUBLE );
     assert( initial_parameters.m_max_volume_change != UNINITIALIZED_DOUBLE );
     
+    std::cout << "************************" << std::endl;
     if ( initial_parameters.m_use_fraction )
     {
-        double avg_length = DynamicSurface::get_average_non_solid_edge_length();   
+        double avg_length = DynamicSurface::get_average_non_solid_edge_length();
         m_collapser.m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
         m_collapser.m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
-
+        
         m_splitter.m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
         m_splitter.m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
         
+        ///
+        double edge_scaling = (initial_parameters.m_min_edge_length + initial_parameters.m_max_edge_length) / 2;
+        avg_length *= edge_scaling;
+        m_merge_proximity_epsilon *= edge_scaling;
+        m_improve_collision_epsilon *= edge_scaling;
+        m_proximity_epsilon *= edge_scaling;
+        m_min_triangle_area *= edge_scaling * edge_scaling;
+        
+        m_hard_min_edge_len = m_collapser.m_min_edge_length * 0.05;
+        m_hard_max_edge_len = m_collapser.m_max_edge_length * 10.0;
+
         m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
         m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
         m_max_volume_change = initial_parameters.m_max_volume_change * avg_length * avg_length * avg_length;
@@ -184,6 +196,13 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
         m_t1transition.m_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance * 2;
         m_collapser.m_t1_pull_apart_distance = avg_length * initial_parameters.m_pull_apart_distance * 2;
 
+        
+        std::cout << "collapser edge len: " << m_collapser.m_min_edge_length << " " << m_collapser.m_max_edge_length << std::endl;
+        std::cout << "splitter edge len: " << m_splitter.m_min_edge_length << " " << m_splitter.m_max_edge_length << std::endl;
+        std::cout << "edge len: " << m_min_edge_length << " " << m_max_edge_length << std::endl;
+        std::cout << "volumen change: " << m_max_volume_change << std::endl;
+        std::cout << "t1 pull apart: " << m_t1transition.m_pull_apart_distance << std::endl;
+        std::cout << "collapser t1 pull apart: " << m_collapser.m_t1_pull_apart_distance << std::endl;
     }
     else
     {
@@ -201,7 +220,10 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
         m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance * 2;
     }
     
-
+    std::cout << "min triangle area: " << m_min_triangle_angle << std::endl;
+    std::cout << "merge epsilon: " << m_merge_proximity_epsilon << std::endl;
+    std::cout << "collision epsilon: " << m_proximity_epsilon << std::endl;
+    std::cout << "misc: " << m_improve_collision_epsilon << " " << initial_parameters.m_min_curvature_multiplier << " " << initial_parameters.m_use_fraction << std::endl;
   
     if ( m_verbose )
     {
