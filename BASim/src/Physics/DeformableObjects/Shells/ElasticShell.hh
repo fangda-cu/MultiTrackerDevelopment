@@ -70,20 +70,45 @@ public:
   const std::vector<ElasticShellForce*>& getForces() const;
   void addForce(ElasticShellForce* force);
 
-  void setRemeshing(bool enable, Scalar min_rez, Scalar max_rez, int iterations) {
+  void setRemeshing(bool enable, int iterations)
+  {
     m_do_remeshing = enable;
-    m_remesh_edge_max_len = max_rez;
-    m_remesh_edge_min_len = min_rez;
     m_remeshing_iters = iterations;
   }
     
-    void setCollisionParams(Scalar eps)
+    void setElTopoParams(
+                         Scalar collision_epsilon_fraction,
+                         Scalar merge_proximity_epsilon_fraction,
+                         Scalar remesh_edge_min_len,
+                         Scalar remesh_edge_max_len,
+                         bool perform_smoothing,
+                         Scalar max_volume_change_fraction,
+                         Scalar min_triangle_angle,
+                         Scalar max_triangle_angle,
+                         Scalar large_triangle_angle_to_split,
+                         Scalar min_triangle_area_fraction,
+                         bool t1_transition_enabled,
+                         Scalar t1_pull_apart_distance_fraction,
+                         bool smooth_subdivision
+                         )
     {
-        m_collision_epsilon = eps;
+        m_et_collision_epsilon_fraction = collision_epsilon_fraction;
+        m_et_merge_proximity_epsilon_fraction = merge_proximity_epsilon_fraction;
+        m_et_remesh_edge_min_len = remesh_edge_min_len;
+        m_et_remesh_edge_max_len = remesh_edge_max_len;
+        m_et_perform_smoothing = perform_smoothing;
+        m_et_max_volume_change_fraction = max_volume_change_fraction;
+        m_et_min_triangle_angle = min_triangle_angle;
+        m_et_max_triangle_angle = max_triangle_angle;
+        m_et_large_triangle_angle_to_split = large_triangle_angle_to_split;
+        m_et_min_triangle_area_fraction = min_triangle_area_fraction;
+        m_et_t1_transition_enabled = t1_transition_enabled;
+        m_et_t1_pull_apart_distance_fraction = t1_pull_apart_distance_fraction;
+        m_et_smooth_subdivision = smooth_subdivision;
     }
   
   //All DOFs at once
-  // these methods should have be removed because position access is now provided by DeformableObject; but 
+  // these methods should have be removed because position access is now provided by DeformableObject; but
   // too much code in other parts of the codebase need to change because they depend on this, so these
   // methods are kept and implemented to redirect the calls
   void setVertexPositions(const VertexProperty<Vec3d>& positions) { m_obj->setVertexPositions(positions); }
@@ -144,10 +169,6 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
-  bool m_do_remeshing;
-  Scalar m_remesh_edge_max_len;
-  Scalar m_remesh_edge_min_len;
-  int m_remeshing_iters;
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied
   //Note: this should ideally use booleans, but std::vector<bool> doesn't support references, which we need. (vector<bool> isn't technically a container)
@@ -161,8 +182,6 @@ protected:
   DeformableObject* m_obj;
   std::vector<ElasticShellForce*> m_shell_forces;
 
-  Scalar m_collision_epsilon; //epsilon tolerance for El Topo collisions
-
   ElTopoCode::BroadPhaseGrid m_broad_phase;
   
   // stepping callback
@@ -173,7 +192,26 @@ protected:
   
   // scene ID for double bubble tests, temporary
   int m_doublebubble_scene;
-  
+
+    // ElTopo parameters
+    Scalar  m_et_collision_epsilon_fraction;        // epsilon for collisions (expressed as percentage of mean edge length)
+    Scalar  m_et_merge_proximity_epsilon_fraction;  // proximity epsilon for triggering snapping (expressed as percentage of mean edge length)
+    Scalar  m_et_remesh_edge_max_len;
+    Scalar  m_et_remesh_edge_min_len;
+    bool    m_et_perform_smoothing;     // old hard-coded value: no
+    Scalar  m_et_max_volume_change_fraction;    // old hard-coded value: 1e-4
+    Scalar  m_et_min_triangle_angle;    // old hard-coded value: 3
+    Scalar  m_et_max_triangle_angle;    // old hard-coded value: 177
+    Scalar  m_et_large_triangle_angle_to_split; // old hard-coded value: 160
+    Scalar  m_et_min_triangle_area_fraction;    // old hard-coded value: 0.02
+    bool    m_et_t1_transition_enabled;
+    Scalar  m_et_t1_pull_apart_distance_fraction;   // old hard-coded value: 0.5
+    bool    m_et_smooth_subdivision;
+    
+    // remesh parameters
+    bool m_do_remeshing;
+    int m_remeshing_iters;
+    
 };
 
 }

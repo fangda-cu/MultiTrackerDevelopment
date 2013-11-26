@@ -281,7 +281,8 @@ void ElasticShell::resolveCollisions(Scalar timestep)
 
   // build a DynamicSurface
   Scalar friction_coeff = 0;
-  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
+  Scalar mean_edge_len = (m_et_remesh_edge_min_len + m_et_remesh_edge_max_len) / 2;
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_et_collision_epsilon_fraction * mean_edge_len, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
     
@@ -430,32 +431,55 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
-  construction_parameters.m_proximity_epsilon = m_collision_epsilon;
-  construction_parameters.m_merge_proximity_epsilon = 0.02 * m_remesh_edge_min_len;
-  construction_parameters.m_allow_vertex_movement_during_collapse = true;
-  construction_parameters.m_perform_smoothing = false;
-  construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
-  construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
-  construction_parameters.m_max_volume_change = 1e-4 * m_remesh_edge_min_len * m_remesh_edge_min_len * m_remesh_edge_min_len;
-  construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
-  construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
-  construction_parameters.m_large_triangle_angle_to_split = 160;
-  construction_parameters.m_min_triangle_area = 0.02*m_remesh_edge_min_len*m_remesh_edge_min_len;
-  construction_parameters.m_verbose = false;
-  construction_parameters.m_allow_non_manifold = true;
-  construction_parameters.m_allow_topology_changes = true;
-  construction_parameters.m_collision_safety = true;
-  construction_parameters.m_remesh_boundaries = true;
-  construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
-  construction_parameters.m_velocity_field_callback = NULL;
-  construction_parameters.m_pull_apart_distance = m_remesh_edge_min_len / 2;// (initial ? 0.1 : 0.02) * m_remesh_edge_min_len;
+//  construction_parameters.m_proximity_epsilon = m_collision_epsilon;
+//  construction_parameters.m_merge_proximity_epsilon = 0.02 * m_remesh_edge_min_len;
+//  construction_parameters.m_allow_vertex_movement_during_collapse = true;
+//  construction_parameters.m_perform_smoothing = false;
+//  construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
+//  construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
+//  construction_parameters.m_max_volume_change = 1e-4 * m_remesh_edge_min_len * m_remesh_edge_min_len * m_remesh_edge_min_len;
+//  construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
+//  construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
+//  construction_parameters.m_large_triangle_angle_to_split = 160;
+//  construction_parameters.m_min_triangle_area = 0.02*m_remesh_edge_min_len*m_remesh_edge_min_len;
+//  construction_parameters.m_verbose = false;
+//  construction_parameters.m_allow_non_manifold = true;
+//  construction_parameters.m_allow_topology_changes = true;
+//  construction_parameters.m_collision_safety = true;
+//  construction_parameters.m_remesh_boundaries = true;
+//  construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
+//  construction_parameters.m_velocity_field_callback = NULL;
+//  construction_parameters.m_pull_apart_distance = m_remesh_edge_min_len / 2;// (initial ? 0.1 : 0.02) * m_remesh_edge_min_len;
+    
+    Scalar mean_edge_len = (m_et_remesh_edge_min_len + m_et_remesh_edge_max_len) / 2;
+    
+    construction_parameters.m_proximity_epsilon = m_et_collision_epsilon_fraction * mean_edge_len;
+    construction_parameters.m_merge_proximity_epsilon = m_et_merge_proximity_epsilon_fraction * mean_edge_len;
+    construction_parameters.m_allow_vertex_movement_during_collapse = true;
+    construction_parameters.m_perform_smoothing = m_et_perform_smoothing;
+    construction_parameters.m_min_edge_length = m_et_remesh_edge_min_len;
+    construction_parameters.m_max_edge_length = m_et_remesh_edge_max_len;
+    construction_parameters.m_max_volume_change = m_et_max_volume_change_fraction * pow(mean_edge_len, 3);
+    construction_parameters.m_min_triangle_angle = m_et_min_triangle_angle;
+    construction_parameters.m_max_triangle_angle = m_et_max_triangle_angle;
+    construction_parameters.m_large_triangle_angle_to_split = m_et_large_triangle_angle_to_split;
+    construction_parameters.m_min_triangle_area = m_et_min_triangle_area_fraction * pow(mean_edge_len, 2);
+    construction_parameters.m_verbose = false;
+    construction_parameters.m_allow_non_manifold = true;
+    construction_parameters.m_allow_topology_changes = true;
+    construction_parameters.m_collision_safety = true;
+    construction_parameters.m_remesh_boundaries = true;
+    construction_parameters.m_t1_transition_enabled = m_et_t1_transition_enabled;
+    construction_parameters.m_velocity_field_callback = NULL;
+    construction_parameters.m_pull_apart_distance = m_et_t1_pull_apart_distance_fraction * mean_edge_len;
   
-  if (m_doublebubble_scene == 14)
-    construction_parameters.m_velocity_field_callback = this; // this is only turned on for specific scenes
+    if (m_doublebubble_scene == 14)
+        construction_parameters.m_velocity_field_callback = this; // this is only turned on for specific scenes
   
-  ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
-  ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
-  construction_parameters.m_subdivision_scheme = (m_remesh_smooth_subdivision ? mb : mp);
+    if (m_et_smooth_subdivision)
+        construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
+    else
+        construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();

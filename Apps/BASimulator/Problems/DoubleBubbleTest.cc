@@ -555,7 +555,7 @@ void DoubleBubbleTest::Setup()
       remeshing_max = 1.5*remeshing_rez;
   }
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
-  shell->setRemeshing(remeshing, remeshing_min, remeshing_max, remeshing_its);
+  shell->setRemeshing(remeshing, remeshing_its);
   
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
   svf = NULL;
@@ -576,8 +576,19 @@ void DoubleBubbleTest::Setup()
   shell->m_remesh_t1transition = GetBoolOpt("t1-transition-enabled");
  
 
-  Scalar epsilon = GetScalarOpt("shell-collision-epsilon");
-  shell->setCollisionParams(epsilon);
+//  Scalar epsilon = GetScalarOpt("shell-collision-epsilon");
+    shell->setElTopoParams(GetScalarOpt("eltopo-collision-epsilon-fraction"),
+                           GetScalarOpt("eltopo-merge-proximity-epsilon-fraction"),
+                           remeshing_min, remeshing_max,
+                           GetBoolOpt("eltopo-perform-smoothing"),
+                           GetScalarOpt("eltopo-max-volume-change-fraction"),
+                           GetScalarOpt("eltopo-min-triangle-angle"),
+                           GetScalarOpt("eltopo-max-triangle-angle"),
+                           GetScalarOpt("eltopo-large-triangle-angle-to-split"),
+                           GetScalarOpt("eltopo-min-triangle-area-fraction"),
+                           GetBoolOpt("eltopo-t1-transition-enabled"),
+                           GetScalarOpt("eltopo-t1-pull-apart-distance-fraction"),
+                           GetBoolOpt("eltopo-smooth-subdivision"));
   
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
