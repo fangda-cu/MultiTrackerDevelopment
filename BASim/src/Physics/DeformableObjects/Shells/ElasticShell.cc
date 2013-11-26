@@ -26,21 +26,9 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_active_faces(shellFaces), 
     m_face_regions(object),
     m_vertex_constraint_labels(object),
-//    m_collision_epsilon(1e-5),
-//    m_vert_point_springs(NULL),
-//    m_repulsion_springs(NULL),
-//    m_sphere_collisions(false),
-//    m_object_collisions(false),
-//    m_ground_collisions(false),
-//    m_do_eltopo_collisions(false),
     m_stepping_callback(stepping_callback),
     m_doublebubble_scene(doublebubble_scene)
 {
-//  m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
-//  m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
-//
-//  addForce(m_vert_point_springs);
-//  addForce(m_repulsion_springs);
 }
 
 ElasticShell::~ElasticShell() {
@@ -143,13 +131,6 @@ void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
     }
 }
 
-
-//void ElasticShell::getThickness(VertexProperty<Scalar> & vThickness) const{
-//    for ( VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit){
-//        vThickness[*vit] = getThickness(*vit);
-//    }
-//}
-
 Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
   VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
@@ -199,44 +180,26 @@ bool ElasticShell::isEdgeActive( const EdgeHandle& e) const {
 const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 {
   assert("No dof");
-//  //they're all edge Dofs for a shell
-//  assert(hnd.getType() == DofHandle::EDGE_DOF);
-//
-//  //return reference to the appropriate position in the vector
-//  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-  
   //Just to satisfy my compiler - CB
 #ifdef _MSC_VER
 #pragma warning( disable : 4172 )
 #endif
   Scalar dummy;
   return const_cast<Scalar&>(dummy);
-  
 }
 
 void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
 {
   assert("No dof");
-//  //they're all vertex Dofs for a shell
-//  assert(hnd.getType() == DofHandle::EDGE_DOF);
-//
-//  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-//  m_xi[eh] = dof;
 }
 
 const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 {
   assert("No dof");
-//  assert(hnd.getType() == DofHandle::EDGE_DOF);
-//
-//  //return reference to the appropriate position in the vector
-//  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-  
   //Just to satisfy my compiler - CB
 #ifdef _MSC_VER
 #pragma warning( disable : 4172 )
 #endif
-
   Scalar dummy;
   return const_cast<Scalar&>(dummy);
 }
@@ -252,10 +215,6 @@ void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& d
 
 void ElasticShell::startStep(Scalar time, Scalar timestep)
 {
-//
-//  //update the damping "reference configuration" for computing viscous forces.
-//  m_damping_undef_xi = m_xi;
-
   //tell the forces to update anything they need to update
   const std::vector<ElasticShellForce*>& forces = getForces();
   for(unsigned int i = 0; i < forces.size(); ++i) {
@@ -263,7 +222,6 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
   }
   
   m_stepping_callback->afterStartStep();
-  
 }
 
 void ElasticShell::resolveCollisions(Scalar timestep)
@@ -987,83 +945,5 @@ bool ElasticShell::solid_edge_is_feature(const ElTopo::SurfTrack & st, size_t e)
     return false;
 }
 
-
-void ElasticShell::updateThickness() {
-  FaceIterator fit = m_obj->faces_begin();
-  for(;fit != m_obj->faces_end(); ++fit) {
-    FaceHandle f = *fit;
-    if(!isFaceActive(f)) continue;
-
-    //compute face area
-    std::vector<Vec3d> verts(3);
-    int i = 0;
-    for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit, ++i)
-      verts[i] = getVertexPosition(*fvit);
-    Vec3d v0 = verts[1] - verts[0]; Vec3d v1 = verts[2] - verts[0];
-    Scalar area = 0.5f*(v0.cross(v1)).norm();
-
-    //figure out new thickness from previous volume, and update it
-//    Scalar newThickness = m_volumes[f] / area;
-//    m_thicknesses[f] = newThickness;
-  }
-
-}
-
-//void ElasticShell::deleteRegion() {
-//  //Delete faces that have entered the deletion zone.
-//
-//  std::vector<FaceHandle> faces_to_remove;
-//  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
-//    //compute barycentre of the face, and if it's in the deletion region, kill it.
-//    FaceHandle fh = *fit;
-//    Vec3d barycentre(0,0,0);
-//    for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
-//      VertexHandle vh = *fvit;
-//      Vec3d pos = getVertexPosition(vh);
-//      barycentre += pos;
-//
-//    }
-//    barycentre /= 3.0;
-//    
-//    //check if barycentre is in the deletion region
-//    if(barycentre[0] > m_delete_lower[0] && barycentre[1] >  m_delete_lower[1] && barycentre[2] > m_delete_lower[2] &&
-//       barycentre[0] < m_delete_upper[0] && barycentre[1] < m_delete_upper[1] && barycentre[2] < m_delete_upper[2]) {
-//      faces_to_remove.push_back(fh);
-//    }
-//  }
-//  for(unsigned int i = 0; i < faces_to_remove.size(); ++i) {
-//    removeFace(faces_to_remove[i]);
-//  }
-//
-//}
-//
-//void ElasticShell::removeFace(FaceHandle& f) {
-//  //safely remove a face
-//  //and all the constraints/springs that link to it.
-//
-//  //collect the vertices that comprise the face
-//  VertexHandle faceVerts[3];
-//  FaceVertexIterator fvit = m_obj->fv_iter(f);
-//  int j = 0;
-//  for(;fvit;++fvit) {
-//    faceVerts[j] = *fvit;
-//    ++j;
-//  }
-//  
-//  //remove springs on this face
-//  m_repulsion_springs->clearSprings(f);
-//
-//  //delete the face, and recursively, any unused vertices
-//  m_obj->deleteFace(f, true);
-//
-//  //now remove the springs and constraints to any vertices deleted as a side effect
-//  for(int j = 0; j < 3; ++j) {
-//    if(!m_obj->vertexExists(faceVerts[j])) {
-//      getDefoObj().releaseVertex(faceVerts[j]);
-//      m_repulsion_springs->clearSprings(faceVerts[j]);
-//    }
-//  }
-//}
-//
 
 } //namespace BASim

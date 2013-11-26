@@ -511,28 +511,10 @@ void DoubleBubbleTest::Setup()
     
   loadDynamicsProps();
 
-  //General shell forces and properties
-//  Scalar density = GetScalarOpt("shell-density");
-//  Scalar thickness = GetScalarOpt("shell-thickness");
-//  m_initial_thickness = thickness;
-
   Vec3d gravity = GetVecOpt("gravity");
   
   Scalar surface_tension = GetScalarOpt("shell-surface-tension");
 
-//  Scalar Youngs_modulus = GetScalarOpt("shell-Youngs");
-//  Scalar Poisson_ratio = GetScalarOpt("shell-Poisson");
-//  Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
-//  Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
-  
-//  bool cst_stretch = GetBoolOpt("shell-CST-stretching");
-//  bool ds_bend = GetBoolOpt("shell-DS-bending");
-//  bool mn_bend = GetBoolOpt("shell-MN-bending");
-
-//  //fudge factors to modify the elastic-viscous coefficients (so as to manipulate them separately)
-//  Scalar cst_scale = GetScalarOpt("shell-stretching-factor");
-//  Scalar ds_scale = GetScalarOpt("shell-bending-factor");
-  
   std::string integrator = GetStringOpt("integrator");
 
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
@@ -551,51 +533,16 @@ void DoubleBubbleTest::Setup()
   shell->setMeshEventCallback(this);
   shell->getVertexConstraintLabels().assign(0);
   
-//  shell->setThickness(thickness); /////////////////////////
-
-  //now add forces to the model
-//  MNBendingForce* bender;
-//
-//  //Stretching and bending forces
-//  if(Youngs_modulus != 0 || Youngs_damping != 0) {
-//    
-//    //Stretching force (Constant Strain Triangle, i.e. linear FEM)
-//    if(cst_stretch)
-//      shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", cst_scale*Youngs_modulus, Poisson_ratio, cst_scale*Youngs_damping, Poisson_damping, timestep));
-//    
-//    //Bending force (Hinge-based Bending, a la Discrete Shells)
-//    if(ds_bend)
-//      shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
-//
-//    //Better bending model (Mid-Edge normals, a la Computing discrete shape operators on general meshes)
-//    if(mn_bend) {
-//      bender = new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep);
-//      shell->addForce(bender);
-//    }
-//
-//  }
-
-//  //Gravity force
-//  shellObj->addForce(new GravityForce(*shellObj, timestep, "Gravity", gravity)); 
-//
-//  Scalar loadForce = GetScalarOpt("shell-uniform-load");
-//  if(loadForce != 0)
-//    shell->addForce(new ShellVerticalForce(*shell, "Load", Vec3d(0,-1,0), loadForce));
-  
   //Surface tension force
   if(surface_tension != 0) {
     //Viscous sheets-style surface tension
     shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension, m_active_scene));
     
-    //Experimental piecewise linear surface tension
-    //shell->addForce(new ShellLinearSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
-    //shell->addForce(new ShellLinearSurfaceTensionForce2(*shell, "Surface Tension", surface_tension));
   }
 
 //  shell->setDensity(density); ////////////////////////////
   
   bool remeshing = GetBoolOpt("shell-remeshing");
-  bool self = GetBoolOpt("shell-self-collision");
   std::cout << "Remeshing: " << remeshing << std::endl;
   Scalar remeshing_rez = GetScalarOpt("shell-remeshing-resolution");
   Scalar remeshing_min, remeshing_max;
@@ -610,12 +557,6 @@ void DoubleBubbleTest::Setup()
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_min, remeshing_max, remeshing_its);
   
-//  bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
-//  shell->setElTopoCollisions(eltopo_collisions);
-
-//  bool thickness_evolution = GetBoolOpt("shell-update-thickness");
-//  shell->setThicknessUpdating(thickness_evolution);
-
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
   svf = NULL;
   if (vf_stiffness > 0)
@@ -635,25 +576,9 @@ void DoubleBubbleTest::Setup()
   shell->m_remesh_t1transition = GetBoolOpt("t1-transition-enabled");
  
 
-  Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
-  Scalar damping = GetScalarOpt("shell-collision-spring-damping");
-//  Scalar proximity = GetScalarOpt("shell-collision-proximity");
   Scalar epsilon = GetScalarOpt("shell-collision-epsilon");
   shell->setCollisionParams(epsilon);
   
-//  bool groundPlane = GetBoolOpt("shell-ground-plane");
-//  Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");
-//  Scalar gpSpeed = GetScalarOpt("shell-ground-plane-velocity");
-//  shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
-//  bool selfCollide = GetBoolOpt("shell-self-collision");
-//  shell->setSelfCollision(selfCollide);
-//
-//  bool tearing = GetBoolOpt("shell-tearing");
-//  Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
-//  Scalar tearingRand = GetScalarOpt( "shell-tearing-randomness");
-////  tearingRand = clamp(tearingRand, 0.0, 1.0);
-//  shell->setTearing(tearing, tearingThres, tearingRand);
-
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
   {
