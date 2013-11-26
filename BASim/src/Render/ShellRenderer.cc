@@ -480,9 +480,7 @@ void ShellRenderer::render()
       Vec3d dir = (p1-p0);
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
-      if ( m_shell.shouldFracture(*eit) ){
-          OpenGL::color(Color(1.0, 1.0, 0.0));
-      } else if (mesh.isBoundary(*eit)){
+      if (mesh.isBoundary(*eit)){
           OpenGL::color(Color(0.0, 1.0, 0.0));
       }
       else {
@@ -624,42 +622,6 @@ void ShellRenderer::render()
     
 
     //Draw collision springs
-    std::vector<Vec3d> starts, ends;
-    m_shell.getSpringList(starts, ends);
-    glLineWidth(5);
-    
-    glBegin(GL_LINES);
-    glColor3f(0.0, 1.0, 0.0);
-     for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
-
-    //Vec3d spherePos;
-    //Scalar sphereRad;
-    //m_shell.getCollisionSphere(spherePos, sphereRad);
-    //glPointSize(20);
-    //glColor3f(1,0,0);
-    //glBegin(GL_POINTS);
-    //glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
-    //glEnd();
-
-    glPointSize(10);
-    glBegin(GL_POINTS);
-    glColor3f(0,0,1);
-    for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-    }
-    glEnd();
-    glPointSize(10);
-    
-    glBegin(GL_POINTS);
-    glColor3f(0,1,1);
-    for(unsigned int i = 0; i < ends.size(); ++i) {
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
 
 
 
@@ -712,9 +674,7 @@ void ShellRenderer::render()
       Vec3d dir = (p1-p0);
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
-      if ( m_shell.shouldFracture(*eit) ){
-        OpenGL::color(Color(1.0, 1.0, 0.0, 0.2));
-      } else if (mesh.isBoundary(*eit)){
+      if (mesh.isBoundary(*eit)){
         OpenGL::color(Color(0.0, 1.0, 0.0, 0.2));
       }
       else {
@@ -1043,44 +1003,6 @@ void ShellRenderer::render()
     }
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
-
-    //Draw collision springs
-    std::vector<Vec3d> starts, ends;
-    m_shell.getSpringList(starts, ends);
-    glLineWidth(5);
-    
-    glBegin(GL_LINES);
-    glColor3f(0.0, 1.0, 0.0);
-    for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
-    
-    //Vec3d spherePos;
-    //Scalar sphereRad;
-    //m_shell.getCollisionSphere(spherePos, sphereRad);
-    //glPointSize(20);
-    //glColor3f(1,0,0);
-    //glBegin(GL_POINTS);
-    //glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
-    //glEnd();
-    
-    glPointSize(10);
-    glBegin(GL_POINTS);
-    glColor3f(0,0,1);
-    for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-    }
-    glEnd();
-    glPointSize(10);
-    
-    glBegin(GL_POINTS);
-    glColor3f(0,1,1);
-    for(unsigned int i = 0; i < ends.size(); ++i) {
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
     
     glEnable(GL_LIGHTING);
     
@@ -1395,45 +1317,7 @@ void ShellRenderer::render()
       OpenGL::vertex(m_shell.getVertexPosition(mind_vertex));
       glEnd();
     }
-    
-    //Draw collision springs
-    std::vector<Vec3d> starts, ends;
-    m_shell.getSpringList(starts, ends);
-    glLineWidth(5);
-    
-    glBegin(GL_LINES);
-    glColor3f(0.0, 1.0, 0.0);
-    for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
-    
-    //Vec3d spherePos;
-    //Scalar sphereRad;
-    //m_shell.getCollisionSphere(spherePos, sphereRad);
-    //glPointSize(20);
-    //glColor3f(1,0,0);
-    //glBegin(GL_POINTS);
-    //glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
-    //glEnd();
-    
-    glPointSize(10);
-    glBegin(GL_POINTS);
-    glColor3f(0,0,1);
-    for(unsigned int i = 0; i < starts.size(); ++i) {
-      OpenGL::vertex(starts[i]);
-    }
-    glEnd();
-    glPointSize(10);
-    
-    glBegin(GL_POINTS);
-    glColor3f(0,1,1);
-    for(unsigned int i = 0; i < ends.size(); ++i) {
-      OpenGL::vertex(ends[i]);
-    }
-    glEnd();
-    
+        
     glEnable(GL_LIGHTING);
     
   }

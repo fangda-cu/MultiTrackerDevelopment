@@ -82,14 +82,19 @@ public:
     m_remesh_edge_min_len = min_rez;
     m_remeshing_iters = iterations;
   }
+    
+    void setCollisionParams(Scalar eps)
+    {
+        m_collision_epsilon = eps;
+    }
   
 //  void setThicknessUpdating(bool enable) {
 //    m_do_thickness_updates = enable;
 //  }
 
-  void setElTopoCollisions(bool enable) {
-    m_do_eltopo_collisions = enable;
-  }
+//  void setElTopoCollisions(bool enable) {
+//    m_do_eltopo_collisions = enable;
+//  }
 
   //All DOFs at once
   // these methods should have be removed because position access is now provided by DeformableObject; but 
@@ -152,18 +157,18 @@ public:
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
 //  void getThickness(VertexProperty<Scalar> & vThickness) const;
 
-  void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
-  void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
+//  void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
+//  void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
-  void setCollisionParams(Scalar proximity, Scalar epsilon, Scalar stiffness, Scalar damping);
-  void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
-  void setSelfCollision(bool enabled);
+//  void setCollisionParams(Scalar proximity, Scalar epsilon, Scalar stiffness, Scalar damping);
+//  void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
+//  void setSelfCollision(bool enabled);
 
-  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity);
-  void setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopoCode::Array3f& grid_data, const Vec3d& origin, Scalar dx);
+//  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity);
+//  void setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopoCode::Array3f& grid_data, const Vec3d& origin, Scalar dx);
 
-  void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
-  void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
+//  void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
+//  void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh(Scalar timestep, bool initial = false);
   
@@ -180,31 +185,31 @@ public:
   ElTopo::Vec3d sampleVelocity(ElTopo::Vec3d & pos);
   bool sampleDirectionalDivergence(const ElTopo::Vec3d & pos, const ElTopo::Vec3d & dir, double & output);
   
-  void extendMesh(Scalar current_time);
-  void deleteRegion();
+//  void extendMesh(Scalar current_time);
+//  void deleteRegion();
 
-  void removeFace(FaceHandle& f);
+//  void removeFace(FaceHandle& f);
 
-  void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
+//  void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
 
   //Fracture functions
   typedef std::vector<VertexHandle> VHList;
   typedef std::vector<bool> BoolList;
 
-  bool shouldFracture (const EdgeHandle & eh) const;
-  bool isInflow(const EdgeHandle & eh) const;
-  void setTearing(bool tearing, Scalar thres, Scalar rand){
-      m_tearing = tearing;
-      m_tear_thres = thres;
-      m_tear_rand = rand;
-  }
+//  bool shouldFracture (const EdgeHandle & eh) const;
+//  bool isInflow(const EdgeHandle & eh) const;
+//  void setTearing(bool tearing, Scalar thres, Scalar rand){
+//      m_tearing = tearing;
+//      m_tear_thres = thres;
+//      m_tear_rand = rand;
+//  }
 
-  void fracture();
+//  void fracture();
 
-  void getCollisionSphere(Vec3d& position, Scalar& radius) const {
-    position = m_sphere_position;
-    radius = m_sphere_radius;
-  }
+//  void getCollisionSphere(Vec3d& position, Scalar& radius) const {
+//    position = m_sphere_position;
+//    radius = m_sphere_radius;
+//  }
 
     bool m_remesh_t1transition;
     bool m_remesh_smooth_subdivision;
@@ -213,17 +218,17 @@ public:
     
 protected:
 
-  void performTearing(const EdgeHandle & eh);
+//  void performTearing(const EdgeHandle & eh);
 
   void resolveCollisions(Scalar timestep);
   void updateThickness();
 
-  void performSplit(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
-  void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
-  bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, FaceHandle & new_f0, FaceHandle & new_f1, EdgeHandle& newEdge);
-  void performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, const std::vector<std::pair<FaceHandle, Vec2i> > & face_labels_to_change, std::vector<FaceHandle> & face_created);
+//  void performSplit(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
+//  void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
+//  bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, FaceHandle & new_f0, FaceHandle & new_f1, EdgeHandle& newEdge);
+//  void performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, const std::vector<std::pair<FaceHandle, Vec2i> > & face_labels_to_change, std::vector<FaceHandle> & face_created);
   
-  void addSelfCollisionForces();
+//  void addSelfCollisionForces();
   
   int onBBWall(const Vec3d & pos) const;
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
@@ -279,33 +284,33 @@ protected:
   DeformableObject* m_obj;
   std::vector<ElasticShellForce*> m_shell_forces;
 
-  ShellVertexPointSpringForce* m_vert_point_springs;
-  ShellStickyRepulsionForce* m_repulsion_springs;
+//  ShellVertexPointSpringForce* m_vert_point_springs;
+//  ShellStickyRepulsionForce* m_repulsion_springs;
 
   //To handle continually inflowing regions
-  Scalar m_inflow_thickness;
-  bool m_inflow;
-  std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
-  std::vector<std::vector<Vec3d> > m_inflow_positions;
-  std::vector<std::vector<Vec3d> > m_inflow_velocities;
-  std::vector<bool> m_inflow_lastdir;
+//  Scalar m_inflow_thickness;
+//  bool m_inflow;
+//  std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
+//  std::vector<std::vector<Vec3d> > m_inflow_positions;
+//  std::vector<std::vector<Vec3d> > m_inflow_velocities;
+//  std::vector<bool> m_inflow_lastdir;
   
   
-  bool m_delete_region;
-  Vec3d m_delete_lower, m_delete_upper;
+//  bool m_delete_region;
+//  Vec3d m_delete_lower, m_delete_upper;
 
   Scalar m_collision_epsilon; //epsilon tolerance for El Topo collisions
-  Scalar m_collision_proximity; //distance at which to trigger spring penalty forces
+//  Scalar m_collision_proximity; //distance at which to trigger spring penalty forces
 
-  Scalar m_ground_height;
-  bool m_self_collisions;
-  bool m_ground_collisions;
-  Scalar m_ground_velocity;
-  Scalar m_collision_spring_stiffness, m_collision_spring_damping;
-  Scalar m_sphere_radius;
-  Vec3d m_sphere_position;
-  bool m_sphere_collisions;
-  Vec3d m_sphere_velocity;
+//  Scalar m_ground_height;
+//  bool m_self_collisions;
+//  bool m_ground_collisions;
+//  Scalar m_ground_velocity;
+//  Scalar m_collision_spring_stiffness, m_collision_spring_damping;
+//  Scalar m_sphere_radius;
+//  Vec3d m_sphere_position;
+//  bool m_sphere_collisions;
+//  Vec3d m_sphere_velocity;
 
   bool m_object_collisions;
   Vec3d m_object_position;
@@ -316,10 +321,10 @@ protected:
 
   ElTopoCode::BroadPhaseGrid m_broad_phase;
   
-  //Fracture properties
-  bool m_tearing;
-  Scalar m_tear_thres;
-  Scalar m_tear_rand;
+//  //Fracture properties
+//  bool m_tearing;
+//  Scalar m_tear_thres;
+//  Scalar m_tear_rand;
   
   // stepping callback
   SteppingCallback * m_stepping_callback;

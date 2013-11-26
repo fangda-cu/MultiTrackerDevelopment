@@ -610,8 +610,8 @@ void DoubleBubbleTest::Setup()
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_min, remeshing_max, remeshing_its);
   
-  bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
-  shell->setElTopoCollisions(eltopo_collisions);
+//  bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
+//  shell->setElTopoCollisions(eltopo_collisions);
 
 //  bool thickness_evolution = GetBoolOpt("shell-update-thickness");
 //  shell->setThicknessUpdating(thickness_evolution);
@@ -637,22 +637,22 @@ void DoubleBubbleTest::Setup()
 
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");
-  Scalar proximity = GetScalarOpt("shell-collision-proximity");
+//  Scalar proximity = GetScalarOpt("shell-collision-proximity");
   Scalar epsilon = GetScalarOpt("shell-collision-epsilon");
-  shell->setCollisionParams(proximity, epsilon, stiffness, damping);
+  shell->setCollisionParams(epsilon);
   
-  bool groundPlane = GetBoolOpt("shell-ground-plane");
-  Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");
-  Scalar gpSpeed = GetScalarOpt("shell-ground-plane-velocity");
-  shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
-  bool selfCollide = GetBoolOpt("shell-self-collision");
-  shell->setSelfCollision(selfCollide);
-
-  bool tearing = GetBoolOpt("shell-tearing");
-  Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
-  Scalar tearingRand = GetScalarOpt( "shell-tearing-randomness");
-//  tearingRand = clamp(tearingRand, 0.0, 1.0);
-  shell->setTearing(tearing, tearingThres, tearingRand);
+//  bool groundPlane = GetBoolOpt("shell-ground-plane");
+//  Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");
+//  Scalar gpSpeed = GetScalarOpt("shell-ground-plane-velocity");
+//  shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
+//  bool selfCollide = GetBoolOpt("shell-self-collision");
+//  shell->setSelfCollision(selfCollide);
+//
+//  bool tearing = GetBoolOpt("shell-tearing");
+//  Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
+//  Scalar tearingRand = GetScalarOpt( "shell-tearing-randomness");
+////  tearingRand = clamp(tearingRand, 0.0, 1.0);
+//  shell->setTearing(tearing, tearingThres, tearingRand);
 
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
@@ -685,7 +685,7 @@ void DoubleBubbleTest::Setup()
   else if(integrator == "statics")
     stepper->setDiffEqSolver(DefoObjTimeStepper::STATICS);
   else {
-    std::cout << "No valid integrator specified. Existing options are 'symplectic' and 'implicit'.\n";
+    std::cout << "No valid integrator specified. Existing options are 'symplectic', 'implicit', 'statics'.\n";
     assert(false);
   }
   stepper->setTimeStep(getDt());

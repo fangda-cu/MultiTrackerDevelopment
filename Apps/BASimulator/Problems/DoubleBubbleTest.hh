@@ -126,7 +126,7 @@ public:
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 17
   void setupScene6(); // VIIM multiphase cube test (figure 24)
-    
+  
   void setupScene7(); // Enright test with a sphere
   void setupScene8(); // Reauleux tetrahedron test VIIM figure 18
   void setupScene9(); // Normal motion VIIM figure 20
