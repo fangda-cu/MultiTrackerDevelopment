@@ -220,11 +220,6 @@ m_hard_max_edge_len(10.0*initial_parameters.m_max_edge_length)
         m_collapser.m_t1_pull_apart_distance = initial_parameters.m_pull_apart_distance * 2;
     }
     
-    std::cout << "min triangle area: " << m_min_triangle_area << std::endl;
-    std::cout << "merge epsilon: " << m_merge_proximity_epsilon << std::endl;
-    std::cout << "collision epsilon: " << m_proximity_epsilon << std::endl;
-    std::cout << "misc: " << m_improve_collision_epsilon << " " << initial_parameters.m_min_curvature_multiplier << " " << initial_parameters.m_use_fraction << std::endl;
-  
     if ( m_verbose )
     {
         std::cout << "m_min_edge_length: " << m_min_edge_length << std::endl;
