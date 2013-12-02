@@ -136,7 +136,7 @@ public:
   void setupScene12();  // Zalesak disk test
   void setupScene13();  // Enright test with a sphere, no four-way junctions
   
-  void setupScene14();    // velocity field (x, -y) convergence test
+  void setupScene14();      // velocity field (x, -y) convergence test
   void setupScene15();  // double bubble test
   void setupScene16();  // single bubble test
 
