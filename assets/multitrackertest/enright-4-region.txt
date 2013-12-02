@@ -4,14 +4,6 @@ max-time 3
 
 gravity 0 0 0	# gravity
 
-shell-CST-stretching 0
-shell-DS-bending 0
-
-#Viscous Parameters
-shell-Youngs-damping 0
-shell-Poisson-damping 0
-
-#Surface Tension
 shell-surface-tension 0
 volume-force-stiffness 0
 
@@ -19,9 +11,6 @@ shell-remeshing 1
 shell-init-remesh 1
 shell-remeshing-resolution 0.01
 shell-remeshing-iterations 1
-
-smooth-subdivision-scheme 0
-t1-transition-enabled 0
 
 integrator implicit	# type of integrator to use for the shell
 
@@ -38,8 +27,18 @@ rtol 1e-008	# relative convergence tolerance
 atol 1e-008	# absolute convergence tolerance
 stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
 
-shell-collision-epsilon 1e-05	# the distance tolerance for El Topo to flag a collision
-shell-collision-proximity 0	# the collision spring rest length and distance at which to add springs
+eltopo-collision-epsilon-fraction 0.001
+eltopo-merge-proximity-epsilon-fraction 0.02
+eltopo-perform-smoothing 0
+eltopo-max-volume-change-fraction 1e-4
+eltopo-min-triangle-angle 3
+eltopo-max-triangle-angle 177
+eltopo-large-triangle-angle-to-split 160
+eltopo-min-triangle-area-fraction 0.02
+eltopo-t1-transition-enabled 1
+eltopo-t1-pull-apart-distance-fraction 0.1
+eltopo-smooth-subdivision 1
+
 
 generate-OBJ 1
 obj-mode 4

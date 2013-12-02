@@ -460,8 +460,8 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     construction_parameters.m_min_edge_length = m_et_remesh_edge_min_len;
     construction_parameters.m_max_edge_length = m_et_remesh_edge_max_len;
     construction_parameters.m_max_volume_change = m_et_max_volume_change_fraction * pow(mean_edge_len, 3);
-    construction_parameters.m_min_triangle_angle = m_et_min_triangle_angle;
-    construction_parameters.m_max_triangle_angle = m_et_max_triangle_angle;
+    construction_parameters.m_min_triangle_angle = initial ? 0 : m_et_min_triangle_angle;
+    construction_parameters.m_max_triangle_angle = initial ? 180 : m_et_max_triangle_angle;
     construction_parameters.m_large_triangle_angle_to_split = m_et_large_triangle_angle_to_split;
     construction_parameters.m_min_triangle_area = m_et_min_triangle_area_fraction * pow(mean_edge_len, 2);
     construction_parameters.m_verbose = false;

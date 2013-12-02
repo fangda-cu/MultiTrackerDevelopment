@@ -321,15 +321,9 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
   
   AddOption("shell-initial-velocity", "starting velocity in the y direction", -0.1);
-  AddOption("shell-inflate-sphere-coeff", "coefficient for inflating sphere", 0.0);
-  AddOption("shell-inflate-sphere-const-pressure", "whether to use constant pressure version", false);
   
   AddOption("volume-targeting", "whether to set the desired volume of each region to equal", false);
     
-  //sheared wrinkling parameters
-  AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
-  AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
-
   //Remeshing options
   AddOption("shell-remeshing", "whether to perform remeshing", false);
   AddOption("shell-remeshing-resolution", "target edge-length", 0.0); //for backwards compatibility
@@ -344,45 +338,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
     
   //Area-based surface tension force
   AddOption("shell-surface-tension", "surface tension coefficient of the shell", 0.0);
-  
-  //Properties for thickness-dependent linear elasticity & viscosity
-  AddOption("shell-Poisson", "the Poisson ratio of the shell material", 0.0f);
-  AddOption("shell-Youngs", "the Young's modulus of the shell material", 0.0f);
-  AddOption("shell-Poisson-damping", "the damping coefficient associated to the shell's Poisson ratio", 0.0f);
-  AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
-  AddOption("shell-uniform-load", "a vertical force per unit area applied to the shell surface", 0.0);
-
-  //Shell forces
-  AddOption("shell-CST-stretching", "whether to apply constant-strain-triangle in-plane stretching", true);
-  AddOption("shell-DS-bending", "whether to apply \"Discrete Shells\" hinge-based bending", false);
-  AddOption("shell-MN-bending", "whether to apply Mid-edge Normal based bending (Morley elt)", false);
-  AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
-  AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
-
   AddOption("volume-force-stiffness", "stiffness of the penalty force maintaining volume of each region", 1000.0);
   
-  //Collision options
-  AddOption("shell-self-collision", "whether to add self-collision springs", false);
-  AddOption("shell-ground-plane", "whether to add ground plane collision springs", false);
-  AddOption("shell-ground-plane-height", "height of the ground plane", 0.0);
-  AddOption("shell-ground-plane-velocity", "the rate at which particles colliding with the ground (bath) are pulled into it.", 0.0);
-
-  AddOption("shell-eltopo-collisions", "whether to apply bridson/harmon-style CCD collision handling, via the El Topo library", true);
-
-  AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
-  AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
-  AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
-  AddOption("shell-collision-epsilon", "the distance tolerance for El Topo to flag a collision", 1e-5);
-
-  AddOption("shell-collision-object-file", "source SDF for object collision", "");
-  AddOption("shell-collision-object-offset", "translation of the object", Vec3d(0,0,0));
-  
-  //Tearing options
-  AddOption("shell-tearing", "whether to add tearing to the model", false);
-  AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
-  AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 1.0 );
-  AddOption("shell-ring-velocity", "velocity in the x direction for the rings", 0.25);
-
   //Time stepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
@@ -403,6 +360,19 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("playback-path", "The path to the recording to playback", "");
   AddOption("playback-simple", "true if playing back only one configuration stored per frame; false if playing back a multistep recording", false);
 
+    // eltopo options
+    AddOption("eltopo-collision-epsilon-fraction", "eltopo collision epsilon (fraction of mean edge length)", 1e-4);
+    AddOption("eltopo-merge-proximity-epsilon-fraction", "eltopo merge proximity epsilon (fraction of mean edge length)", 0.02);
+    AddOption("eltopo-perform-smoothing", "whether or not to perform smoothing", false);
+    AddOption("eltopo-max-volume-change-fraction", "maximum allowed volume change during a remeshing operation (fraction of mean edge length cubed)", 1e-4);
+    AddOption("eltopo-min-triangle-angle", "min triangle angle (in degrees)", 3);
+    AddOption("eltopo-max-triangle-angle", "max triangle angle (in degrees)", 177);
+    AddOption("eltopo-large-triangle-angle-to-split", "threshold for large angles to be split", 160);
+    AddOption("eltopo-min-triangle-area-fraction", "minimum allowed triangle area (fraction of mean edge length squared)", 0.02);
+    AddOption("eltopo-t1-transition-enabled", "whether t1 is enabled", true);
+    AddOption("eltopo-t1-pull-apart-distance-fraction", "t1 pull apart distance (fraction of mean edge legnth)", 0.1);
+    AddOption("eltopo-smooth-subdivision", "wheterh to use smooth subdivision during remeshing", false);
+    
 }
 
 DoubleBubbleTest::~DoubleBubbleTest()
@@ -415,7 +385,7 @@ DoubleBubbleTest::~DoubleBubbleTest()
 typedef void (DoubleBubbleTest::*sceneFunc)();
 
 
-sceneFunc db_scenes[] = 
+sceneFunc db_scenes[] =
 {
   0,
   &DoubleBubbleTest::setupScene1,
