@@ -135,6 +135,7 @@ public:
 
   void setupScene12();  // Zalesak disk test
   void setupScene13();  // Enright test with a sphere, no four-way junctions
+  void setupScene14();  // collision debugging
   
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
