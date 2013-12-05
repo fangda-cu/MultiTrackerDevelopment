@@ -53,6 +53,8 @@ int db_current_obj_frame = 0;
 extern bool g_ply_dump;
 int db_current_ply_frame = 0;
 
+std::set<int> g_frames_to_generate_rec;
+
 extern std::string outputdirectory;
 Recording g_recording;
 
@@ -374,6 +376,9 @@ DoubleBubbleTest::DoubleBubbleTest() :
     AddOption("eltopo-t1-pull-apart-distance-fraction", "t1 pull apart distance (fraction of mean edge legnth)", 0.1);
     AddOption("eltopo-smooth-subdivision", "wheterh to use smooth subdivision during remeshing", false);
     
+  // controlled input/output
+  AddOption("generate-rec-at-time", "Generate a .rec file at specified time points", "");
+  AddOption("load-from-rec", "start the simulation from a .rec file as initial geometry", "");
 }
 
 DoubleBubbleTest::~DoubleBubbleTest()
@@ -447,6 +452,26 @@ int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 
 void DoubleBubbleTest::Setup()
 {
+    if (GetStringOpt("generate-rec-at-time") != "")
+    {
+        std::vector<Scalar> rec_times;
+        std::stringstream rec_time_ss(GetStringOpt("generate-rec-at-time"));
+        while (!rec_time_ss.eof())
+        {
+            Scalar r = -1;
+            rec_time_ss >> r;
+            if (r >= 0)
+                rec_times.push_back(r);
+        }
+        
+        g_frames_to_generate_rec.clear();
+        for (size_t i = 0; i < rec_times.size(); i++)
+        {
+            int frame = (int)(rec_times[i] / GetScalarOpt("dt") + 0.5);
+            g_frames_to_generate_rec.insert(frame);
+        }
+    }
+    
     if (GetBoolOpt("record"))
     {
         assert(!GetBoolOpt("playback"));
@@ -481,7 +506,7 @@ void DoubleBubbleTest::Setup()
         mkdir(outputdirectory.c_str(), 0755);
 #endif
     }
-    
+  
   loadDynamicsProps();
 
   Vec3d gravity = GetVecOpt("gravity");
@@ -562,6 +587,16 @@ void DoubleBubbleTest::Setup()
                            GetBoolOpt("eltopo-t1-transition-enabled"),
                            GetScalarOpt("eltopo-t1-pull-apart-distance-fraction"),
                            GetBoolOpt("eltopo-smooth-subdivision"));
+
+  if (GetStringOpt("load-from-rec") != "")
+  {
+    std::ifstream fs(GetStringOpt("load-from-rec").c_str());
+    assert(fs.is_open());
+    ElTopo::SurfTrack * st = mesh2surftrack();
+    Recording::readSurfTrack(fs, *st);
+    surftrack2mesh(*st);
+    fs.close();
+  }
   
   updateBBWallConstraints();
   if (GetBoolOpt("shell-init-remesh"))
@@ -1000,8 +1035,31 @@ void DoubleBubbleTest::AtEachTimestep()
 
         ++db_current_obj_frame;
     }
+    
+    if (g_frames_to_generate_rec.size() > 0)
+    {
+#ifdef _MSC_VER
+        _mkdir(outputdirectory.c_str());
+#else
+        mkdir(outputdirectory.c_str(), 0755);
+#endif
+        
+        static int frame = 0;
+        frame++;
+        if (g_frames_to_generate_rec.find(frame) != g_frames_to_generate_rec.end())
+        {
+            std:stringstream name;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "frame" << std::setw(6) << frame << ".rec";
+            
+            ElTopo::SurfTrack * st = mesh2surftrack();
+            std::ofstream of(name.str().c_str());
+            Recording::writeSurfTrack(of, *st);
+            of.close();
+        }
+    }
 
-    std::cout << "Time: " << this->getTime() << std::endl; 
+    std::cout << "Time: " << this->getTime() << std::endl;
 
   
     g_recording.setCurrentFrame((int)(this->getTime() / this->getDt() + 0.5));

@@ -1002,6 +1002,7 @@ void setOptions()
     current_problem->AddOption("max-frames", "number of frames to compute", max_frames);
     current_problem->AddOption("max-time", "maximum (simulation) time", max_time);
     current_problem->AddOption("progress-indicator", "prints out time", progress_indicator);
+    current_problem->AddOption("output-directory-override", "this overrides the automatically generated output directory name", "");
 
 }
 
@@ -1019,7 +1020,8 @@ void getOptions()
     max_time = current_problem->GetScalarOpt("max-time");
     progress_indicator = current_problem->GetBoolOpt("progress-indicator");
 
-
+    if (current_problem->GetStringOpt("output-directory-override") != "")
+        outputdirectory = current_problem->GetStringOpt("output-directory-override");
 }
 
 void RunProblem(int argc, char** argv)
