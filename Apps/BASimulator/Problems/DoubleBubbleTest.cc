@@ -3126,12 +3126,16 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
         name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
 
         std::ifstream fs(name.str().c_str());
-        assert(fs.is_open());
-        ElTopo::SurfTrack * st = mesh2surftrack();
-        Recording::readSurfTrack(fs, *st);
-        surftrack2mesh(*st);
-        fs.close();
-        
+        if (!fs.is_open())
+        {
+          std::cout << "File not found" << std::endl;
+        } else
+        {
+          ElTopo::SurfTrack * st = mesh2surftrack();
+          Recording::readSurfTrack(fs, *st);
+          surftrack2mesh(*st);
+          fs.close();
+        }
       } else
       {
         ElTopo::SurfTrack * st = mesh2surftrack();
@@ -3155,12 +3159,16 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
         name << g_recording.recordingName() << std::setw(6) << g_recording.currentFrame() << ".rec";
 
         std::ifstream fs(name.str().c_str());
-        assert(fs.is_open());
-        ElTopo::SurfTrack * st = mesh2surftrack();
-        Recording::readSurfTrack(fs, *st);
-        surftrack2mesh(*st);
-        fs.close();
-        
+        if (!fs.is_open())
+        {
+          std::cout << "File not found" << std::endl;
+        } else
+        {
+          ElTopo::SurfTrack * st = mesh2surftrack();
+          Recording::readSurfTrack(fs, *st);
+          surftrack2mesh(*st);
+          fs.close();
+        }
       } else
       {
         ElTopo::SurfTrack * st = mesh2surftrack();
