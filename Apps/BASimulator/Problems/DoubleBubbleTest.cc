@@ -25,6 +25,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVerticalForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellPointForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
+#include "faceoff_multi.h"
 
 #include "DelaunayTriangulator.hh"
 #include "ElTopo/eltopo3d/iomesh.h"
@@ -404,6 +405,8 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene14,
   &DoubleBubbleTest::setupScene15,
   &DoubleBubbleTest::setupScene16,
+  &DoubleBubbleTest::setupScene17,
+  &DoubleBubbleTest::setupScene18,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -716,6 +719,88 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   return st;
 }
 
+ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack(VertexProperty<int> & vert_numbers, FaceProperty<int> & face_numbers, std::vector<VertexHandle> & reverse_vertmap, std::vector<FaceHandle> & reverse_trimap)
+{
+    // convert BASim mesh to ElTopo mesh (code copied from ElasticShell::remesh())
+    std::vector<ElTopo::Vec3d> vert_data;
+    std::vector<ElTopo::Vec3d> vert_vel;
+    std::vector<ElTopo::Vec3st> tri_data;
+    std::vector<ElTopo::Vec2i> tri_labels;
+    std::vector<ElTopo::Vec3d> masses;
+    
+    DeformableObject& mesh = *shellObj;
+    
+    reverse_vertmap.reserve(shellObj->nv());
+    reverse_trimap.reserve(shellObj->nt());
+    
+    vert_data.reserve(shellObj->nv());
+    tri_data.reserve(shellObj->nt());
+    tri_labels.reserve(shellObj->nt());
+    masses.reserve(shellObj->nv());
+    
+    //walk through vertices, create linear list, store numbering
+    int id = 0;
+    for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+        VertexHandle vh = *vit;
+        Vec3d vert = shell->getVertexPosition(vh);
+        vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
+        Vec3d vel = shell->getVertexVelocity(vh);
+        vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+        assert(shellObj->isConstrained(vh) == (shell->getVertexConstraintLabel(vh) != 0));
+        ElTopo::Vec3d mass(1, 1, 1);
+        for (int i = 0; i < 3; i++)
+            if (shellObj->isConstrainedInDirection(vh, i))
+                mass[i] = numeric_limits<Scalar>::infinity();
+        masses.push_back(mass);
+        vert_numbers[vh] = id;
+        reverse_vertmap.push_back(vh);
+        
+        ++id;
+    }
+    
+    //walk through tris, creating linear list, using the vertex numbering assigned above
+    id = 0;
+    for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
+        FaceHandle fh = *fit;
+        ElTopo::Vec3st tri;
+        int i = 0;
+        for(FaceVertexIterator fvit = mesh.fv_iter(fh); fvit; ++fvit) {
+            VertexHandle vh = *fvit;
+            tri[i] = vert_numbers[vh];
+            ++i;
+        }
+        tri_data.push_back(tri);
+        tri_labels.push_back(ElTopo::Vec2i(shell->getFaceLabel(fh).x(), shell->getFaceLabel(fh).y()));
+        face_numbers[fh] = id;
+        reverse_trimap.push_back(fh);
+        ++id;
+    }
+    
+    ElTopo::SurfTrackInitializationParameters construction_parameters;
+    construction_parameters.m_proximity_epsilon = 1e-10;
+    construction_parameters.m_merge_proximity_epsilon = 1e-10;
+    construction_parameters.m_allow_vertex_movement_during_collapse = true;
+    construction_parameters.m_perform_smoothing = false;
+    construction_parameters.m_min_edge_length = 0.00001;
+    construction_parameters.m_max_edge_length = 1000;
+    construction_parameters.m_max_volume_change = numeric_limits<double>::max();
+    construction_parameters.m_min_triangle_angle = 3;
+    construction_parameters.m_max_triangle_angle = 177;
+    construction_parameters.m_large_triangle_angle_to_split = 160;
+    construction_parameters.m_verbose = false;
+    construction_parameters.m_allow_non_manifold = true;
+    construction_parameters.m_allow_topology_changes = true;
+    construction_parameters.m_collision_safety = true;
+    construction_parameters.m_remesh_boundaries = true;
+    construction_parameters.m_t1_transition_enabled = false;
+    
+    ElTopo::SurfTrack * st = new ElTopo::SurfTrack( vert_data, tri_data, tri_labels, masses, construction_parameters );
+    st->m_solid_vertices_callback = shell;
+    st->set_all_remesh_velocities(vert_vel);
+    
+    return st;
+}
+
 void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 {
 //  std::cout << "nv 3: " << surface_tracker.pm_positions.size() << " " << surface_tracker.pm_velocities.size() << " " << surface_tracker.m_mesh.m_vertex_constraint_labels.size() << " " << surface_tracker.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
@@ -933,8 +1018,9 @@ void DoubleBubbleTest::AtEachTimestep()
 
 void DoubleBubbleTest::updateBBWallConstraints()
 {
-    if (m_active_scene == 9)
-      return;
+    if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 17 || m_active_scene == 18)
+        return;
+    
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
@@ -1209,6 +1295,10 @@ void DoubleBubbleTest::beforeEndStep()
     svf->m_target_volumes[0] = -volume;
     svf->m_target_volumes[1] = volume;
   }
+  else if (m_active_scene == 17 || m_active_scene == 18)  // face offsetting
+  {
+      faceoff_step();
+  }
   
   if (g_recording.isRecording())
   {
@@ -1255,6 +1345,52 @@ void DoubleBubbleTest::s14_cross_velocity(double t, const Vec3d & pos, Vec3d & o
   out = Vec3d((x - 0.5), -(y - 0.5), 0);
 }
 
+void DoubleBubbleTest::faceoff_step()
+{
+    // wrapper for the faceoff_multi driver in multitracker's talpa
+    //normal flow examples
+    static Scalar speeds_scene17[3][3] =
+    {
+        { 0, -1, -1 },
+        { 1, 0, 0 },
+        { 1, 0, 0 }
+    };
+    
+    static Scalar speeds_scene18[3][3] =
+    {
+        { 0, -1, 1 },
+        { 1, 0, -2 },
+        { -1, 2, 0 }
+    };
+    
+    Scalar speed_multiplier = GetScalarOpt("shell-thickness");
+    std::vector<std::vector<Scalar> > speeds;
+    speeds.resize(3, std::vector<Scalar>(3));
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) speeds[i][j] = (m_active_scene == 17 ? speeds_scene17 : speeds_scene18)[i][j] * speed_multiplier;
+    
+    FaceOffMultiDriver driver(speeds, 0, false);
+    
+    VertexProperty<int> vert_numbers(shellObj);
+    FaceProperty<int> face_numbers(shellObj);
+    std::vector<VertexHandle> reverse_vertmap;
+    std::vector<FaceHandle> reverse_trimap;
+    ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
+    
+    std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
+    new_positions = st->pm_positions;
+    Scalar dt = getDt();
+    Scalar curr_dt = dt;
+    driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+    
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+        ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
+        Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
+        shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
+        shellObj->setVertexPosition(*vit, newpos);
+    }
+    
+}
 
 void DoubleBubbleTest::AfterStep()
 {
@@ -3706,6 +3842,128 @@ void DoubleBubbleTest::setupScene16()
   
   shell->setFaceLabels(faceLabels);
   
+}
+
+void DoubleBubbleTest::setupScene17()
+{
+    //vertices
+    VertexProperty<Vec3d> undeformed(shellObj);
+    VertexProperty<Vec3d> positions(shellObj);
+    VertexProperty<Vec3d> velocities(shellObj);
+    
+    //edge properties
+    EdgeProperty<Scalar> undefAngle(shellObj);
+    EdgeProperty<Scalar> edgeAngle(shellObj);
+    EdgeProperty<Scalar> edgeVel(shellObj);
+    
+    //create a sphere
+    std::vector<VertexHandle> vertList;
+    
+    int N = GetIntOpt("shell-x-resolution");
+    Scalar separate = GetScalarOpt("shell-width");
+    Scalar r = GetScalarOpt("shell-height");
+    Vec3d c1 = Vec3d(0.5 - separate, 0.5, 0.5);
+    Vec3d c2 = Vec3d(0.5 + separate, 0.5, 0.5);
+    
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj);
+    std::vector<VertexHandle> vs;
+    std::vector<FaceHandle> fs;
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, c1, r, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(1, 0);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, c2, r, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(2, 0);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    velocities.assign(Vec3d(0, 0, 0));
+    undeformed = positions;
+    
+    //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+    FaceProperty<char> shellFaces(shellObj);
+    DeformableObject::face_iter fIt;
+    for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+        shellFaces[*fIt] = true;
+    
+    //now create the physical model to hang on the mesh
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+    shellObj->addModel(shell);
+    
+    //positions
+    //  shell->setVertexUndeformed(undeformed);
+    shell->setVertexPositions(positions);
+    shell->setVertexVelocities(velocities);
+    
+    shell->setFaceLabels(faceLabels);
+    
+}
+
+void DoubleBubbleTest::setupScene18()
+{
+    //vertices
+    std::vector<VertexHandle> vertHandles;
+    VertexProperty<Vec3d> undeformed(shellObj);
+    VertexProperty<Vec3d> positions(shellObj);
+    VertexProperty<Vec3d> velocities(shellObj);
+    
+    //edge properties
+    EdgeProperty<Scalar> undefAngle(shellObj);
+    EdgeProperty<Scalar> edgeAngle(shellObj);
+    EdgeProperty<Scalar> edgeVel(shellObj);
+    
+    //create a cube
+    std::vector<VertexHandle> vertList;
+    
+    for(int i = 0; i < 4; ++i)
+    {
+        vertList.push_back(shellObj->addVertex());
+        velocities[vertList[i]] = Vec3d(0,0,0);
+    }
+    
+    //create positions
+    positions[vertList[ 0]] = Vec3d(0.5,0.5,0.5);
+    positions[vertList[ 1]] = Vec3d(0.6,0.5,0.5);
+    positions[vertList[ 2]] = Vec3d(0.5,0.6,0.5);
+    positions[vertList[ 3]] = Vec3d(0.5,0.5,0.6);
+    
+    for(int i = 0; i < 4; ++i)
+        undeformed[vertList[i]] = positions[vertList[i]];
+    
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+    
+    faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 3], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 3], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,1);
+    
+    //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+    FaceProperty<char> shellFaces(shellObj);
+    DeformableObject::face_iter fIt;
+    for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+        shellFaces[*fIt] = true;
+    
+    //now create the physical model to hang on the mesh
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+    shellObj->addModel(shell);
+    
+    //positions
+    //  shell->setVertexUndeformed(undeformed);
+    shell->setVertexPositions(positions);
+    shell->setVertexVelocities(velocities);
+    
+    shell->setFaceLabels(faceLabels);
+    
 }
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)

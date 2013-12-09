@@ -107,6 +107,7 @@ protected:
   void updateBBWallConstraints();
     
   ElTopo::SurfTrack * mesh2surftrack();
+  ElTopo::SurfTrack * mesh2surftrack(VertexProperty<int> & vert_numbers, FaceProperty<int> & face_numbers, std::vector<VertexHandle> & reverse_vertmap, std::vector<FaceHandle> & reverse_trimap);
   void surftrack2mesh(const ElTopo::SurfTrack & st);
   
     // callback
@@ -139,6 +140,9 @@ public:
   void setupScene14();      // velocity field (x, -y) convergence test
   void setupScene15();  // double bubble test
   void setupScene16();  // single bubble test
+    
+  void setupScene17();  // face off, two spheres
+  void setupScene18();  // face off, test
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
@@ -146,6 +150,8 @@ public:
   
   void createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions);
 
+  void faceoff_step();
+    
   int m_nregion;
 
 };
