@@ -366,9 +366,9 @@ DoubleBubbleTest::DoubleBubbleTest() :
     AddOption("eltopo-merge-proximity-epsilon-fraction", "eltopo merge proximity epsilon (fraction of mean edge length)", 0.02);
     AddOption("eltopo-perform-smoothing", "whether or not to perform smoothing", false);
     AddOption("eltopo-max-volume-change-fraction", "maximum allowed volume change during a remeshing operation (fraction of mean edge length cubed)", 1e-4);
-    AddOption("eltopo-min-triangle-angle", "min triangle angle (in degrees)", 3);
-    AddOption("eltopo-max-triangle-angle", "max triangle angle (in degrees)", 177);
-    AddOption("eltopo-large-triangle-angle-to-split", "threshold for large angles to be split", 160);
+    AddOption("eltopo-min-triangle-angle", "min triangle angle (in degrees)", 3.0);
+    AddOption("eltopo-max-triangle-angle", "max triangle angle (in degrees)", 177.0);
+    AddOption("eltopo-large-triangle-angle-to-split", "threshold for large angles to be split", 160.0);
     AddOption("eltopo-min-triangle-area-fraction", "minimum allowed triangle area (fraction of mean edge length squared)", 0.02);
     AddOption("eltopo-t1-transition-enabled", "whether t1 is enabled", true);
     AddOption("eltopo-t1-pull-apart-distance-fraction", "t1 pull apart distance (fraction of mean edge legnth)", 0.1);
