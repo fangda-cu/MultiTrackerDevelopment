@@ -1,0 +1,44 @@
+#double bubble cubes for surface tension
+
+shell-scene 19
+dt 0.01	# time-step size
+
+gravity 0 0 0	# gravity
+
+shell-surface-tension 0
+volume-force-stiffness 0
+
+shell-remeshing 1
+shell-remeshing-resolution 0.1
+shell-remeshing-iterations 1
+
+smooth-subdivision-scheme 0
+t1-transition-enabled 1
+
+integrator symplectic	# type of integrator to use for the shell
+
+shell-density 0.1	# volumetric density of the shell 
+shell-thickness 0.1	# the thickness of the shell
+shell-height 3.0	# the vertical side length of the shell
+shell-width 0.15	# the horizontal side length of the shell
+shell-x-resolution 20	# the number of segments along the horizontal edge
+shell-y-resolution 60	# the number of segments along the vertical edge
+
+iterations 100	# maximum number of iterations for the implicit method
+atol 1e-008	# absolute convergence tolerance
+rtol 1e-008	# relative convergence tolerance
+atol 1e-008	# absolute convergence tolerance
+stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+
+eltopo-collision-epsilon-fraction 0.001
+eltopo-merge-proximity-epsilon-fraction 0.02
+eltopo-perform-smoothing 0
+eltopo-max-volume-change-fraction 1e-4
+eltopo-min-triangle-angle 3
+eltopo-max-triangle-angle 177
+eltopo-large-triangle-angle-to-split 160
+eltopo-min-triangle-area-fraction 0.02
+eltopo-t1-transition-enabled 1
+eltopo-t1-pull-apart-distance-fraction 0.1
+eltopo-smooth-subdivision 1
+

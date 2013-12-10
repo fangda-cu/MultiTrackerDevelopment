@@ -143,6 +143,7 @@ public:
     
   void setupScene17();  // face off, two spheres
   void setupScene18();  // face off, test
+  void setupScene19();  // bunny flight
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
