@@ -859,7 +859,7 @@ void SurfTrack::improve_mesh( )
 
       int i = 0;
       
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge splitting
       std::cout << "Splits\n";
@@ -870,14 +870,14 @@ void SurfTrack::improve_mesh( )
         std::cout << "Splits\n";
       }
       
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       // edge flipping
       std::cout << "Flips\n";
       m_flipper.flip_pass();		
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge collapsing
       i = 0;
@@ -892,7 +892,7 @@ void SurfTrack::improve_mesh( )
       // process t1 transitions (vertex separation)
       i = 0;
       
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
          std::cout << "T1's\n";
@@ -902,7 +902,7 @@ void SurfTrack::improve_mesh( )
       }
 
       
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       // smoothing
       if ( m_perform_smoothing)
       {
@@ -913,7 +913,7 @@ void SurfTrack::improve_mesh( )
       }
       
 
-        for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       ////////////////////////////////////////////////////////////
       //enter aggressive improvement mode to improve remaining bad triangles up to minimum bounds, 
       //potentially at the expense of some shape deterioration. (aka. BEAST MODE!!1!1!!) 
@@ -925,14 +925,14 @@ void SurfTrack::improve_mesh( )
          //enter aggressive mode
          
          std::cout << "Aggressive mesh improvement iteration #" << i << "." << std::endl;
-          for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+          for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
 
          m_splitter.split_pass();
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive split pass " << i << " finished" << std::endl;
          
           
-          for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+          for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
           
          //switch to delaunay criterion for this, since it is purported to produce better angles for a given vertex set.
          m_flipper.m_use_Delaunay_criterion = true;
@@ -941,7 +941,7 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Aggressive flip pass " << i << " finished" << std::endl;
          m_flipper.m_use_Delaunay_criterion = false; //switch back to valence-based mode
 
-          for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+          for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
           
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 
@@ -951,7 +951,7 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive collapse pass " << i << " finished" << std::endl;
 
-          for (size_t i = 0; i < m_mesh.nv(); i++) assert(get_position(i) == get_newposition(i));
+          for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
           
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 

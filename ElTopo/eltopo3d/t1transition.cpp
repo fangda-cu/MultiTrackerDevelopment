@@ -564,7 +564,6 @@ bool T1Transition::t1_pass()
         if (m_surf.m_mesh.nv() > 2338) std::cout << "5: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
         if (a == 2338 || b == 2338 || xj == 2338)
             std::cout << "t1: " << m_surf.get_position(2338) << " -> " << m_surf.get_newposition(2338) << " = " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
-        for (size_t i = 0; i < m_surf.m_mesh.nv(); i++) assert(m_surf.get_position(i) == m_surf.get_newposition(i));
     }
   
     return pop_occurred;
