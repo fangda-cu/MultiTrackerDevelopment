@@ -356,6 +356,7 @@ bool T1Transition::t1_pass()
         {
             if (m_surf.m_verbose)
                 std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
+            m_surf.set_position(xj, original_position);
             continue;
         }
         
