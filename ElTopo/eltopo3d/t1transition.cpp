@@ -238,12 +238,12 @@ bool T1Transition::t1_pass()
     // sort the candidate pairs according to the strength of the tensile force
     std::sort(candidates.begin(), candidates.end());
     
-    if (m_surf.m_mesh.nv() > 2338) std::cout << "1: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+    if (m_surf.m_mesh.nv() > 7212) std::cout << "1: " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
     
     // process the candidates from top
     for ( ; candidates.size() > 0; candidates.pop_back())
     {
-        if (m_surf.m_mesh.nv() > 2338) std::cout << "2: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+        if (m_surf.m_mesh.nv() > 7212) std::cout << "2: " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
         size_t xj = candidates.back().vertex;
         int A = candidates.back().regions[0];
         int B = candidates.back().regions[1];
@@ -281,7 +281,7 @@ bool T1Transition::t1_pass()
             std::cout << "Attempting to pop vertex " << xj << " region " << A << " from region " << B << std::endl;
         }
         
-        if (m_surf.m_mesh.nv() > 2338) std::cout << "3: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+        if (m_surf.m_mesh.nv() > 7212) std::cout << "3: " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
         // compute the desired destination positions, enforcing constraints
         Vec3c original_solid = m_surf.vertex_is_solid_3(xj);
         Vec3d original_position = m_surf.get_position(xj);
@@ -460,7 +460,7 @@ bool T1Transition::t1_pass()
         
         if (collision)
         {
-            if (m_surf.m_verbose)
+//            if (m_surf.m_verbose)
                 std::cout << "Vertex popping: collision introduced." << std::endl;
             
             m_surf.set_position(xj, original_position);
@@ -468,7 +468,7 @@ bool T1Transition::t1_pass()
             continue;
         }
         
-        if (m_surf.m_mesh.nv() > 2338) std::cout << "4: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+        if (m_surf.m_mesh.nv() > 7212) std::cout << "4: " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
         // pull apart
         std::vector<size_t> verts_to_delete;
         std::vector<Vec3d> verts_to_create;
@@ -561,9 +561,9 @@ bool T1Transition::t1_pass()
         if (m_surf.m_mesheventcallback)
             m_surf.m_mesheventcallback->t1(m_surf, xj);
         
-        if (m_surf.m_mesh.nv() > 2338) std::cout << "5: " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
-        if (a == 2338 || b == 2338 || xj == 2338)
-            std::cout << "t1: " << m_surf.get_position(2338) << " -> " << m_surf.get_newposition(2338) << " = " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+        if (m_surf.m_mesh.nv() > 7212) std::cout << "5: " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
+        if (a == 7212 || b == 7212 || xj == 7212)
+            std::cout << "t1: " << m_surf.get_position(7212) << " -> " << m_surf.get_newposition(7212) << " = " << m_surf.get_newposition(7212) - m_surf.get_position(7212) << std::endl;
     }
   
     return pop_occurred;
