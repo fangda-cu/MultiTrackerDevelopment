@@ -914,6 +914,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool collision = false;
 
+      if (edge == 21030) m_surf.assert_mesh_is_intersection_free( false );
+      
     if ( m_surf.m_collision_safety )
     {
       collision = collapse_edge_pseudo_motion_introduces_collision( vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
@@ -943,7 +945,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   collapse.m_vert_position = vertex_new_position;
   collapse.m_v0 = vertex_to_keep;
   collapse.m_v1 = vertex_to_delete;
-
+    
   // move the vertex we decided to keep
 
   m_surf.set_position( vertex_to_keep, vertex_new_position );
@@ -965,6 +967,12 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Copy this vector, don't take a reference, as deleting will change the original
   std::vector< size_t > triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge];
+
+    if (edge == 21030)
+    {
+        std::cout << "edge " << edge << ": " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ") - " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") -> " << vertex_new_position << std::endl;
+        std::cout << "edge neighbors:\n"; for (int i = 0; i < triangles_incident_to_edge.size(); i++) std::cout << "\t" << triangles_incident_to_edge[i] << " [" << m_surf.m_mesh.get_triangle(triangles_incident_to_edge[i]) << "]" << std::endl;
+    }
 
   // Delete triangles incident on the edge
 
@@ -1014,6 +1022,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     m_surf.m_dirty_triangles.push_back( new_triangle_index );
   }
 
+    if (edge == 21030)
+    {
+        std::cout << "vert neighbors:\n"; for (int i = 0; i < triangles_incident_to_vertex.size(); i++) std::cout << "\t" << triangles_incident_to_vertex[i] << "[" << m_surf.m_mesh.get_triangle(triangles_incident_to_vertex[i]) << "]" << std::endl;
+    }
+    
   for ( size_t i=0; i < triangles_incident_to_vertex.size(); ++i )
   {  
     if ( m_surf.m_verbose )
@@ -1038,6 +1051,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
 
+    if (edge == 21030) m_surf.assert_mesh_is_intersection_free( false );
+    
   return true;
 }
 
@@ -1199,12 +1214,18 @@ bool EdgeCollapser::collapse_pass()
         if(edge_is_collapsible(e, dummy)) {
           bool result = collapse_edge( e );
           
+//            if (m_surf.m_aggressive_mode)
+//            {
+//                std::cout << "attempt to collapse edge " << e << ": " << result << std::endl;
+//                m_surf.assert_mesh_is_intersection_free( false );
+//            }
+            
           if ( result )
           { 
             // clean up degenerate triangles and tets
             m_surf.trim_degeneracies( m_surf.m_dirty_triangles );                        
           }
-
+            
           collapse_occurred |= result;
         }
     }

@@ -1376,9 +1376,9 @@ void DoubleBubbleTest::beforeEndStep()
       axes[1] = Vec3d(1, 0, 1).normalized();
       axes[2] = Vec3d(0, 0, 1).normalized();
       axes[3] = Vec3d(0, 1, 0).normalized();
-      omegas[1] = 1;
-      omegas[2] = 1;
-      omegas[3] = 1;
+      omegas[1] = 0.8;
+      omegas[2] = 1.7;
+      omegas[3] = 2.5;
       
       for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
       {
