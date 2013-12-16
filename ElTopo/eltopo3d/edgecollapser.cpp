@@ -179,6 +179,20 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
         
     }
     
+    collision_candidates.push_back(Vec3st(21291, 21509, 1));
+    for (size_t i = 0; i < collision_candidates.size(); i++)
+    {
+        const Vec3st & candidate = collision_candidates[i];
+        
+        if (edge_index == 21030)
+        {
+            if (candidate[2] == 1)
+                std::cout << "candidate: " << candidate[0] << " [" << m_surf.m_mesh.m_edges[candidate[0]] << "] - " << candidate[1] << " [" << m_surf.m_mesh.m_edges[candidate[1]] << "]" << std::endl;
+            else
+                std::cout << "candidate: " << candidate[1] << " (" << m_surf.get_position(candidate[1]) << ") - " << candidate[0] << " [" << m_surf.m_mesh.get_triangle(candidate[0]) << "]" << std::endl;
+        }
+    }
+    
     Collision collision;
     if ( m_surf.m_collision_pipeline->any_collision( collision_candidates, collision ) )
     {
@@ -193,6 +207,7 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
     for (size_t i = 0; i < collision_candidates.size(); i++)
     {
         const Vec3st & candidate = collision_candidates[i];
+        
         if (candidate[2] == 1)
         {
             // edge-edge
@@ -230,6 +245,9 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
             }
         }
     }
+    
+    if (edge_index == 21030)
+        std::cout << "all clear" << std::endl;
     
     return false;    
 }
