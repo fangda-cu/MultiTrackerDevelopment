@@ -192,6 +192,24 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
                 std::cout << "candidate: " << candidate[1] << " (" << m_surf.get_position(candidate[1]) << ") - " << candidate[0] << " [" << m_surf.m_mesh.get_triangle(candidate[0]) << "]" << std::endl;
         }
     }
+
+    
+    if (edge_index == 21030)
+    {
+        const std::vector<Vec3d> & x0 = m_surf.get_positions();
+        const std::vector<Vec3d> & x1 = m_surf.get_newpositions();
+        std::cout << "2338 motion: " << x0[2338] << " -> " << x1[2338] << " = " << x1[2338] - x0[2338] << std::endl;
+        std::cout << "7040 motion: " << x0[7040] << " -> " << x1[7040] << " = " << x1[7040] - x0[7040] << std::endl;
+        std::cout << "7084 motion: " << x0[7084] << " -> " << x1[7084] << " = " << x1[7084] - x0[7084] << std::endl;
+        std::cout << "7085 motion: " << x0[7085] << " -> " << x1[7085] << " = " << x1[7085] - x0[7085] << std::endl;
+        std::cout << "7139 motion: " << x0[7139] << " -> " << x1[7139] << " = " << x1[7139] - x0[7139] << std::endl;
+        std::cout << "ee1 = " << segment_segment_collision(x0[2338], x1[2338], 2338, x0[7040], x1[7040], 7040, x0[7139], x1[7139], 7139, x0[7085], x1[7085], 7085) << std::endl;
+        std::cout << "ee2 = " << segment_segment_collision(x0[7084], x1[7084], 7084, x0[7040], x1[7040], 7040, x0[7139], x1[7139], 7139, x0[7085], x1[7085], 7085) << std::endl;
+        std::cout << "ee3 = " << segment_segment_collision(x0[2338], x1[2338], 2338, x0[7084], x1[7084], 7084, x0[7139], x1[7139], 7139, x0[7085], x1[7085], 7085) << std::endl;
+        std::cout << "pt1 = " << point_triangle_collision (x0[7085], x1[7085], 7085, x0[2338], x1[2338], 2338, x0[7040], x1[7040], 7040, x0[7084], x1[7084], 7084) << std::endl;
+        std::cout << "pt2 = " << point_triangle_collision (x0[7139], x1[7139], 7139, x0[2338], x1[2338], 2338, x0[7040], x1[7040], 7040, x0[7084], x1[7084], 7084) << std::endl;
+    }
+    
     
     Collision collision;
     if ( m_surf.m_collision_pipeline->any_collision( collision_candidates, collision ) )
@@ -686,6 +704,8 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
 
 bool EdgeCollapser::collapse_edge( size_t edge )
 {
+    if (m_surf.m_aggressive_mode && edge == 21030) std::cout << "2338 - 0: " << m_surf.get_position(2338) << " -> " << m_surf.get_newposition(2338) << " = " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
    
@@ -932,7 +952,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool collision = false;
 
-      if (edge == 21030) m_surf.assert_mesh_is_intersection_free( false );
+      if (m_surf.m_aggressive_mode && edge == 21030) std::cout << "2338 - 1: " << m_surf.get_position(2338) << " -> " << m_surf.get_newposition(2338) << " = " << m_surf.get_newposition(2338) - m_surf.get_position(2338) << std::endl;
+      if (m_surf.m_aggressive_mode && edge == 21030) m_surf.assert_mesh_is_intersection_free( false );
       
     if ( m_surf.m_collision_safety )
     {
