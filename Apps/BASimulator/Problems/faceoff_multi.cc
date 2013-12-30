@@ -385,7 +385,8 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
             if ( contracting )
             {
                 //this weighting from Jiao seems to make things worse! So I've turned it off. -CB
-                //mu *= cos_theta * cos_theta;
+                //I turned it back on because without it the li /= fabs(cos_theta) can give huge numbers which can happen at triple junction that's trying to moving in a direction nearly parallel to one of the faces. -FD
+                mu *= cos_theta * cos_theta;
             }
             
             double li = fabs( triangle_plane_distances[triangle_index] ); 
