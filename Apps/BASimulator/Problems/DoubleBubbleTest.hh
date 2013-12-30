@@ -144,14 +144,16 @@ public:
   void setupScene17();  // face off, two spheres
   void setupScene18();  // face off, test
   void setupScene19();  // bunny flight
+  void setupScene20();  // curl noise + normal flow
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s14_cross_velocity(double t, const Vec3d & pos, Vec3d & out);
   
-  void createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions);
+  void createIcoSphere(DeformableObject & mesh, const Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions);
 
   void faceoff_step();
+  void cn_step();
     
   int m_nregion;
 

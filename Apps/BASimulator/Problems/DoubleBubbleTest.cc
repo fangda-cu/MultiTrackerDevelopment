@@ -413,6 +413,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene17,
   &DoubleBubbleTest::setupScene18,
   &DoubleBubbleTest::setupScene19,
+  &DoubleBubbleTest::setupScene20,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -1358,6 +1359,10 @@ void DoubleBubbleTest::beforeEndStep()
   {
       faceoff_step();
   }
+  else if (m_active_scene == 20) // curl noise + normal flow
+  {
+      cn_step();
+  }
   else if (m_active_scene == 19) // bunny flight
   {
       static const int N = 10;
@@ -1507,6 +1512,55 @@ void DoubleBubbleTest::faceoff_step()
         shellObj->setVertexPosition(*vit, newpos);
     }
     
+}
+
+void DoubleBubbleTest::cn_step()
+{
+  // wrapper for the normal driver in multitracker's talpa
+  //normal flow examples
+  static Scalar speeds_scene17[3][3] =
+  {
+    { 0, -1, -1 },
+    { 1, 0, 0 },
+    { 1, 0, 0 }
+  };
+  
+  static Scalar speeds_scene18[3][3] =
+  {
+    { 0, -1, 1 },
+    { 1, 0, -2 },
+    { -1, 2, 0 }
+  };
+  
+  Scalar speed_multiplier = GetScalarOpt("shell-thickness");
+  if (getTime() > 1.5) speed_multiplier *= -1;
+  
+  std::vector<std::vector<Scalar> > speeds;
+  speeds.resize(3, std::vector<Scalar>(3));
+  for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) speeds[i][j] = (m_active_scene == 17 ? speeds_scene17 : speeds_scene18)[i][j] * speed_multiplier;
+  
+  FaceOffMultiDriver driver(speeds, 0, false);
+  
+  VertexProperty<int> vert_numbers(shellObj);
+  FaceProperty<int> face_numbers(shellObj);
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
+  ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
+  
+  std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
+  new_positions = st->pm_positions;
+  Scalar dt = getDt();
+  Scalar curr_dt = dt;
+  driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+  
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+  {
+    ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
+    Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
+    shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
+    shellObj->setVertexPosition(*vit, newpos);
+  }
+  
 }
 
 void DoubleBubbleTest::AfterStep()
@@ -2776,7 +2830,7 @@ void DoubleBubbleTest::setupScene8()
   
 }
 
-void DoubleBubbleTest::createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions)
+void DoubleBubbleTest::createIcoSphere(DeformableObject & mesh, const Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions)
 {
   vertList.clear();
   faceList.clear();
@@ -4201,6 +4255,83 @@ void DoubleBubbleTest::setupScene19()
     shellObj->addModel(shell);
     
     //positions
+    shell->setVertexPositions(positions);
+    shell->setVertexVelocities(velocities);
+    
+    shell->setFaceLabels(faceLabels);
+    
+}
+
+void DoubleBubbleTest::setupScene20()
+{
+    //vertices
+    VertexProperty<Vec3d> undeformed(shellObj);
+    VertexProperty<Vec3d> positions(shellObj);
+    VertexProperty<Vec3d> velocities(shellObj);
+    
+    //edge properties
+    EdgeProperty<Scalar> undefAngle(shellObj);
+    EdgeProperty<Scalar> edgeAngle(shellObj);
+    EdgeProperty<Scalar> edgeVel(shellObj);
+    
+    //create a sphere
+    std::vector<VertexHandle> vertList;
+    
+    int N = GetIntOpt("shell-x-resolution");
+    Scalar s = GetScalarOpt("shell-width");
+    
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj);
+    std::vector<VertexHandle> vs;
+    std::vector<FaceHandle> fs;
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, Vec3d(0.5 - s * sqrt(3), 0.5, 0.5), s, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(0, 2);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, Vec3d(0.5 + s * sqrt(3), 0.5, 0.5), s, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(1, 2);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, Vec3d(0.5, 0.5 + s, 0.5), s, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(3, 2);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    vs.clear();
+    fs.clear();
+    createIcoSphere(*shellObj, Vec3d(0.5, 0.5 - s, 0.5), s, N, vs, fs, positions);
+    for (size_t i = 0; i < fs.size(); i++)
+        faceLabels[fs[i]] = Vec2i(4, 2);
+    vertList.insert(vertList.end(), vs.begin(), vs.end());
+    faceList.insert(faceList.end(), fs.begin(), fs.end());
+    
+    velocities.assign(Vec3d(0, 0, 0));
+    undeformed = positions;
+    
+    //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+    FaceProperty<char> shellFaces(shellObj);
+    DeformableObject::face_iter fIt;
+    for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+        shellFaces[*fIt] = true;
+    
+    //now create the physical model to hang on the mesh
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+    shellObj->addModel(shell);
+    
+    //positions
+    //  shell->setVertexUndeformed(undeformed);
     shell->setVertexPositions(positions);
     shell->setVertexVelocities(velocities);
     
