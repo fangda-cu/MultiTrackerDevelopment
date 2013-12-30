@@ -1537,7 +1537,7 @@ void DoubleBubbleTest::cn_step()
   //  if (getTime() > 1.5) speed_multiplier *= -1;
     
     std::vector<std::vector<Scalar> > speeds;
-    speeds.resize(3, std::vector<Scalar>(3));
+    speeds.resize(5, std::vector<Scalar>(5));
     for (int i = 0; i < 5; i++) for (int j = 0; j < 5; j++) speeds[i][j] = speeds_scene20[i][j] * speed_multiplier;
     
     FaceOffMultiDriver driver(speeds, 0, false);
@@ -1571,6 +1571,12 @@ void DoubleBubbleTest::cn_step()
     std::vector<FaceHandle> reverse_trimap;
     ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
     
+    // transform to the desired location for applying noise
+    double s = GetScalarOpt("shell-thickness");
+    for (size_t i = 0; i < st->m_mesh.nv(); i++)
+      st->set_newposition(i, (st->get_position(i) - ElTopo::Vec3d(0.5, 0.5, 0.5)) / s * 0.8 + ElTopo::Vec3d(0, 1, 0));
+    st->set_positions_to_newpositions();
+    
     std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
     new_positions = st->pm_positions;
     Scalar dt = getDt();
@@ -1581,6 +1587,7 @@ void DoubleBubbleTest::cn_step()
     {
       ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
       Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
+      newpos = (newpos - Vec3d(0, 1, 0)) * s / 0.8 + Vec3d(0.5, 0.5, 0.5);  // reverse the transformation above
       shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
       shellObj->setVertexPosition(*vit, newpos);
     }
