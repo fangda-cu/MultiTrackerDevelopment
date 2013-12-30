@@ -906,7 +906,7 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 
 void DoubleBubbleTest::AtEachTimestep()
 {
-  START_TIMER("1-AtEachTimestep");
+  START_TIMER("1 AtEachTimestep");
 //  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
 //    shellObj->deleteFace(triangulation_added_faces[i], false);
 //  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
@@ -1075,8 +1075,8 @@ void DoubleBubbleTest::AtEachTimestep()
 //      surftrack2mesh(*st);
 //      delete st;
 //    }
-  STOP_TIMER("1-AtEachTimestep");
-  START_TIMER("2-after-AtEachTimestep");
+  STOP_TIMER("1 AtEachTimestep");
+  START_TIMER("2 after-AtEachTimestep");
 }
 
 void DoubleBubbleTest::updateBBWallConstraints()
@@ -1149,8 +1149,8 @@ void DoubleBubbleTest::updateBBWallConstraints()
 
 void DoubleBubbleTest::afterStartStep()
 {
-  STOP_TIMER("2-after-AtEachTimestep");
-  START_TIMER("3-afterStartStep");
+  STOP_TIMER("2 after-AtEachTimestep");
+  START_TIMER("3 afterStartStep");
   
   updateBBWallConstraints();
   
@@ -1162,14 +1162,14 @@ void DoubleBubbleTest::afterStartStep()
     delete st;
   }
   
-  STOP_TIMER("3-afterStartStep");
-  START_TIMER("4-after-afterStartStep");
+  STOP_TIMER("3 afterStartStep");
+  START_TIMER("4 after-afterStartStep");
 }
 
 void DoubleBubbleTest::beforeEndStep()
 {
-  STOP_TIMER("4-after-afterStartStep");
-  START_TIMER("5-beforeEndStep");
+  STOP_TIMER("4 after-afterStartStep");
+  START_TIMER("5 beforeEndStep");
   
   updateBBWallConstraints();
     
@@ -1440,8 +1440,8 @@ void DoubleBubbleTest::beforeEndStep()
     delete st;
   }
 
-  STOP_TIMER("5-beforeEndStep");
-  START_TIMER("6-after-beforeEndStep");
+  STOP_TIMER("5 beforeEndStep");
+  START_TIMER("6 after-beforeEndStep");
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -1535,6 +1535,8 @@ void DoubleBubbleTest::cn_step()
   
   if (driver == 0)  // face off
   {
+    START_TIMER("5.1 faceoff copy forward");
+    
     // wrapper for the normal driver in multitracker's talpa
     //normal flow examples
     static Scalar speeds_scene20[5][5] =
@@ -1560,12 +1562,18 @@ void DoubleBubbleTest::cn_step()
     std::vector<VertexHandle> reverse_vertmap;
     std::vector<FaceHandle> reverse_trimap;
     ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
-    
+
+    STOP_TIMER("5.1 faceoff copy forward");
+    START_TIMER("5.2 faceoff compute velocity");
+
     std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
     new_positions = st->pm_positions;
     Scalar dt = getDt();
     Scalar curr_dt = dt;
     driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+    
+    STOP_TIMER("5.2 faceoff compute velocity");
+    START_TIMER("5.3 faceoff copy backward");
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
@@ -1574,8 +1582,13 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
       shellObj->setVertexPosition(*vit, newpos);
     }
+    
+    STOP_TIMER("5.3 faceoff copy backward");
+
   } else
   {
+    START_TIMER("5.4 curlnoise copy forward");
+
     SISCCurlNoiseDriver driver;
     
     VertexProperty<int> vert_numbers(shellObj);
@@ -1590,11 +1603,17 @@ void DoubleBubbleTest::cn_step()
       st->set_newposition(i, (st->get_position(i) - ElTopo::Vec3d(0.5, 0.5, 0.5)) / s * 0.8 + ElTopo::Vec3d(0, 1, 0));
     st->set_positions_to_newpositions();
     
+    STOP_TIMER("5.4 curlnoise copy forward");
+    START_TIMER("5.5 curlnoise compute velocity");
+    
     std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
     new_positions = st->pm_positions;
     Scalar dt = getDt();
     Scalar curr_dt = dt;
     driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+    
+    STOP_TIMER("5.5 curlnoise compute velocity");
+    START_TIMER("5.6 curlnoise copy backward");
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
@@ -1604,6 +1623,8 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
       shellObj->setVertexPosition(*vit, newpos);
     }
+
+    STOP_TIMER("5.6 curlnoise copy backward");
   }
   
   
@@ -1611,8 +1632,8 @@ void DoubleBubbleTest::cn_step()
 
 void DoubleBubbleTest::AfterStep()
 {
-  STOP_TIMER("6-after-beforeEndStep");
-  START_TIMER("7-AfterStep");
+  STOP_TIMER("6 after-beforeEndStep");
+  START_TIMER("7 AfterStep");
   
 //  triangulation_added_vertices.clear();
 //  triangulation_added_edges.clear();
@@ -1662,7 +1683,7 @@ void DoubleBubbleTest::AfterStep()
     
   }
   
-  STOP_TIMER("7-AfterStep");
+  STOP_TIMER("7 AfterStep");
   
 }
 
