@@ -1479,6 +1479,8 @@ void DoubleBubbleTest::faceoff_step()
     };
     
     Scalar speed_multiplier = GetScalarOpt("shell-thickness");
+    if (getTime() > 1.5) speed_multiplier *= -1;
+    
     std::vector<std::vector<Scalar> > speeds;
     speeds.resize(3, std::vector<Scalar>(3));
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) speeds[i][j] = (m_active_scene == 17 ? speeds_scene17 : speeds_scene18)[i][j] * speed_multiplier;
