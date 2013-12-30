@@ -88,7 +88,7 @@ void Timer::report()
         std::string name = iter->first;
         Timer* t = iter->second;
         // This is not using TextLog because std::setw is not supported. TODO: you know.
-        std::cout << std::setw(50) << name <<
+        std::cout << std::setfill(' ') << std::setw(50) << name <<
         //" (" << iter->second << ") " <<
                 " = " << *t << '\n';
         t->lap();

@@ -906,6 +906,7 @@ void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 
 void DoubleBubbleTest::AtEachTimestep()
 {
+  START_TIMER("1-AtEachTimestep");
 //  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
 //    shellObj->deleteFace(triangulation_added_faces[i], false);
 //  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
@@ -1051,7 +1052,7 @@ void DoubleBubbleTest::AtEachTimestep()
         frame++;
         if (g_frames_to_generate_rec.find(frame) != g_frames_to_generate_rec.end())
         {
-            std:stringstream name;
+            std::stringstream name;
             name << std::setfill('0');
             name << outputdirectory << "/" << "frame" << std::setw(6) << frame << ".rec";
             
@@ -1074,7 +1075,8 @@ void DoubleBubbleTest::AtEachTimestep()
 //      surftrack2mesh(*st);
 //      delete st;
 //    }
-  
+  STOP_TIMER("1-AtEachTimestep");
+  START_TIMER("2-after-AtEachTimestep");
 }
 
 void DoubleBubbleTest::updateBBWallConstraints()
@@ -1147,6 +1149,9 @@ void DoubleBubbleTest::updateBBWallConstraints()
 
 void DoubleBubbleTest::afterStartStep()
 {
+  STOP_TIMER("2-after-AtEachTimestep");
+  START_TIMER("3-afterStartStep");
+  
   updateBBWallConstraints();
   
   if (g_recording.isRecording())
@@ -1156,10 +1161,16 @@ void DoubleBubbleTest::afterStartStep()
     g_recording.recordSurfTrack(*st);
     delete st;
   }
+  
+  STOP_TIMER("3-afterStartStep");
+  START_TIMER("4-after-afterStartStep");
 }
 
 void DoubleBubbleTest::beforeEndStep()
 {
+  STOP_TIMER("4-after-afterStartStep");
+  START_TIMER("5-beforeEndStep");
+  
   updateBBWallConstraints();
     
   Scalar dt = getDt();
@@ -1429,6 +1440,8 @@ void DoubleBubbleTest::beforeEndStep()
     delete st;
   }
 
+  STOP_TIMER("5-beforeEndStep");
+  START_TIMER("6-after-beforeEndStep");
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -1598,6 +1611,9 @@ void DoubleBubbleTest::cn_step()
 
 void DoubleBubbleTest::AfterStep()
 {
+  STOP_TIMER("6-after-beforeEndStep");
+  START_TIMER("7-AfterStep");
+  
 //  triangulation_added_vertices.clear();
 //  triangulation_added_edges.clear();
 //  triangulation_added_faces.clear();
@@ -1645,6 +1661,9 @@ void DoubleBubbleTest::AfterStep()
     }
     
   }
+  
+  STOP_TIMER("7-AfterStep");
+  
 }
 
 void DoubleBubbleTest::setupScene1() 
