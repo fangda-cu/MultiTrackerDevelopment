@@ -1599,9 +1599,11 @@ void DoubleBubbleTest::cn_step()
     
     // transform to the desired location for applying noise
     double s = GetScalarOpt("shell-thickness");
-    for (size_t i = 0; i < st->m_mesh.nv(); i++)
-      st->set_newposition(i, (st->get_position(i) - ElTopo::Vec3d(0.5, 0.5, 0.5)) / s * 0.8 + ElTopo::Vec3d(0, 1, 0));
-    st->set_positions_to_newpositions();
+    std::vector<ElTopo::Vec3d> x = st->get_positions();
+    for (size_t i = 0; i < x.size(); i++)
+      x[i] = (x[i] - ElTopo::Vec3d(0.5, 0.5, 0.5)) / s * 0.8 + ElTopo::Vec3d(0, 1, 0);
+    st->set_all_positions(x);
+    st->set_all_newpositions(x);
     
     STOP_TIMER("5.4 curlnoise copy forward");
     START_TIMER("5.5 curlnoise compute velocity");
