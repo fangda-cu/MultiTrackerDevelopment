@@ -1526,11 +1526,11 @@ void DoubleBubbleTest::cn_step()
     //normal flow examples
     static Scalar speeds_scene20[5][5] =
     {
-      { 0, -1, -1, -1, -1 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 },
-      { 1, 0, 0, 0, 0 }
+      { 0, 0, 1, 0, 0 },
+      { 0, 0, 1, 0, 0 },
+      { -1, -1, 0, -1, -1 },
+      { 0, 0, 1, 0, 0 },
+      { 0, 0, 1, 0, 0 }
     };
     
     Scalar speed_multiplier = GetScalarOpt("shell-thickness");
@@ -1540,7 +1540,7 @@ void DoubleBubbleTest::cn_step()
     speeds.resize(5, std::vector<Scalar>(5));
     for (int i = 0; i < 5; i++) for (int j = 0; j < 5; j++) speeds[i][j] = speeds_scene20[i][j] * speed_multiplier;
     
-    FaceOffMultiDriver driver(speeds, 0, false);
+    FaceOffMultiDriver driver(speeds, 2, false);
     
     VertexProperty<int> vert_numbers(shellObj);
     FaceProperty<int> face_numbers(shellObj);
