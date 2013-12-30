@@ -1535,8 +1535,6 @@ void DoubleBubbleTest::cn_step()
   
   if (driver == 0)  // face off
   {
-    START_TIMER("5.1 faceoff copy forward");
-    
     // wrapper for the normal driver in multitracker's talpa
     //normal flow examples
     static Scalar speeds_scene20[5][5] =
@@ -1563,17 +1561,11 @@ void DoubleBubbleTest::cn_step()
     std::vector<FaceHandle> reverse_trimap;
     ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
 
-    STOP_TIMER("5.1 faceoff copy forward");
-    START_TIMER("5.2 faceoff compute velocity");
-
     std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
     new_positions = st->pm_positions;
     Scalar dt = getDt();
     Scalar curr_dt = dt;
     driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
-    
-    STOP_TIMER("5.2 faceoff compute velocity");
-    START_TIMER("5.3 faceoff copy backward");
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
@@ -1583,12 +1575,8 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexPosition(*vit, newpos);
     }
     
-    STOP_TIMER("5.3 faceoff copy backward");
-
   } else
   {
-    START_TIMER("5.4 curlnoise copy forward");
-
     SISCCurlNoiseDriver driver;
     
     VertexProperty<int> vert_numbers(shellObj);
@@ -1605,17 +1593,11 @@ void DoubleBubbleTest::cn_step()
     st->set_all_positions(x);
     st->set_all_newpositions(x);
     
-    STOP_TIMER("5.4 curlnoise copy forward");
-    START_TIMER("5.5 curlnoise compute velocity");
-    
     std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
     new_positions = st->pm_positions;
     Scalar dt = getDt();
     Scalar curr_dt = dt;
     driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
-    
-    STOP_TIMER("5.5 curlnoise compute velocity");
-    START_TIMER("5.6 curlnoise copy backward");
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
@@ -1626,7 +1608,6 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexPosition(*vit, newpos);
     }
 
-    STOP_TIMER("5.6 curlnoise copy backward");
   }
   
   

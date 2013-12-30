@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <numeric>
 
+#include "BASim/src/Core/Timer.hh"
+
 namespace BASim {
   
 ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback, int doublebubble_scene) :
@@ -328,6 +330,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
   
+  START_TIMER("6.1 es prep");
+  
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
   {
@@ -358,6 +362,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     if (m_obj->vertexIncidentEdges(*vit) == 0)
       m_obj->deleteVertex(*vit);
   
+  STOP_TIMER("6.1 es prep");
+  START_TIMER("6.2 es collision");
   
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
@@ -371,6 +377,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //El Topo collision processing.
   
   resolveCollisions(timestep);
+  
+  STOP_TIMER("6.2 es collision");
+  START_TIMER("6.3 es remesh");
 
   //Remeshing
   if(m_do_remeshing) {
@@ -380,6 +389,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     //Relabel DOFs if necessary
     do_relabel = true;
   }
+  
+  STOP_TIMER("6.3 es remesh");
+  START_TIMER("6.4 es wrap up");
   
   std::cout << "nv = " << getDefoObj().nv() << " ne = " << getDefoObj().ne() << " nf = " << getDefoObj().nf() << " nt = " << getDefoObj().nt() << std::endl;
 
@@ -394,10 +406,13 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   std::cout << "Completed endStep\n";
 
+  STOP_TIMER("6.4 es wrap up");
 }
 
 void ElasticShell::remesh(Scalar timestep, bool initial)
 {
+  START_TIMER("6.3.1 prep mesh");
+  
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
   {
@@ -550,7 +565,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     reverse_trimap.push_back(fh);
     ++id;
   }
-
+  
   std::cout << "Calling surface improvement\n";
   
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
@@ -585,11 +600,19 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
         }
     }
   
+  STOP_TIMER("6.3.1 prep mesh");
+  
   for(int i = 0; i < m_remeshing_iters; ++i) {
+    START_TIMER("6.3.2 topology changes");
     surface_tracker.topology_changes();
+    STOP_TIMER("6.3.2 topology changes");
+    START_TIMER("6.3.3 improve mesh");
     surface_tracker.improve_mesh();
+    STOP_TIMER("6.3.3 improve mesh");
   }
   
+  START_TIMER("6.3.4 wrap up");
+
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
   // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
   
@@ -722,6 +745,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     if (m_obj->vertexIncidentEdges(*vit) == 0)
       m_obj->deleteVertex(*vit);
   
+  STOP_TIMER("6.3.4 wrap up");
 
 }
 
