@@ -26,6 +26,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellPointForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
 #include "faceoff_multi.h"
+#include "sisccurlnoisedriver.h"
 
 #include "DelaunayTriangulator.hh"
 #include "ElTopo/eltopo3d/iomesh.h"
@@ -1516,50 +1517,75 @@ void DoubleBubbleTest::faceoff_step()
 
 void DoubleBubbleTest::cn_step()
 {
-  // wrapper for the normal driver in multitracker's talpa
-  //normal flow examples
-  static Scalar speeds_scene17[3][3] =
+  static int driver = 0;
+  driver = (driver + 1) % 2;  // alternating between the drivers
+  
+  if (driver == 0)  // face off
   {
-    { 0, -1, -1 },
-    { 1, 0, 0 },
-    { 1, 0, 0 }
-  };
-  
-  static Scalar speeds_scene18[3][3] =
+    // wrapper for the normal driver in multitracker's talpa
+    //normal flow examples
+    static Scalar speeds_scene20[5][5] =
+    {
+      { 0, -1, -1, -1, -1 },
+      { 1, 0, 0, 0, 0 },
+      { 1, 0, 0, 0, 0 },
+      { 1, 0, 0, 0, 0 },
+      { 1, 0, 0, 0, 0 }
+    };
+    
+    Scalar speed_multiplier = GetScalarOpt("shell-thickness");
+  //  if (getTime() > 1.5) speed_multiplier *= -1;
+    
+    std::vector<std::vector<Scalar> > speeds;
+    speeds.resize(3, std::vector<Scalar>(3));
+    for (int i = 0; i < 5; i++) for (int j = 0; j < 5; j++) speeds[i][j] = speeds_scene20[i][j] * speed_multiplier;
+    
+    FaceOffMultiDriver driver(speeds, 0, false);
+    
+    VertexProperty<int> vert_numbers(shellObj);
+    FaceProperty<int> face_numbers(shellObj);
+    std::vector<VertexHandle> reverse_vertmap;
+    std::vector<FaceHandle> reverse_trimap;
+    ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
+    
+    std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
+    new_positions = st->pm_positions;
+    Scalar dt = getDt();
+    Scalar curr_dt = dt;
+    driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+    
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
+      Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
+      shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
+      shellObj->setVertexPosition(*vit, newpos);
+    }
+  } else
   {
-    { 0, -1, 1 },
-    { 1, 0, -2 },
-    { -1, 2, 0 }
-  };
-  
-  Scalar speed_multiplier = GetScalarOpt("shell-thickness");
-  if (getTime() > 1.5) speed_multiplier *= -1;
-  
-  std::vector<std::vector<Scalar> > speeds;
-  speeds.resize(3, std::vector<Scalar>(3));
-  for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) speeds[i][j] = (m_active_scene == 17 ? speeds_scene17 : speeds_scene18)[i][j] * speed_multiplier;
-  
-  FaceOffMultiDriver driver(speeds, 0, false);
-  
-  VertexProperty<int> vert_numbers(shellObj);
-  FaceProperty<int> face_numbers(shellObj);
-  std::vector<VertexHandle> reverse_vertmap;
-  std::vector<FaceHandle> reverse_trimap;
-  ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
-  
-  std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
-  new_positions = st->pm_positions;
-  Scalar dt = getDt();
-  Scalar curr_dt = dt;
-  driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
-  
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-  {
-    ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
-    Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
-    shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
-    shellObj->setVertexPosition(*vit, newpos);
+    SISCCurlNoiseDriver driver;
+    
+    VertexProperty<int> vert_numbers(shellObj);
+    FaceProperty<int> face_numbers(shellObj);
+    std::vector<VertexHandle> reverse_vertmap;
+    std::vector<FaceHandle> reverse_trimap;
+    ElTopo::SurfTrack * st = mesh2surftrack(vert_numbers, face_numbers, reverse_vertmap, reverse_trimap);
+    
+    std::vector<ElTopo::Vec3d> new_positions(st->get_num_vertices());
+    new_positions = st->pm_positions;
+    Scalar dt = getDt();
+    Scalar curr_dt = dt;
+    driver.set_predicted_vertex_positions(*st, new_positions, dt, curr_dt);
+    
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      ElTopo::Vec3d newpos_eltopo = new_positions[vert_numbers[*vit]];
+      Vec3d newpos(newpos_eltopo[0], newpos_eltopo[1], newpos_eltopo[2]);
+      shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
+      shellObj->setVertexPosition(*vit, newpos);
+    }
   }
+  
   
 }
 
