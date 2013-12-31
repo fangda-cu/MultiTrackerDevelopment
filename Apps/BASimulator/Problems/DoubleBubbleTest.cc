@@ -602,6 +602,7 @@ void DoubleBubbleTest::Setup()
     Recording::readSurfTrack(fs, *st);
     surftrack2mesh(*st);
     fs.close();
+    delete st;
   }
   
   updateBBWallConstraints();
@@ -1063,6 +1064,7 @@ void DoubleBubbleTest::AtEachTimestep()
             std::ofstream of(name.str().c_str());
             Recording::writeSurfTrack(of, *st);
             of.close();
+            delete(st);
         }
     }
 
@@ -1531,7 +1533,8 @@ void DoubleBubbleTest::faceoff_step()
         shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
         shellObj->setVertexPosition(*vit, newpos);
     }
-    
+  
+    delete(st);
 }
 
 void DoubleBubbleTest::cn_step()
@@ -1581,6 +1584,8 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexPosition(*vit, newpos);
     }
     
+      delete(st);
+    
   } else
   {
     SISCCurlNoiseDriver driver;
@@ -1613,6 +1618,8 @@ void DoubleBubbleTest::cn_step()
       shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
       shellObj->setVertexPosition(*vit, newpos);
     }
+    
+    delete (st);
 
   }
   
@@ -3368,6 +3375,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
           Recording::readSurfTrack(fs, *st);
           surftrack2mesh(*st);
           fs.close();
+          delete st;
         }
       } else
       {
@@ -3401,6 +3409,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
           Recording::readSurfTrack(fs, *st);
           surftrack2mesh(*st);
           fs.close();
+          delete st;
         }
       } else
       {
