@@ -434,6 +434,9 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
+  if (m_active_scene == 20) // this scene doesn't use the BB
+    return 0;
+
   static const double WALL_THRESHOLD = 1e-6;
   
   int walls = 0;
@@ -1083,7 +1086,10 @@ void DoubleBubbleTest::updateBBWallConstraints()
 {
     if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 17 || m_active_scene == 18)
         return;
-    
+  
+    if (m_active_scene == 20) // this scene doesn't use the BB
+        return;
+  
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
@@ -4383,7 +4389,7 @@ void DoubleBubbleTest::setupScene20()
         shellFaces[*fIt] = true;
     
     //now create the physical model to hang on the mesh
-    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this, m_active_scene);
     shellObj->addModel(shell);
     
     //positions
