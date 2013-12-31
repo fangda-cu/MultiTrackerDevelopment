@@ -751,6 +751,9 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
 
 int ElasticShell::onBBWall(const Vec3d & pos) const
 {
+  if (m_doublebubble_scene == 20) // this scene doesn't use the BB
+    return 0;
+
   static const double WALL_THRESHOLD = 1e-6;
   
   int walls = 0;
@@ -772,6 +775,9 @@ int ElasticShell::onBBWall(const Vec3d & pos) const
   
 Vec3d ElasticShell::enforceBBWallConstraint(const Vec3d & input, int constraints) const
 {
+  if (m_doublebubble_scene == 20) // this scene doesn't use the BB
+    return input;
+
   Vec3d output = input;
   if (constraints & (1 << 0))
     output.x() = 0;
