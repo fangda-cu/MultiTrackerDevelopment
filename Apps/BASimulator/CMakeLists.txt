@@ -1,7 +1,9 @@
-append_files (Headers "hh" . Problems)
-append_files (Headers "inl" . Problems)
-append_files (Templates "tcc" . Problems)
-append_files (Sources "cc" . Problems)
+append_files (Headers "hh" . Problems Problems/curlnoise)
+append_files (Headers "h" . Problems Problems/curlnoise)
+append_files (Headers "inl" . Problems Problems/curlnoise)
+append_files (Templates "tcc" . Problems Problems/curlnoise)
+append_files (Sources "cc" . Problems Problems/curlnoise)
+append_files (Sources "cpp" . Problems Problems/curlnoise)
 
 find_package (TCLAP REQUIRED)
 include_directories (${TCLAP_INCLUDE_DIR})
