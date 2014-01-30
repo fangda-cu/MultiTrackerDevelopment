@@ -413,6 +413,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene17,
   &DoubleBubbleTest::setupScene18,
   &DoubleBubbleTest::setupScene19,
+  &DoubleBubbleTest::setupScene20,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -4209,6 +4210,115 @@ void DoubleBubbleTest::setupScene19()
     
     shell->setFaceLabels(faceLabels);
     
+}
+
+void DoubleBubbleTest::setupScene20()
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  std::ifstream objfile("assets/doublebubbletest/20.OBJ");
+  std::vector<Vec3d> obj_vs;
+  std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
+  
+  while (!objfile.eof())
+  {
+    std::string line;
+    std::getline(objfile, line);
+    std::stringstream liness(line);
+    std::string ins;
+    liness >> ins;
+    if (ins == "v")
+    {
+      Vec3d v;
+      liness >> v.x() >> v.y() >> v.z();
+      obj_vs.push_back(v);
+    } else if (ins == "f")
+    {
+      Vec3i f;
+      Vec2i fl;
+      liness >> f.x() >> f.y() >> f.z();
+      liness >> fl.x() >> fl.y();
+      f.x()--;
+      f.y()--;
+      f.z()--;
+      obj_fs.push_back(std::pair<Vec3i, Vec2i>(f, fl));
+    }
+  }
+  objfile.close();
+  
+  std::cout << "OBJ load report: nv = " << obj_vs.size() << " nf = " << obj_fs.size() << std::endl;
+  
+  //create the mesh
+  std::vector<VertexHandle> vertList;
+  for (size_t i = 0; i < obj_vs.size(); i++)
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0, 0, 0);
+    positions[vertList[i]] = obj_vs[i];
+    undeformed[vertList[i]] = positions[vertList[i]];
+  }
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+  
+  for (size_t i = 0; i < obj_fs.size(); i++)
+  {
+    faceList.push_back(shellObj->addFace(vertList[obj_fs[i].first.x()], vertList[obj_fs[i].first.y()], vertList[obj_fs[i].first.z()]));
+    faceLabels[faceList.back()] = Vec2i(obj_fs[i].second.x(), obj_fs[i].second.y());
+  }
+  
+  // remove the bounding box wall faces
+  std::vector<FaceHandle> faces_to_remove;
+  for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = shellObj->fv_iter(*fit); assert(fvit);
+    VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+    
+    int wall0 = onBBWall(positions[v0]);
+    int wall1 = onBBWall(positions[v1]);
+    int wall2 = onBBWall(positions[v2]);
+    
+    if (wall0 & wall1 & wall2)
+    faces_to_remove.push_back(*fit);
+  }
+  
+  for (size_t i = 0; i < faces_to_remove.size(); i++)
+  shellObj->deleteFace(faces_to_remove[i], true);
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+  shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  //  shell->setEdgeUndeformed(undefAngle);
+  //  shell->setEdgeXis(edgeAngle);
+  //  shell->setEdgeVelocities(edgeVel);
+  
+  shell->setFaceLabels(faceLabels);
+  
+  
 }
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
