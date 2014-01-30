@@ -29,7 +29,6 @@
 #include <vector>
 #include <wallclocktime.h>
 
-
 // ---------------------------------------------------------
 // Local constants, typedefs, macros
 // ---------------------------------------------------------
@@ -127,7 +126,7 @@ DynamicSurface::~DynamicSurface()
 
 double DynamicSurface::distance_to_surface( const Vec3d& p, size_t& closest_triangle ) const
 {
-    
+    //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
     double padding = m_aabb_padding;
     double min_distance = BIG_DOUBLE;
     
@@ -297,6 +296,7 @@ void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a,
                                                 std::vector<size_t>& hit_triangles,
                                                 bool verbose ) const
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     Vec3d aabb_low, aabb_high;
     minmax( segment_point_a, segment_point_b, aabb_low, aabb_high );
     
@@ -580,6 +580,8 @@ double DynamicSurface::get_largest_dihedral(size_t edge, const std::vector<Vec3d
 // ---------------------------------------------------------
 int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end) {
 
+   //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
+
    std::vector<double> hit_ss;
    std::vector<size_t> hit_tris;
    get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
@@ -615,6 +617,7 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
 
 int DynamicSurface::get_region_containing_point( const Vec3d& p )
 {
+   //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
 
    //
    // The point is inside if the dot product between the normal of the first
@@ -824,6 +827,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
 
 void DynamicSurface::rebuild_static_broad_phase()
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     assert( m_collision_safety );
     if(m_verbose)
       std::cout << "Rebuilding broad phase\n";
@@ -841,6 +845,7 @@ void DynamicSurface::rebuild_static_broad_phase()
 
 void DynamicSurface::rebuild_continuous_broad_phase()
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     assert( m_collision_safety );
     m_broad_phase->update_broad_phase( *this, true );
 }
@@ -854,6 +859,7 @@ void DynamicSurface::rebuild_continuous_broad_phase()
 
 void DynamicSurface::update_static_broad_phase( size_t vertex_index )
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     const std::vector<size_t>& incident_tris = m_mesh.m_vertex_to_triangle_map[ vertex_index ];
     const std::vector<size_t>& incident_edges = m_mesh.m_vertex_to_edge_map[ vertex_index ];
     
@@ -884,6 +890,7 @@ void DynamicSurface::update_static_broad_phase( size_t vertex_index )
 
 void DynamicSurface::update_continuous_broad_phase( size_t vertex_index )
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     assert( m_collision_safety );
     
     const std::vector<size_t>& incident_tris = m_mesh.m_vertex_to_triangle_map[ vertex_index ];
@@ -943,7 +950,7 @@ void DynamicSurface::edge_static_bounds(size_t e, Vec3d &xmin, Vec3d &xmax) cons
     }
     else
     {            
-        minmax( get_position(edge[0]), get_position(edge[1]), xmin, xmax);
+        minmax( get_position(edge[0]), get_position(edge[1], edge[0]), xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
     }
@@ -965,7 +972,7 @@ void DynamicSurface::triangle_static_bounds(size_t t, Vec3d &xmin, Vec3d &xmax) 
     }
     else
     {      
-        minmax(get_position(tri[0]), get_position(tri[1]), get_position(tri[2]), xmin, xmax);
+        minmax(get_position(tri[0]), get_position(tri[1], tri[0]), get_position(tri[2], tri[0]), xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
     }
@@ -1008,8 +1015,8 @@ void DynamicSurface::edge_continuous_bounds(size_t e, Vec3d &xmin, Vec3d &xmax) 
     }
     else
     {      
-        minmax(get_position(edge[0]), get_newposition(edge[0]), 
-               get_position(edge[1]), get_newposition(edge[1]), 
+        minmax(get_position(edge[0]),          get_newposition(edge[0]),
+               get_position(edge[1], edge[0]), get_newposition(edge[1], edge[0]),
                xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
@@ -1032,9 +1039,9 @@ void DynamicSurface::triangle_continuous_bounds(size_t t, Vec3d &xmin, Vec3d &xm
     }
     else
     {
-        minmax(get_position(tri[0]), get_newposition(tri[0]), 
-               get_position(tri[1]), get_newposition(tri[1]), 
-               get_position(tri[2]), get_newposition(tri[2]), 
+        minmax(get_position(tri[0]),         get_newposition(tri[0]),
+               get_position(tri[1], tri[0]), get_newposition(tri[1], tri[0]),
+               get_position(tri[2], tri[0]), get_newposition(tri[2], tri[0]),
                xmin, xmax);
         
         xmin -= Vec3d(m_aabb_padding);
@@ -1070,7 +1077,8 @@ static bool aabbs_intersect( const Vec3d& a_xmin, const Vec3d& a_xmax, const Vec
 
 void DynamicSurface::check_static_broad_phase_is_up_to_date() const
 {
-    
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
+  
     // Verify by running against the n^2 broad phase
     
     //
@@ -1283,7 +1291,8 @@ void DynamicSurface::check_static_broad_phase_is_up_to_date() const
 
 void DynamicSurface::check_continuous_broad_phase_is_up_to_date() const
 {
-    
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
+
     // Verify by running against the n^2 broad phase
     
     //
@@ -1513,6 +1522,7 @@ void DynamicSurface::check_continuous_broad_phase_is_up_to_date() const
 
 bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( size_t tri_index  )
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     return check_triangle_vs_all_triangles_for_intersection( m_mesh.get_triangle(tri_index) );
 }
 
@@ -1524,6 +1534,7 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( size_t tr
 
 bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec3st& tri )
 {
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     bool any_intersection = false;
     
     static std::vector<size_t> overlapping_triangles(20);
@@ -1658,7 +1669,8 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
                                        bool use_new_positions, 
                                        std::vector<Intersection>& intersections )
 {
-    
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
+
     //assert( degeneracy_counts_as_intersection == false );
     
     //   if ( use_new_positions )
@@ -1747,7 +1759,8 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
 
 void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
 {
-    
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
+  
     std::vector<Intersection> intersections;
     get_intersections( degeneracy_counts_as_intersection, false, intersections );
     
@@ -1783,7 +1796,8 @@ void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as
 
 void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
 {
-    
+    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
+
     std::vector<Intersection> intersections;
     get_intersections( degeneracy_counts_as_intersection, true, intersections );
     

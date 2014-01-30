@@ -21,6 +21,10 @@
 #include <nondestructivetrimesh.h>
 #include <limits>
 
+#define PBC_DOMAIN_SIZE_X    (1.0)
+#define PBC_DOMAIN_SIZE_Y    (1.0)
+#define PBC_DOMAIN_SIZE_Z    (1.0)
+
 // ---------------------------------------------------------
 //  Forwards and typedefs
 // ---------------------------------------------------------
@@ -359,7 +363,12 @@ public:
     
     /// Returns the current positions of a vertex.
     ///
-    inline const Vec3d& get_position( size_t index ) const;
+    inline const Vec3d& get_position( size_t index ) const; // PBC: this returns the position of the base instance of vertex index, which is the same with the non-PBC implementation
+    inline       Vec3d  get_position( size_t index, size_t ref_vert ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position of the base instance of vertex ref_vert
+    inline       Vec3d  get_position( size_t index, const Vec3d & ref_pos ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position ref_pos
+    
+    /// Returns the periodic domain offset of a position, an offset such that each component of (pos - offset) is in [0, 1)
+    inline Vec3d get_domain_offset(const Vec3d & pos) const;
 
     /// Returns the set of all current vertex positions.
     ///
@@ -383,7 +392,9 @@ public:
 
     /// Returns the predicted position of a vertex.
     ///
-    inline const Vec3d& get_newposition( size_t index ) const;
+    inline const Vec3d& get_newposition( size_t index ) const; // PBC: this returns the position of the base instance of vertex index, which is the same with the non-PBC implementation
+    inline       Vec3d  get_newposition( size_t index, size_t ref_vert ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position of the base instance of vertex ref_vert
+    inline       Vec3d  get_newposition( size_t index, const Vec3d & ref_pos ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position ref_pos
     
     /// Returns the set of all predicted vertex positions.
     ///
@@ -527,8 +538,8 @@ inline double DynamicSurface::get_triangle_area(const Vec3st& tri) const
 inline double DynamicSurface::get_triangle_area(size_t v0, size_t v1, size_t v2) const
 {
     const Vec3d &p0 = get_position(v0);
-    const Vec3d &p1 = get_position(v1);
-    const Vec3d &p2 = get_position(v2);
+    const Vec3d &p1 = get_position(v1, v0);
+    const Vec3d &p2 = get_position(v2, v0);
     
     return 0.5 * mag(cross(p1-p0, p2-p0));
 }
@@ -592,8 +603,8 @@ inline Vec3d DynamicSurface::get_triangle_normal(const Vec3st& tri) const
 inline Vec3d DynamicSurface::get_triangle_normal(size_t v0, size_t v1, size_t v2) const
 {
     Vec3d start = get_position(v0);
-    Vec3d u = get_position(v1) - start;
-    Vec3d v = get_position(v2) - start;
+    Vec3d u = get_position(v1, v0) - start;
+    Vec3d v = get_position(v2, v0) - start;
     Vec3d res = cross(u, v);
     normalize(res);
     return res;
@@ -604,7 +615,7 @@ inline Vec3d DynamicSurface::get_triangle_normal(size_t v0, size_t v1, size_t v2
 inline Vec3d DynamicSurface::get_triangle_barycenter( size_t triangle_index ) const
 {
     const Vec3st& tri = m_mesh.get_triangle( triangle_index );
-    return 1.0 / 3.0 * ( get_position( tri[0] ) + get_position( tri[1] ) + get_position( tri[2] ) );
+    return 1.0 / 3.0 * ( get_position( tri[0] ) + get_position( tri[1], tri[0] ) + get_position( tri[2], tri[0] ) );
 }
 
 // --------------------------------------------------------
@@ -789,7 +800,7 @@ inline Vec3d DynamicSurface::get_vertex_normal_max( size_t vertex_index ) const
 
 inline double DynamicSurface::get_edge_length( size_t edge_index ) const
 {
-    return mag( get_position( m_mesh.m_edges[edge_index][1] ) - get_position( m_mesh.m_edges[edge_index][0] ) );
+    return mag( get_position( m_mesh.m_edges[edge_index][1], m_mesh.m_edges[edge_index][0] ) - get_position( m_mesh.m_edges[edge_index][0] ) );
 }
 
 // --------------------------------------------------------
@@ -805,7 +816,7 @@ inline double DynamicSurface::get_average_edge_length() const
     {
         const Vec2st& e = m_mesh.m_edges[i]; 
         if ( e[0] == e[1] )  { continue; }
-        sum_lengths += mag( get_position(e[1]) - get_position(e[0]) ); 
+        sum_lengths += get_edge_length(i);
     }
     return sum_lengths / (double) m_mesh.m_edges.size();   
 }
@@ -825,7 +836,7 @@ inline double DynamicSurface::get_average_non_solid_edge_length() const
         const Vec2st& e = m_mesh.m_edges[i]; 
         if ( e[0] == e[1] )  { continue; }
         if ( edge_is_all_solid(i) ) { continue; }
-        sum_lengths += mag( get_position(e[1]) - get_position(e[0]) ); 
+        sum_lengths += get_edge_length(i);
         ++counted_edges;
     }
     return sum_lengths / (double) counted_edges;   
@@ -862,8 +873,8 @@ inline double DynamicSurface::get_predicted_surface_area( ) const
     {
         if ( tris[t][0] ==  tris[t][1] ) { continue; }
         const Vec3d &p0 = get_newposition(tris[t][0]);
-        const Vec3d &p1 = get_newposition(tris[t][1]);
-        const Vec3d &p2 = get_newposition(tris[t][2]);      
+        const Vec3d &p1 = get_newposition(tris[t][1], tris[t][0]);
+        const Vec3d &p2 = get_newposition(tris[t][2], tris[t][0]);
         area += 0.5 * mag(cross(p1-p0, p2-p0));
     }
     return area;
@@ -884,7 +895,7 @@ inline double DynamicSurface::get_volume( ) const
     {
         if ( tris[t][0] == tris[t][1] ) { continue; }
         const Vec3st& tri = tris[t];
-        volume += inv_six * triple(get_position(tri[0]), get_position(tri[1]), get_position(tri[2]));
+        volume += inv_six * triple(get_position(tri[0]), get_position(tri[1], tri[0]), get_position(tri[2], tri[0]));
     }
     return volume;
 }
@@ -904,7 +915,7 @@ inline double DynamicSurface::get_predicted_volume( ) const
     {
         if ( tris[t][0] ==  tris[t][1] ) { continue; }
         const Vec3st& tri = tris[t];
-        volume += inv_six * triple(get_newposition(tri[0]), get_newposition(tri[1]), get_newposition(tri[2]));
+        volume += inv_six * triple(get_newposition(tri[0]), get_newposition(tri[1], tri[0]), get_newposition(tri[2], tri[0]));
     }
     return volume;
 }
@@ -1010,6 +1021,55 @@ inline const Vec3d& DynamicSurface::get_position( size_t index ) const
     return pm_positions[index];   
 }
 
+inline Vec3d DynamicSurface::get_position( size_t index, size_t ref_vert ) const
+{
+    const Vec3d & ref_base = get_position(ref_vert);
+    const Vec3d & voi_base = get_position(index);
+    Vec3d voi_pos = voi_base;
+    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
+    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
+    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
+    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
+    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
+    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
+    
+    return voi_pos;
+}
+ 
+inline Vec3d DynamicSurface::get_position( size_t index, const Vec3d & ref_pos ) const
+{
+    Vec3d ref_offset = get_domain_offset(ref_pos);
+    const Vec3d & ref_base = ref_pos - ref_offset;
+    const Vec3d & voi_base = get_position(index);
+    Vec3d voi_pos = voi_base;
+    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
+    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
+    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
+    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
+    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
+    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
+    
+    voi_pos += ref_base;
+    return voi_pos;
+}
+    
+    
+// ---------------------------------------------------------
+///
+/// Returns the domain offset of a position
+///
+// ---------------------------------------------------------
+inline Vec3d DynamicSurface::get_domain_offset(const Vec3d & pos) const
+{
+    // essentially dividing each component by the corresponding PBC_DOMAIN_SIZE_? and taking the floor
+    Vec3d offset;
+    offset[0] = std::floor(pos[0] / PBC_DOMAIN_SIZE_X) * PBC_DOMAIN_SIZE_X;
+    offset[1] = std::floor(pos[1] / PBC_DOMAIN_SIZE_Y) * PBC_DOMAIN_SIZE_Y;
+    offset[2] = std::floor(pos[2] / PBC_DOMAIN_SIZE_Z) * PBC_DOMAIN_SIZE_Z;
+    
+    return offset;
+}
+    
 // ---------------------------------------------------------
 ///
 /// Returns the set of all current vertex positions.
@@ -1030,7 +1090,7 @@ inline const std::vector<Vec3d>& DynamicSurface::get_positions( ) const
 inline void DynamicSurface::set_position( size_t index, const Vec3d& x )
 {
     assert( index < pm_positions.size() );
-    pm_positions[index] = x;
+    pm_positions[index] = x - get_domain_offset(x);
     
     // update broad phase
     if ( m_collision_safety )
@@ -1110,6 +1170,39 @@ inline const Vec3d& DynamicSurface::get_newposition( size_t index ) const
     return pm_newpositions[index];   
 }
 
+inline Vec3d DynamicSurface::get_newposition( size_t index, size_t ref_vert ) const
+{
+    const Vec3d & ref_base = get_newposition(ref_vert);
+    const Vec3d & voi_base = get_newposition(index);
+    Vec3d voi_pos = voi_base;
+    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
+    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
+    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
+    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
+    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
+    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
+    
+    return voi_pos;
+}
+
+inline Vec3d DynamicSurface::get_newposition( size_t index, const Vec3d & ref_pos ) const
+{
+    Vec3d ref_offset = get_domain_offset(ref_pos);
+    const Vec3d & ref_base = ref_pos - ref_offset;
+    const Vec3d & voi_base = get_newposition(index);
+    Vec3d voi_pos = voi_base;
+    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
+    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
+    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
+    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
+    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
+    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
+    
+    voi_pos += ref_base;
+    return voi_pos;
+}
+
+
 // ---------------------------------------------------------
 ///
 /// Set the predicted position of an individual vertex.
@@ -1120,7 +1213,7 @@ inline void DynamicSurface::set_newposition( size_t index, const Vec3d& x )
 {
     assert( index < pm_newpositions.size() );
     
-    pm_newpositions[index] = x;
+    pm_newpositions[index] = x - get_domain_offset(x);
     
     // update broad phase
     if ( m_collision_safety )
