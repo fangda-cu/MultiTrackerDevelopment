@@ -370,7 +370,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
-  resolveCollisions(timestep);
+//  resolveCollisions(timestep);
 
   //Remeshing
   if(m_do_remeshing) {
@@ -467,7 +467,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     construction_parameters.m_verbose = false;
     construction_parameters.m_allow_non_manifold = true;
     construction_parameters.m_allow_topology_changes = true;
-    construction_parameters.m_collision_safety = true;
+    construction_parameters.m_collision_safety = false;
     construction_parameters.m_remesh_boundaries = true;
     construction_parameters.m_t1_transition_enabled = m_et_t1_transition_enabled;
     construction_parameters.m_velocity_field_callback = NULL;
