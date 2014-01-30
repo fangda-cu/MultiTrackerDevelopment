@@ -1506,7 +1506,8 @@ void DoubleBubbleTest::faceoff_step()
         shellObj->setVertexVelocity(*vit, (newpos - shellObj->getVertexPosition(*vit)) / dt);
         shellObj->setVertexPosition(*vit, newpos);
     }
-    
+  
+    delete st;
 }
 
 void DoubleBubbleTest::AfterStep()
@@ -3252,6 +3253,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
           Recording::readSurfTrack(fs, *st);
           surftrack2mesh(*st);
           fs.close();
+          delete st;
         }
       } else
       {
@@ -3285,6 +3287,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
           Recording::readSurfTrack(fs, *st);
           surftrack2mesh(*st);
           fs.close();
+          delete st;
         }
       } else
       {
