@@ -414,6 +414,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene18,
   &DoubleBubbleTest::setupScene19,
   &DoubleBubbleTest::setupScene20,
+  &DoubleBubbleTest::setupScene21,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -4319,6 +4320,65 @@ void DoubleBubbleTest::setupScene20()
   shell->setFaceLabels(faceLabels);
   
   
+}
+
+void DoubleBubbleTest::setupScene21()
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  int N = GetIntOpt("shell-x-resolution");
+  
+  for(int i = 0; i < N*N; ++i)
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0,0,0);
+  }
+  
+  //create positions
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+      positions[vertList[i * N + j]] = Vec3d(0.5, (i + 0.5) / N, (j + 0.5) / N);
+  
+  for(int i = 0; i < N*N; ++i)
+  undeformed[vertList[i]] = positions[vertList[i]];
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj);
+  
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+    {
+      faceList.push_back(shellObj->addFace(vertList[((i + 0) % N) * N + (j + 0) % N], vertList[((i + 1) % N) * N + (j + 0) % N], vertList[((i + 1) % N) * N + (j + 1) % N]));   faceLabels[faceList.back()] = Vec2i(0, 1);
+      faceList.push_back(shellObj->addFace(vertList[((i + 1) % N) * N + (j + 1) % N], vertList[((i + 0) % N) * N + (j + 1) % N], vertList[((i + 0) % N) * N + (j + 0) % N]));   faceLabels[faceList.back()] = Vec2i(0, 1);
+    }
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+  shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  shell->setFaceLabels(faceLabels);
+
 }
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)

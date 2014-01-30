@@ -146,6 +146,7 @@ public:
   void setupScene19();  // bunny flight
    
   void setupScene20();  // periodic boundary condition MCF test
+  void setupScene21();  // periodic boundary condition test with a simple geometry
   
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
