@@ -565,6 +565,11 @@ void idle()
 
     if (progress_indicator && current_problem->dynamicsPropsLoaded())
         std::cout << "\rtime = " << current_problem->getTime() << std::flush;
+
+    if (render && generate_movie)
+    {
+        current_problem->keyboard(']',0,0);
+    }
 }
 
 void scaleMousePos(const int x, const int y, Scalar& xx, Scalar& yy)
