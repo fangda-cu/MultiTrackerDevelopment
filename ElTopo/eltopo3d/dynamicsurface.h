@@ -366,7 +366,9 @@ public:
     inline const Vec3d& get_position( size_t index ) const; // PBC: this returns the position of the base instance of vertex index, which is the same with the non-PBC implementation
     inline       Vec3d  get_position( size_t index, size_t ref_vert ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position of the base instance of vertex ref_vert
     inline       Vec3d  get_position( size_t index, const Vec3d & ref_pos ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of vertex index that's closest to the position ref_pos
-    
+    inline       Vec3d  get_position( const Vec3d & pos, size_t ref_vert ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of position pos that's closest to the position of the base instance of vertex ref_vert
+    inline       Vec3d  get_position( const Vec3d & pos, const Vec3d & ref_pos ) const; // PBC: this returns the position of one instance (out of the infinitely many instances) of position pos that's closest to the position ref_pos
+  
     /// Returns the periodic domain offset of a position, an offset such that each component of (pos - offset) is in [0, 1)
     inline Vec3d get_domain_offset(const Vec3d & pos) const;
 
@@ -1023,36 +1025,24 @@ inline const Vec3d& DynamicSurface::get_position( size_t index ) const
 
 inline Vec3d DynamicSurface::get_position( size_t index, size_t ref_vert ) const
 {
-    const Vec3d & ref_base = get_position(ref_vert);
-    const Vec3d & voi_base = get_position(index);
-    Vec3d voi_pos = voi_base;
-    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
-    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
-    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
-    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
-    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
-    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
-    
-    return voi_pos;
+    return get_position(get_position(index), get_position(ref_vert));
 }
  
 inline Vec3d DynamicSurface::get_position( size_t index, const Vec3d & ref_pos ) const
 {
-    Vec3d ref_offset = get_domain_offset(ref_pos);
-    const Vec3d & ref_base = ref_pos - ref_offset;
-    const Vec3d & voi_base = get_position(index);
-    Vec3d voi_pos = voi_base;
-    if      (voi_pos[0] < ref_base[0] - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] += PBC_DOMAIN_SIZE_X;
-    else if (voi_pos[0] > ref_base[0] + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos[0] -= PBC_DOMAIN_SIZE_X;
-    if      (voi_pos[1] < ref_base[1] - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] += PBC_DOMAIN_SIZE_Y;
-    else if (voi_pos[1] > ref_base[1] + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos[1] -= PBC_DOMAIN_SIZE_Y;
-    if      (voi_pos[2] < ref_base[2] - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] += PBC_DOMAIN_SIZE_Z;
-    else if (voi_pos[2] > ref_base[2] + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos[2] -= PBC_DOMAIN_SIZE_Z;
-    
-    voi_pos += ref_base;
-    return voi_pos;
+    return get_position(get_position(index), ref_pos);
 }
     
+inline Vec3d DynamicSurface::get_position( const Vec3d & pos, size_t ref_vert ) const
+{
+    return get_position(pos, get_position(ref_vert));
+}
+
+inline Vec3d DynamicSurface::get_position( const Vec3d & pos, const Vec3d & ref_pos ) const
+{
+    return pos - get_domain_offset(pos + (Vec3d(PBC_DOMAIN_SIZE_X, PBC_DOMAIN_SIZE_Y, PBC_DOMAIN_SIZE_Z) * 0.5 - ref_pos));
+}
+  
     
 // ---------------------------------------------------------
 ///

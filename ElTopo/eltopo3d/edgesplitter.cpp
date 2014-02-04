@@ -460,7 +460,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // and if so we will fall back to midpoint
   if(use_smooth_point) {
     
-    use_smooth_point = !split_edge_pseudo_motion_introduces_intersection( new_vertex_average_position, 
+    use_smooth_point = !split_edge_pseudo_motion_introduces_intersection( new_vertex_average_position,    //&&&&&&&& collision: not included in PBC phase 1
       new_vertex_smooth_position, 
       edge, 
       vertex_a, 
