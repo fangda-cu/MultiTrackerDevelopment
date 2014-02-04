@@ -365,8 +365,8 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, const Vec3d& new
         pm_velocities.resize( new_vertex_index + 1 );
     }
     
-    pm_positions[new_vertex_index] = new_vertex_position;
-    pm_newpositions[new_vertex_index] = new_vertex_position;
+    pm_positions[new_vertex_index] = new_vertex_position - get_domain_offset(new_vertex_position);  // PBC: pm_positions should only hold the base instance position
+    pm_newpositions[new_vertex_index] = pm_positions[new_vertex_index];
     m_masses[new_vertex_index] = new_vertex_mass;
   
     pm_velocities[new_vertex_index] = Vec3d(0);
@@ -375,7 +375,7 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, const Vec3d& new
     
     if ( m_collision_safety )
     {
-        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) );
+        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) ); //&&&&&& collision not included in PBC phase 1
     }
     
     return new_vertex_index;
