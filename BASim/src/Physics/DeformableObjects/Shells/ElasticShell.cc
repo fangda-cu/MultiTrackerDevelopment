@@ -39,6 +39,20 @@ ElasticShell::~ElasticShell() {
   
 }
 
+Vec3d ElasticShell::getVertexPosition(const VertexHandle& v, const VertexHandle& v0) const
+{
+  Vec3d ref_base = getVertexPosition(v0);
+  Vec3d voi_base = getVertexPosition(v);
+  Vec3d voi_pos = voi_base;
+  if      (voi_pos.x() < ref_base.x() - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos.x() += PBC_DOMAIN_SIZE_X;
+  else if (voi_pos.x() > ref_base.x() + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos.x() -= PBC_DOMAIN_SIZE_X;
+  if      (voi_pos.y() < ref_base.y() - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos.y() += PBC_DOMAIN_SIZE_Y;
+  else if (voi_pos.y() > ref_base.y() + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos.y() -= PBC_DOMAIN_SIZE_Y;
+  if      (voi_pos.z() < ref_base.z() - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos.z() += PBC_DOMAIN_SIZE_Z;
+  else if (voi_pos.z() > ref_base.z() + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos.z() -= PBC_DOMAIN_SIZE_Z;
+  return voi_pos;
+}
+  
 void ElasticShell::computeConservativeForcesEnergy( VecXd& force , Scalar& energy)
 {
   const std::vector<ElasticShellForce*>& forces = getForces();

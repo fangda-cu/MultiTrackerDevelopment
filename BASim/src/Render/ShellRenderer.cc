@@ -671,7 +671,8 @@ void ShellRenderer::render()
       
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
-      Vec3d dir = (p1-p0);
+      Vec3d dir = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit)) - m_shell.getVertexPosition(mesh.fromVertex(*eit));
+//      std::cout << "from = " << m_shell.getVertexPosition(mesh.fromVertex(*eit)).transpose() << " to = " << m_shell.getVertexPosition(mesh.toVertex(*eit)).transpose() << " ton = " << m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit)).transpose() << " dir = " << dir.transpose() << std::endl;
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
       if (mesh.isBoundary(*eit)){
@@ -692,8 +693,8 @@ void ShellRenderer::render()
           OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
       
-      if ((p0 - p1).norm() <= 0.1)
-        glColor4f(0.0, 0.5, 1.0, 1.0);
+//      if (dir.norm() <= 0.1)
+//        glColor4f(0.0, 0.5, 1.0, 1.0);
       
       bool visible = false;
       for (EdgeFaceIterator efit = mesh.ef_iter(*eit); efit; ++efit)
@@ -707,9 +708,14 @@ void ShellRenderer::render()
       
       if (!visible)
         OpenGL::color(Color(0.0, 0.0, 0.0, 0.1));
-      
+
       OpenGL::vertex(p0);
-      OpenGL::vertex(p1);      
+      OpenGL::vertex(Vec3d(p0 + dir));
+      if (p1 - p0 != dir) // this is an edge that crosses the domain boundary, i.e. p0 and p1 have different domain offsets due to PBC, so render a second istance on the opposite end of the domain (e.g. an edge from -0.1 to 0.1 is rendered twice, first as -0.1 to 0.1, then as 0.9 to 1.1)
+      {
+        OpenGL::vertex(p1);
+        OpenGL::vertex(Vec3d(p1 - dir));
+      }
     }
     glEnd();
     
@@ -778,9 +784,15 @@ void ShellRenderer::render()
           continue;
         
         FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
-        Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-        Vec3d p1 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-        Vec3d p2 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(!fvit);
+        VertexHandle v0 = *fvit;  ++fvit;   assert(fvit);
+        VertexHandle v1 = *fvit;  ++fvit;   assert(fvit);
+        VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
+
+        Vec3d p0  = m_shell.getVertexPosition(v0);
+        Vec3d p1b = m_shell.getVertexPosition(v1);
+        Vec3d p2b = m_shell.getVertexPosition(v2);
+        Vec3d p1 = m_shell.getVertexPosition(v1, v0);
+        Vec3d p2 = m_shell.getVertexPosition(v2, v0);
         
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
@@ -794,6 +806,16 @@ void ShellRenderer::render()
         {
           OpenGL::vertex(c);
           OpenGL::vertex(Vec3d(c - n * mean_edge_length * 0.05));
+          if (p1 != p1b)
+          {
+            OpenGL::vertex(Vec3d(c + p1b - p1));
+            OpenGL::vertex(Vec3d(c + p1b - p1 - n * mean_edge_length * 0.05));
+          }
+          if (p2 != p2b)
+          {
+            OpenGL::vertex(Vec3d(c + p2b - p2));
+            OpenGL::vertex(Vec3d(c + p2b - p2 - n * mean_edge_length * 0.05));
+          }
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -803,6 +825,16 @@ void ShellRenderer::render()
         {
           OpenGL::vertex(c);
           OpenGL::vertex(Vec3d(c + n * mean_edge_length * 0.05));          
+          if (p1 != p1b)
+          {
+            OpenGL::vertex(Vec3d(c + p1b - p1));
+            OpenGL::vertex(Vec3d(c + p1b - p1 + n * mean_edge_length * 0.05));
+          }
+          if (p2 != p2b)
+          {
+            OpenGL::vertex(Vec3d(c + p2b - p2));
+            OpenGL::vertex(Vec3d(c + p2b - p2 + n * mean_edge_length * 0.05));
+          }
         }
       }
       glEnd();
@@ -843,13 +875,18 @@ void ShellRenderer::render()
     
     for (size_t i = 0; i < sorted_faces.size(); i++)
     {
-      Vec3d barycentre;
-      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
-      {
-        Vec3d pos = m_shell.getVertexPosition(*fvit);
-        barycentre += pos;
-      }
-      barycentre /= 3.0;
+      FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); assert(fvit);
+      VertexHandle v0 = *fvit;  ++fvit;   assert(fvit);
+      VertexHandle v1 = *fvit;  ++fvit;   assert(fvit);
+      VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
+      
+      Vec3d p0  = m_shell.getVertexPosition(v0);
+      Vec3d p1b = m_shell.getVertexPosition(v1);
+      Vec3d p2b = m_shell.getVertexPosition(v2);
+      Vec3d p1 = m_shell.getVertexPosition(v1, v0);
+      Vec3d p2 = m_shell.getVertexPosition(v2, v0);
+
+      Vec3d barycentre = (p0 + p1 + p2) / 3;
 
       Scalar alpha = 0.1;
       OpenGL::color(Color(1.0,0.0,0.0,alpha));
@@ -866,13 +903,23 @@ void ShellRenderer::render()
         glColor4f(1.0, 0.0, 0.0, 0.5);
         edge_shrink = 0.0;
       }
+
+      OpenGL::vertex(Vec3d(p0 + (barycentre - p0) * edge_shrink));
+      OpenGL::vertex(Vec3d(p1 + (barycentre - p1) * edge_shrink));
+      OpenGL::vertex(Vec3d(p2 + (barycentre - p2) * edge_shrink));
       
-      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
+      if (p1 != p1b)
       {
-        Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos += (barycentre - pos) * edge_shrink;
-        OpenGL::vertex(pos);
-      }      
+        OpenGL::vertex(Vec3d(p0 + p1b - p1 + (barycentre - p0) * edge_shrink));
+        OpenGL::vertex(Vec3d(p1 + p1b - p1 + (barycentre - p1) * edge_shrink));
+        OpenGL::vertex(Vec3d(p2 + p1b - p1 + (barycentre - p2) * edge_shrink));
+      }
+      if (p2 != p2b)
+      {
+        OpenGL::vertex(Vec3d(p0 + p2b - p2 + (barycentre - p0) * edge_shrink));
+        OpenGL::vertex(Vec3d(p1 + p2b - p2 + (barycentre - p1) * edge_shrink));
+        OpenGL::vertex(Vec3d(p2 + p2b - p2 + (barycentre - p2) * edge_shrink));
+      }
     }
     
     glEnd();

@@ -124,6 +124,7 @@ public:
   
   //Individual DOFs
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_obj->getVertexPosition(v); }
+  Vec3d getVertexPosition(const VertexHandle& v, const VertexHandle& v0) const;   // refer to ElTopo::DynamicSurface::get_position()
   Vec3d getVertexVelocity(const VertexHandle& v) const { return m_obj->getVertexVelocity(v); }
   Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_obj->getVertexDampingUndeformedPosition(v); }
 
