@@ -329,50 +329,122 @@ void ShellRenderer::render()
     {
       mind = distance;
       mind_vertex = *vit;
-    }      
+    }
   }
   
   for (EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit)
   {
     Vec3d v0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-    Vec3d v1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
-    
-    Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
-    Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
-    Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
-    Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
-    
-    Scalar distance = (mousepos - (scrv0 + scrv1) / 2).norm();
-//    Scalar distance = (mousepos - scrv0 - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
-    if (distance < mind || mind < 0)
+    Vec3d v1b = m_shell.getVertexPosition(mesh.toVertex(*eit));
+    Vec3d v1 = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit));
+
+    if (true)
     {
-      mind = distance;
-      mind_vertex = VertexHandle();
-      mind_edge = *eit;
+      Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
+      Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+      Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
+      Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+      
+      Scalar distance = (mousepos - (scrv0 + scrv1) / 2).norm();
+//    Scalar distance = (mousepos - scrv0 - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
+      if (distance < mind || mind < 0)
+      {
+        mind = distance;
+        mind_vertex = VertexHandle();
+        mind_edge = *eit;
+      }
+    }
+    if (v1 != v1b)
+    {
+      Vec3d _v0 = v0 + v1b - v1;
+      Vec3d _v1 = v1b;
+      Vec4d scrv0_h = MVP * Vec4d(_v0.x(), _v0.y(), _v0.z(), 1.0);
+      Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+      Vec4d scrv1_h = MVP * Vec4d(_v1.x(), _v1.y(), _v1.z(), 1.0);
+      Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+      
+      Scalar distance = (mousepos - (scrv0 + scrv1) / 2).norm();
+//    Scalar distance = (mousepos - scrv0 - (mousepos - scrv0).dot(scrv1 - scrv0) * (scrv1 - scrv0) / (scrv1 - scrv0).squaredNorm()).norm();
+      if (distance < mind || mind < 0)
+      {
+        mind = distance;
+        mind_vertex = VertexHandle();
+        mind_edge = *eit;
+      }
     }
   }
   
   for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
   {
     FaceVertexIterator fvit = mesh.fv_iter(*fit); assert(fvit);
-    Vec3d v0 = m_shell.getVertexPosition(*fvit); ++fvit; assert(fvit);
-    Vec3d v1 = m_shell.getVertexPosition(*fvit); ++fvit; assert(fvit);
-    Vec3d v2 = m_shell.getVertexPosition(*fvit); ++fvit; assert(!fvit);
+    VertexHandle vh0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle vh1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle vh2 = *fvit; ++fvit; assert(!fvit);
+    Vec3d v0 = m_shell.getVertexPosition(vh0);
+    Vec3d v1b = m_shell.getVertexPosition(vh1);
+    Vec3d v2b = m_shell.getVertexPosition(vh2);
+    Vec3d v1 = m_shell.getVertexPosition(vh1, vh0);
+    Vec3d v2 = m_shell.getVertexPosition(vh2, vh0);
     
-    Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
-    Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
-    Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
-    Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
-    Vec4d scrv2_h = MVP * Vec4d(v2.x(), v2.y(), v2.z(), 1.0);
-    Vec2d scrv2 = Vec2d(scrv2_h.x(), scrv2_h.y()) / scrv2_h.w();
-    
-    Scalar distance = (mousepos - (scrv0 + scrv1 + scrv2) / 3).norm();
-    if (distance < mind || mind < 0)
+    if (true)
     {
-      mind = distance;
-      mind_vertex = VertexHandle();
-      mind_edge = EdgeHandle();
-      mind_face = *fit;
+      Vec4d scrv0_h = MVP * Vec4d(v0.x(), v0.y(), v0.z(), 1.0);
+      Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+      Vec4d scrv1_h = MVP * Vec4d(v1.x(), v1.y(), v1.z(), 1.0);
+      Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+      Vec4d scrv2_h = MVP * Vec4d(v2.x(), v2.y(), v2.z(), 1.0);
+      Vec2d scrv2 = Vec2d(scrv2_h.x(), scrv2_h.y()) / scrv2_h.w();
+      
+      Scalar distance = (mousepos - (scrv0 + scrv1 + scrv2) / 3).norm();
+      if (distance < mind || mind < 0)
+      {
+        mind = distance;
+        mind_vertex = VertexHandle();
+        mind_edge = EdgeHandle();
+        mind_face = *fit;
+      }
+    }
+    if (v1 != v1b)
+    {
+      Vec3d _v0 = v0 + v1b - v1;
+      Vec3d _v1 = v1b;
+      Vec3d _v2 = v2 + v1b - v1;
+      Vec4d scrv0_h = MVP * Vec4d(_v0.x(), _v0.y(), _v0.z(), 1.0);
+      Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+      Vec4d scrv1_h = MVP * Vec4d(_v1.x(), _v1.y(), _v1.z(), 1.0);
+      Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+      Vec4d scrv2_h = MVP * Vec4d(_v2.x(), _v2.y(), _v2.z(), 1.0);
+      Vec2d scrv2 = Vec2d(scrv2_h.x(), scrv2_h.y()) / scrv2_h.w();
+      
+      Scalar distance = (mousepos - (scrv0 + scrv1 + scrv2) / 3).norm();
+      if (distance < mind || mind < 0)
+      {
+        mind = distance;
+        mind_vertex = VertexHandle();
+        mind_edge = EdgeHandle();
+        mind_face = *fit;
+      }
+    }
+    if (v2 != v2b)
+    {
+      Vec3d _v0 = v0 + v2b - v2;
+      Vec3d _v1 = v1 + v2b - v2;
+      Vec3d _v2 = v2b;
+      Vec4d scrv0_h = MVP * Vec4d(_v0.x(), _v0.y(), _v0.z(), 1.0);
+      Vec2d scrv0 = Vec2d(scrv0_h.x(), scrv0_h.y()) / scrv0_h.w();
+      Vec4d scrv1_h = MVP * Vec4d(_v1.x(), _v1.y(), _v1.z(), 1.0);
+      Vec2d scrv1 = Vec2d(scrv1_h.x(), scrv1_h.y()) / scrv1_h.w();
+      Vec4d scrv2_h = MVP * Vec4d(_v2.x(), _v2.y(), _v2.z(), 1.0);
+      Vec2d scrv2 = Vec2d(scrv2_h.x(), scrv2_h.y()) / scrv2_h.w();
+      
+      Scalar distance = (mousepos - (scrv0 + scrv1 + scrv2) / 3).norm();
+      if (distance < mind || mind < 0)
+      {
+        mind = distance;
+        mind_vertex = VertexHandle();
+        mind_edge = EdgeHandle();
+        mind_face = *fit;
+      }
     }
   }
   
@@ -670,11 +742,8 @@ void ShellRenderer::render()
           continue;
       
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
-      Vec3d dir = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit)) - m_shell.getVertexPosition(mesh.fromVertex(*eit));
-//      std::cout << "from = " << m_shell.getVertexPosition(mesh.fromVertex(*eit)).transpose() << " to = " << m_shell.getVertexPosition(mesh.toVertex(*eit)).transpose() << " ton = " << m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit)).transpose() << " dir = " << dir.transpose() << std::endl;
-      //p0 = p0 + 0.05*dir;
-      //p1 = p1 - 0.05*dir;
+      Vec3d p1b = m_shell.getVertexPosition(mesh.toVertex(*eit));
+      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit));
       if (mesh.isBoundary(*eit)){
         OpenGL::color(Color(0.0, 1.0, 0.0, 0.2));
       }
@@ -710,11 +779,11 @@ void ShellRenderer::render()
         OpenGL::color(Color(0.0, 0.0, 0.0, 0.1));
 
       OpenGL::vertex(p0);
-      OpenGL::vertex(Vec3d(p0 + dir));
-      if (p1 - p0 != dir) // this is an edge that crosses the domain boundary, i.e. p0 and p1 have different domain offsets due to PBC, so render a second istance on the opposite end of the domain (e.g. an edge from -0.1 to 0.1 is rendered twice, first as -0.1 to 0.1, then as 0.9 to 1.1)
+      OpenGL::vertex(p1);
+      if (p1b != p1) // this is an edge that crosses the domain boundary, i.e. p0 and p1 have different domain offsets due to PBC, so render a second istance on the opposite end of the domain (e.g. an edge from -0.1 to 0.1 is rendered twice, first as -0.1 to 0.1, then as 0.9 to 1.1)
       {
-        OpenGL::vertex(p1);
-        OpenGL::vertex(Vec3d(p1 - dir));
+        OpenGL::vertex(Vec3d(p0 + p1b - p1));
+        OpenGL::vertex(Vec3d(p1 + p1b - p1));
       }
     }
     glEnd();
@@ -725,7 +794,9 @@ void ShellRenderer::render()
       glLineWidth(4);
       glBegin(GL_LINES);
       OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge), mesh.fromVertex(mind_edge)));
       OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge), mesh.toVertex(mind_edge)));
       glEnd();
       glLineWidth(2);
     }
@@ -1091,7 +1162,8 @@ void ShellRenderer::render()
     {
       EdgeHandle eh = *eit;
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+      Vec3d p1b = m_shell.getVertexPosition(mesh.toVertex(*eit));
+      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit));
 
       bool visible = false;
       for (EdgeFaceIterator efit = mesh.ef_iter(eh); efit; ++efit)
@@ -1120,7 +1192,12 @@ void ShellRenderer::render()
       glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
       
       OpenGL::vertex(p0);
-      OpenGL::vertex(p1);      
+      OpenGL::vertex(p1);
+      if (p1b != p1) // this is an edge that crosses the domain boundary, i.e. p0 and p1 have different domain offsets due to PBC, so render a second istance on the opposite end of the domain (e.g. an edge from -0.1 to 0.1 is rendered twice, first as -0.1 to 0.1, then as 0.9 to 1.1)
+      {
+        OpenGL::vertex(Vec3d(p0 + p1b - p1));
+        OpenGL::vertex(Vec3d(p1 + p1b - p1));
+      }
     }
     glEnd();
     
@@ -1130,7 +1207,9 @@ void ShellRenderer::render()
       glLineWidth(2);
       glBegin(GL_LINES);
       OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge), mesh.fromVertex(mind_edge)));
       OpenGL::vertex(m_shell.getVertexPosition(mesh.toVertex(mind_edge)));
+      OpenGL::vertex(m_shell.getVertexPosition(mesh.fromVertex(mind_edge), mesh.toVertex(mind_edge)));
       glEnd();
       glLineWidth(1);
     }
@@ -1168,9 +1247,15 @@ void ShellRenderer::render()
         
         Vec2i regions = m_shell.getFaceLabel(f);
         FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
-        Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-        Vec3d p1 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-        Vec3d p2 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(!fvit);
+        VertexHandle v0 = *fvit;  ++fvit;   assert(fvit);
+        VertexHandle v1 = *fvit;  ++fvit;   assert(fvit);
+        VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
+
+        Vec3d p0  = m_shell.getVertexPosition(v0);
+        Vec3d p1b = m_shell.getVertexPosition(v1);
+        Vec3d p2b = m_shell.getVertexPosition(v2);
+        Vec3d p1 = m_shell.getVertexPosition(v1, v0);
+        Vec3d p2 = m_shell.getVertexPosition(v2, v0);
         
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
@@ -1182,6 +1267,16 @@ void ShellRenderer::render()
         {
           OpenGL::vertex(c);
           OpenGL::vertex(Vec3d(c - n * 0.05));
+          if (p1 != p1b)
+          {
+            OpenGL::vertex(Vec3d(c + p1b - p1));
+            OpenGL::vertex(Vec3d(c + p1b - p1 - n * 0.05));
+          }
+          if (p2 != p2b)
+          {
+            OpenGL::vertex(Vec3d(c + p2b - p2));
+            OpenGL::vertex(Vec3d(c + p2b - p2 - n * 0.05));
+          }
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -1191,6 +1286,16 @@ void ShellRenderer::render()
         {
           OpenGL::vertex(c);
           OpenGL::vertex(Vec3d(c + n * 0.05));          
+          if (p1 != p1b)
+          {
+            OpenGL::vertex(Vec3d(c + p1b - p1));
+            OpenGL::vertex(Vec3d(c + p1b - p1 + n * 0.05));
+          }
+          if (p2 != p2b)
+          {
+            OpenGL::vertex(Vec3d(c + p2b - p2));
+            OpenGL::vertex(Vec3d(c + p2b - p2 + n * 0.05));
+          }
         }
       }
       glEnd();
@@ -1227,13 +1332,18 @@ void ShellRenderer::render()
     
     for (size_t i = 0; i < sorted_faces.size(); i++)
     {
-      Vec3d barycentre;
-      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
-      {
-        Vec3d pos = m_shell.getVertexPosition(*fvit);
-        barycentre += pos;
-      }
-      barycentre /= 3.0;
+      FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); assert(fvit);
+      VertexHandle v0 = *fvit;  ++fvit;   assert(fvit);
+      VertexHandle v1 = *fvit;  ++fvit;   assert(fvit);
+      VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
+      
+      Vec3d p0  = m_shell.getVertexPosition(v0);
+      Vec3d p1b = m_shell.getVertexPosition(v1);
+      Vec3d p2b = m_shell.getVertexPosition(v2);
+      Vec3d p1 = m_shell.getVertexPosition(v1, v0);
+      Vec3d p2 = m_shell.getVertexPosition(v2, v0);
+      
+      Vec3d barycentre = (p0 + p1 + p2) / 3;
       
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
       if (!m_solid_boundary_visible)
@@ -1267,12 +1377,22 @@ void ShellRenderer::render()
       if (sorted_faces[i].first == mind_face)
         OpenGL::color(Color(color_combined.x(), color_combined.y(), color_combined.z(), 1.0));
       
-      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
+      OpenGL::vertex(Vec3d(p0));
+      OpenGL::vertex(Vec3d(p1));
+      OpenGL::vertex(Vec3d(p2));
+      
+      if (p1 != p1b)
       {
-        Vec3d pos = m_shell.getVertexPosition(*fvit);
-//        pos += (barycentre - pos) * 0.1;
-        OpenGL::vertex(pos);
-      }      
+        OpenGL::vertex(Vec3d(p0 + p1b - p1));
+        OpenGL::vertex(Vec3d(p1 + p1b - p1));
+        OpenGL::vertex(Vec3d(p2 + p1b - p1));
+      }
+      if (p2 != p2b)
+      {
+        OpenGL::vertex(Vec3d(p0 + p2b - p2));
+        OpenGL::vertex(Vec3d(p1 + p2b - p2));
+        OpenGL::vertex(Vec3d(p2 + p2b - p2));
+      }
     }
     
     glEnd();
