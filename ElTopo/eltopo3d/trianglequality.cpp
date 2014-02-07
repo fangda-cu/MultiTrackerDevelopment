@@ -283,7 +283,7 @@ double estimated_max_curvature(const SurfTrack& surf, size_t vertex) {
     for(std::set<size_t>::iterator it = twoneighbors.begin(); it != twoneighbors.end(); ++it)
     {
         size_t curVert = *it;
-        Vec3d adjpt = surf.get_position(curVert);
+        Vec3d adjpt = surf.get_position(curVert, vertex);
         Vec3d diff;
         for(int i=0; i<3; i++)
             diff[i] = adjpt[i]-centpt[i];
@@ -400,7 +400,7 @@ double get_curvature_scaled_length(const SurfTrack& surf,
     assert( vertex_a < surf.get_num_vertices() );
     assert( vertex_b < surf.get_num_vertices() );
     
-    double length = dist(  surf.get_position( vertex_a ), surf.get_position( vertex_b ) );
+    double length = dist(  surf.get_position( vertex_a ), surf.get_position( vertex_b, vertex_a ) );
     
     //std::cout << "\n\nTrue length: " << length << std::endl;
 #ifdef USE_INV_MIN_RADIUS
@@ -508,8 +508,8 @@ double min_triangle_angle( const SurfTrack& surf )
         if ( surf.m_mesh.triangle_is_deleted(i) ) { continue; }
         
         const Vec3d& a = surf.get_position( surf.m_mesh.get_triangle(i)[0] );
-        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1] );
-        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2] );
+        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1], surf.m_mesh.get_triangle(i)[0] );
+        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2], surf.m_mesh.get_triangle(i)[0] );
         
         double curr_min_angle = min_triangle_angle( a, b, c );
         
@@ -536,8 +536,8 @@ double max_triangle_angle( const SurfTrack& surf )
         if ( surf.m_mesh.triangle_is_deleted(i) ) { continue; }
         
         const Vec3d& a = surf.get_position( surf.m_mesh.get_triangle(i)[0] );
-        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1] );
-        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2] );
+        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1], surf.m_mesh.get_triangle(i)[0] );
+        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2], surf.m_mesh.get_triangle(i)[0] );
         
         double curr_max_angle = max_triangle_angle( a, b, c );
         
@@ -563,8 +563,8 @@ size_t num_angles_below_threshold( const SurfTrack& surf, double low_threshold )
         if ( surf.m_mesh.triangle_is_deleted(i) ) { continue; }
         
         const Vec3d& a = surf.get_position( surf.m_mesh.get_triangle(i)[0] );
-        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1] );
-        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2] );
+        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1], surf.m_mesh.get_triangle(i)[0] );
+        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2], surf.m_mesh.get_triangle(i)[0] );
         
         double angle_a, angle_b, angle_c;
         triangle_angles( a, b, c, angle_a, angle_b, angle_c );
@@ -593,8 +593,8 @@ size_t num_angles_above_threshold( const SurfTrack& surf, double high_threshold 
         if ( surf.m_mesh.triangle_is_deleted(i) ) { continue; }
         
         const Vec3d& a = surf.get_position( surf.m_mesh.get_triangle(i)[0] );
-        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1] );
-        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2] );
+        const Vec3d& b = surf.get_position( surf.m_mesh.get_triangle(i)[1], surf.m_mesh.get_triangle(i)[0] );
+        const Vec3d& c = surf.get_position( surf.m_mesh.get_triangle(i)[2], surf.m_mesh.get_triangle(i)[0] );
         
         double angle_a, angle_b, angle_c;
         triangle_angles( a, b, c, angle_a, angle_b, angle_c );
@@ -619,7 +619,7 @@ double triangle_aspect_ratio( const SurfTrack& surf, size_t triangle_index )
 {
     const Vec3st& tri = surf.m_mesh.get_triangle(triangle_index);
     assert( tri[0] != tri[1] );
-    return triangle_aspect_ratio( surf.get_position(tri[0]), surf.get_position(tri[1]), surf.get_position(tri[2]) );   
+    return triangle_aspect_ratio( surf.get_position(tri[0]), surf.get_position(tri[1], tri[0]), surf.get_position(tri[2], tri[0]) );
 }
 
 // ---------------------------------------------------------

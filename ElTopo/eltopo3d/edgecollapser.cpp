@@ -265,7 +265,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
     for (size_t i = 0; i < moving_triangles.size(); i++)
     {
         Vec3st current_triangle = m_surf.m_mesh.get_triangle(moving_triangles[i]);
-        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]));
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area;
     }
@@ -308,19 +308,19 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
         double new_area;
         if ( current_triangle[0] == source_vertex || current_triangle[0] == destination_vertex )
         { 
-            new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
-            new_area = triangle_area( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
+            new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
+            new_area = triangle_area( vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
         }
         else if ( current_triangle[1] == source_vertex || current_triangle[1] == destination_vertex ) 
         { 
-            new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
-            new_area = triangle_area( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
+            new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
+            new_area = triangle_area( m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
         }
         else 
         { 
             assert( current_triangle[2] == source_vertex || current_triangle[2] == destination_vertex ); 
-            new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
-            new_area = triangle_area( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
+            new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
+            new_area = triangle_area( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
         }      
         
         if ( dot( new_normal, old_normal ) < 1e-5 )
@@ -380,7 +380,7 @@ bool EdgeCollapser::collapse_edge_introduces_volume_change( size_t source_vertex
     for ( size_t i = 0; i < triangles_incident_to_vertex.size(); ++i )
     {
         const Vec3st& inc_tri = m_surf.m_mesh.get_triangle( triangles_incident_to_vertex[i] );
-        volume_change += signed_volume( vertex_new_position, m_surf.get_position(inc_tri[0]), m_surf.get_position(inc_tri[1]), m_surf.get_position(inc_tri[2]) );
+        volume_change += signed_volume( vertex_new_position, m_surf.get_position(inc_tri[0],vertex_new_position), m_surf.get_position(inc_tri[1],vertex_new_position), m_surf.get_position(inc_tri[2],vertex_new_position) );
     }
     
     if ( std::fabs(volume_change) > m_surf.m_max_volume_change )
@@ -417,8 +417,8 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
 
        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         
-        double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
-        double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
+        double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1],tri[0]), m_surf.get_position(tri[2],tri[0]));
+        double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1],tri[0]), m_surf.get_position(tri[2],tri[0]));
 
         //assert(mina >= 0); //This was failing. Is it a NaN or really a negative angle?
         assert(mina == mina);
@@ -453,21 +453,21 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         
 
-        Vec3d a = m_surf.get_position( tri[0] );
+        Vec3d a = m_surf.get_position( tri[0], vertex_new_position );
         
         if ( tri[0] == source_vertex || tri[0] == destination_vertex )
         {
             a = vertex_new_position;
         }
         
-        Vec3d b = m_surf.get_position( tri[1] );
+        Vec3d b = m_surf.get_position( tri[1], vertex_new_position );
         
         if ( tri[1] == source_vertex || tri[1] == destination_vertex )
         {
             b = vertex_new_position;
         }
         
-        Vec3d c = m_surf.get_position( tri[2] );
+        Vec3d c = m_surf.get_position( tri[2], vertex_new_position );
         
         if ( tri[2] == source_vertex || tri[2] == destination_vertex )
         {
@@ -532,7 +532,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
     
     large_threshold = large_threshold || m_surf.m_aggressive_mode; //if we are in aggressive mode, use the large threshold
 
-    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete));
+    double len = mag(m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete,vertex_to_keep));
     if (!large_threshold && len >= m_t1_pull_apart_distance) {
        if(m_surf.m_verbose)
           std::cout << "!large thresh and len >= t1_dist\n";
@@ -623,7 +623,7 @@ bool EdgeCollapser::get_new_vertex_position_dihedral(Vec3d& vertex_new_position,
    {
       assert(m_surf.m_solid_vertices_callback);
 
-      Vec3d newpos = (m_surf.get_position(vertex_to_keep) + m_surf.get_position(vertex_to_delete)) / 2;
+      Vec3d newpos = (m_surf.get_position(vertex_to_keep) + m_surf.get_position(vertex_to_delete,vertex_to_keep)) / 2;
       if (!m_surf.m_solid_vertices_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
       {
          // the callback decides this edge should not be collapsed
@@ -699,7 +699,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   // do not collapse the edge if the two vertices are moving apart (unless we're in aggressive mode)
   
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
-  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete) - rel_vel;
+  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete,vertex_to_keep) - rel_vel;
   double edge_len = mag(edge_vec);
   
   
@@ -863,7 +863,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Check vertex pseudo motion for collisions and volume change
 
-  if ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) != m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) )
+  if ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1],m_surf.m_mesh.m_edges[edge][0]) != m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) )
   //if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
   {
 
@@ -1076,12 +1076,12 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   size_t vertex_a = m_surf.m_mesh.m_edges[edge_index][0];
   size_t vertex_b = m_surf.m_mesh.m_edges[edge_index][1];
   Vec3d a = m_surf.get_position(vertex_a);
-  Vec3d b = m_surf.get_position(vertex_b);
+  Vec3d b = m_surf.get_position(vertex_b, vertex_a);
   for(size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size(); ++i) {
      size_t tri_id = m_surf.m_mesh.m_edge_to_triangle_map[edge_index][i];
      Vec3st tri = m_surf.m_mesh.m_tris[tri_id];
      size_t vertex_c = m_surf.m_mesh.get_third_vertex(edge_index, tri_id);
-     Vec3d c = m_surf.get_position(vertex_c);
+     Vec3d c = m_surf.get_position(vertex_c, vertex_a);
      
      //The current angle is less than our threshold, so try to collapse
      double cur_angle = acos( dot( normalized(b-c), normalized(a-c) ) );
