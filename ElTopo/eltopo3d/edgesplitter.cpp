@@ -856,7 +856,7 @@ bool EdgeSplitter::large_angle_split_pass()
     // get edge end points
     const Vec2st& edge = m_surf.m_mesh.m_edges[e];      
     const Vec3d& edge_point0 = m_surf.get_position( edge[0] );
-    const Vec3d& edge_point1 = m_surf.get_position( edge[1] );
+    const Vec3d& edge_point1 = m_surf.get_position( edge[1], edge[0] );
     
     double edge_length = m_surf.get_edge_length(e);
 
@@ -873,7 +873,7 @@ bool EdgeSplitter::large_angle_split_pass()
       size_t opposite0 = mesh.get_third_vertex( e, tri0 );
     
       // compute the angle at each opposite vertex
-      const Vec3d& opposite_point0 = m_surf.get_position(opposite0);
+      const Vec3d& opposite_point0 = m_surf.get_position(opposite0, edge[0]);
       double acos_input = dot( normalized(edge_point0-opposite_point0), normalized(edge_point1-opposite_point0) );
       if(acos_input != acos_input || acos_input <= -1 || acos_input >= 1) {
          std::cout << "Value: " << acos_input << std::endl;
