@@ -411,7 +411,7 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
       {
          double area = triangle_areas[triangles[i]];
          sum_areas += area;
-         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v,triangle_centroids[triangles[i]]);
          t += area * c;
       }
 
@@ -521,13 +521,12 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
 
       Vec3d t(0,0,0);      // displacement
       double sum_areas = 0;
-      Vec3d main_vert = m_surf.get_position(v);
       for ( size_t i = 0; i < triangles.size(); ++i )
       {
          size_t triangle_index = triangles[i];
          double area = triangle_areas[triangle_index];
          sum_areas += area;
-         Vec3d c = triangle_centroids[triangle_index] - main_vert;
+         Vec3d c = triangle_centroids[triangle_index] - m_surf.get_position(v,triangle_centroids[triangle_index]);
          t += area * c;
       }
 
@@ -559,7 +558,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
             for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[v].size(); ++i) {
                size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[v][i];
                if(m_surf.edge_is_feature(edge)) {
-                  Vec3d edgeVec = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]);
+                  Vec3d edgeVec = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][1],m_surf.m_mesh.m_edges[edge][0]);
                   normalize(edgeVec);
                   T.push_back(edgeVec);
                }
@@ -571,7 +570,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
             for(size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[v].size(); ++i) {
                size_t edge = m_surf.m_mesh.m_vertex_to_edge_map[v][i];
                if(m_surf.edge_is_feature(edge)) {
-                  Vec3d midpoint = 0.5*(m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) + m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]));
+                  Vec3d midpoint = 0.5*(m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) + m_surf.get_position(m_surf.m_mesh.m_edges[edge][1],m_surf.m_mesh.m_edges[edge][0]));
                   edge_midpoints.push_back(midpoint);
                }
             }
@@ -604,7 +603,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_dihedral( size_t v,
       {
          double area = triangle_areas[triangles[i]];
          sum_areas += area;
-         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v,triangle_centroids[triangles[i]]);
          t += area * c;
       }
 
@@ -644,7 +643,7 @@ Vec3d MeshSmoother::get_smoothing_displacement_naive( size_t v,
    {
       double area = triangle_areas[triangles[i]];
       sum_areas += area;
-      Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+      Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v,triangle_centroids[triangles[i]]);
       t += area * c;
    }
 
@@ -688,7 +687,7 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
         {
             triangle_areas.push_back( m_surf.get_triangle_area( i ) );
             triangle_normals.push_back( m_surf.get_triangle_normal( i ) );
-            triangle_centroids.push_back( (m_surf.get_position(tri[0]) + m_surf.get_position(tri[1]) + m_surf.get_position(tri[2])) / 3 );
+            triangle_centroids.push_back( (m_surf.get_position(tri[0]) + m_surf.get_position(tri[1],tri[0]) + m_surf.get_position(tri[2],tri[0])) / 3 );
         }
     }
     
@@ -717,8 +716,8 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
           
           Vec3st tri = m_surf.m_mesh.m_tris[i];
           Vec3d v0 = m_surf.get_position(tri[0]);
-          Vec3d v1 = m_surf.get_position(tri[1]);
-          Vec3d v2 = m_surf.get_position(tri[2]);
+          Vec3d v1 = m_surf.get_position(tri[1],tri[0]);
+          Vec3d v2 = m_surf.get_position(tri[2],tri[0]);
           Vec3d angles;
           triangle_angles(v0, v1, v2, angles[0], angles[1], angles[2]);
           
