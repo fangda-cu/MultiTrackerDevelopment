@@ -130,19 +130,19 @@ bool MeshSnapper::snap_introduces_normal_inversion( size_t source_vertex,
       double new_area;
       if ( current_triangle[0] == source_vertex || current_triangle[0] == destination_vertex )
       { 
-         new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
-         new_area = triangle_area( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
+         new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
+         new_area =   triangle_area(   vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
       }
       else if ( current_triangle[1] == source_vertex || current_triangle[1] == destination_vertex ) 
       { 
-         new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
-         new_area = triangle_area( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
+         new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
+         new_area =   triangle_area(   m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
       }
       else 
       { 
          assert( current_triangle[2] == source_vertex || current_triangle[2] == destination_vertex ); 
-         new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
-         new_area = triangle_area( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
+         new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
+         new_area =   triangle_area(   m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
       }      
 
       if ( dot( new_normal, old_normal ) < 1e-5 )
@@ -292,7 +292,7 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
    // --------------
    // decide on new vertex position: just take the average of the two points to be snapped.
 
-   Vec3d vertex_new_position = 0.5*(m_surf.get_position(vertex_to_delete) + m_surf.get_position(vertex_to_keep));
+   Vec3d vertex_new_position = 0.5*(m_surf.get_position(vertex_to_delete,vertex_to_keep) + m_surf.get_position(vertex_to_keep));
 
    if ( m_surf.m_verbose ) { 
       std::cout << "Snapping vertex pair.  Doomed vertex: " << vertex_to_delete 
@@ -303,7 +303,7 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
 
    // Check vertex pseudo motion for collisions
 
-   if ( mag ( m_surf.get_position(vertex_to_delete) - m_surf.get_position(vertex_to_keep) ) > 0 )
+   if ( mag ( m_surf.get_position(vertex_to_delete,vertex_to_keep) - m_surf.get_position(vertex_to_keep) ) > 0 )
    {
 
       // Change source vertex predicted position to superimpose onto destination vertex
@@ -326,7 +326,7 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
 
       if ( m_surf.m_collision_safety )
       {
-         collision = snap_pseudo_motion_introduces_collision( vertex_to_delete, vertex_to_keep, vertex_new_position );
+         collision = snap_pseudo_motion_introduces_collision( vertex_to_delete, vertex_to_keep, vertex_new_position );  //&&&&&& collision not included in PBC phase 1
       }
 
       if ( collision ) 
@@ -438,7 +438,6 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
 
 bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
 {
-
    assert(m_surf.m_allow_non_manifold);
 
    //TODO Figure out how to deal with boundaries here.
@@ -449,10 +448,12 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    const Vec2st& edge_data0 = m_surf.m_mesh.m_edges[edge0];
    const Vec2st& edge_data1 = m_surf.m_mesh.m_edges[edge1];
 
-   const Vec3d& v0 = m_surf.get_position(edge_data0[0]);
-   const Vec3d& v1 = m_surf.get_position(edge_data0[1]);
-   const Vec3d& v2 = m_surf.get_position(edge_data1[0]);
-   const Vec3d& v3 = m_surf.get_position(edge_data1[1]);
+   size_t vref = edge_data0[0];
+    
+   const Vec3d& v0 = m_surf.get_position(edge_data0[0],vref);
+   const Vec3d& v1 = m_surf.get_position(edge_data0[1],vref);
+   const Vec3d& v2 = m_surf.get_position(edge_data1[0],vref);
+   const Vec3d& v3 = m_surf.get_position(edge_data1[1],vref);
    
    check_edge_edge_proximity( v0, v1, v2, v3, 
       distance, s0, s2, normal );
@@ -542,10 +543,12 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    Vec3st face_data = m_surf.m_mesh.m_tris[face];
    double dist;
    
-   const Vec3d& v_pos = m_surf.get_position(vertex);
-   const Vec3d& t0_pos = m_surf.get_position(face_data[0]);
-   const Vec3d& t1_pos = m_surf.get_position(face_data[1]);
-   const Vec3d& t2_pos = m_surf.get_position(face_data[2]);
+    size_t vref = vertex;
+    
+   const Vec3d& v_pos = m_surf.get_position(vertex, vref);
+   const Vec3d& t0_pos = m_surf.get_position(face_data[0], vref);
+   const Vec3d& t1_pos = m_surf.get_position(face_data[1], vref);
+   const Vec3d& t2_pos = m_surf.get_position(face_data[2], vref);
 
    //determine the distance, and barycentric coordinates of the closest point
    check_point_triangle_proximity(v_pos, 
@@ -752,7 +755,7 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
    double s0, s2;
    Vec3d normal;
 
-   check_edge_edge_proximity( m_surf.get_position(edge_data0[0]), 
+   check_edge_edge_proximity( m_surf.get_position(edge_data0[0]),   //&&&&& collision not included in PBC phase 1
       m_surf.get_position(edge_data0[1]), 
       m_surf.get_position(edge_data1[0]), 
       m_surf.get_position(edge_data1[1]), 
@@ -838,7 +841,7 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
    double s0, s1, s2;
    Vec3d normal;
 
-   check_point_triangle_proximity( m_surf.get_position(vertex), 
+   check_point_triangle_proximity( m_surf.get_position(vertex),    //&&&&& collision not included in PBC phase 1
       m_surf.get_position(face_data[0]), 
       m_surf.get_position(face_data[1]), 
       m_surf.get_position(face_data[2]), 
