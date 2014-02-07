@@ -36,6 +36,7 @@ extern RunStats g_stats;
 ///
 // --------------------------------------------------------
 
+    //&&&&&&&& collision not included in PBC phase 1
 bool EdgeFlipper::flip_introduces_collision( size_t edge_index, 
                                             const Vec2st& new_edge, 
                                             const Vec3st& new_triangle_a, 
@@ -168,9 +169,10 @@ bool EdgeFlipper::flip_edge( size_t edge,
     g_stats.add_to_int( "EdgeFlipper:edge_flip_attempt", 1 );
     
     NonDestructiveTriMesh& m_mesh = m_surf.m_mesh;
-    const std::vector<Vec3d>& xs = m_surf.get_positions();
+//    const std::vector<Vec3d>& xs = m_surf.get_positions();    // PBC: all direct access to xs elements are replaced by m_surf.get_position(v, ref) calls
     
     Vec2st& edge_vertices = m_mesh.m_edges[edge];
+    size_t vref = edge_vertices[0]; // PBC's reference vertex for all position query in this entire function
     
     // Find the vertices which will form the new edge
     Vec2st new_edge( third_vertex_0, third_vertex_1);
@@ -178,10 +180,10 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // Control volume change
-    double vol = std::fabs( signed_volume( xs[edge_vertices[0]], 
-                                     xs[edge_vertices[1]], 
-                                     xs[new_edge[0]], 
-                                     xs[new_edge[1]] ) ); 
+    double vol = std::fabs( signed_volume( m_surf.get_position(edge_vertices[0], vref),
+                                           m_surf.get_position(edge_vertices[1], vref),
+                                           m_surf.get_position(new_edge[0], vref),
+                                           m_surf.get_position(new_edge[1], vref) ) );
     
     if ( vol > m_surf.m_max_volume_change )
     {
@@ -357,14 +359,14 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // Prevent degenerate triangles
     Vec3st old_tri0 = m_mesh.get_triangle(tri0);
     Vec3st old_tri1 = m_mesh.get_triangle(tri1);
-    Vec3d old_normal0 = cross(xs[old_tri0[1]] - xs[old_tri0[0]], xs[old_tri0[2]] - xs[old_tri0[0]]);
-    Vec3d old_normal1 = cross(xs[old_tri1[1]] - xs[old_tri1[0]], xs[old_tri1[2]] - xs[old_tri1[0]]); 
+    Vec3d old_normal0 = cross(m_surf.get_position(old_tri0[1],vref) - m_surf.get_position(old_tri0[0],vref), m_surf.get_position(old_tri0[2],vref) - m_surf.get_position(old_tri0[0],vref));
+    Vec3d old_normal1 = cross(m_surf.get_position(old_tri1[1],vref) - m_surf.get_position(old_tri1[0],vref), m_surf.get_position(old_tri1[2],vref) - m_surf.get_position(old_tri1[0],vref));
     double old_area0 = mag(old_normal0) / 2;
     double old_area1 = mag(old_normal1) / 2;
     normalize(old_normal0);
     normalize(old_normal1);
-    Vec3d new_normal0 = cross(xs[new_triangle0[1]] - xs[new_triangle0[0]], xs[new_triangle0[2]] - xs[new_triangle0[0]]);
-    Vec3d new_normal1 = cross(xs[new_triangle1[1]] - xs[new_triangle1[0]], xs[new_triangle1[2]] - xs[new_triangle1[0]]);
+    Vec3d new_normal0 = cross(m_surf.get_position(new_triangle0[1],vref) - m_surf.get_position(new_triangle0[0],vref), m_surf.get_position(new_triangle0[2],vref) - m_surf.get_position(new_triangle0[0],vref));
+    Vec3d new_normal1 = cross(m_surf.get_position(new_triangle1[1],vref) - m_surf.get_position(new_triangle1[0],vref), m_surf.get_position(new_triangle1[2],vref) - m_surf.get_position(new_triangle1[0],vref));
     double new_area0 = mag(new_normal0) / 2;
     double new_area1 = mag(new_normal1) / 2;
     normalize(new_normal0);
@@ -415,14 +417,14 @@ bool EdgeFlipper::flip_edge( size_t edge,
     }
     
     // Don't flip if it produces triangles with bad aspect ratio (regardless of area)
-    double old_min_edge_0 = std::min(std::min(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
-    double old_min_edge_1 = std::min(std::min(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
-    double old_max_edge_0 = std::max(std::max(mag(xs[old_tri0[1]] - xs[old_tri0[0]]), mag(xs[old_tri0[2]] - xs[old_tri0[1]])), mag(xs[old_tri0[0]] - xs[old_tri0[2]]));
-    double old_max_edge_1 = std::max(std::max(mag(xs[old_tri1[1]] - xs[old_tri1[0]]), mag(xs[old_tri1[2]] - xs[old_tri1[1]])), mag(xs[old_tri1[0]] - xs[old_tri1[2]]));
-    double new_min_edge_0 = std::min(std::min(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
-    double new_min_edge_1 = std::min(std::min(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
-    double new_max_edge_0 = std::max(std::max(mag(xs[new_triangle0[1]] - xs[new_triangle0[0]]), mag(xs[new_triangle0[2]] - xs[new_triangle0[1]])), mag(xs[new_triangle0[0]] - xs[new_triangle0[2]]));
-    double new_max_edge_1 = std::max(std::max(mag(xs[new_triangle1[1]] - xs[new_triangle1[0]]), mag(xs[new_triangle1[2]] - xs[new_triangle1[1]])), mag(xs[new_triangle1[0]] - xs[new_triangle1[2]]));
+    double old_min_edge_0 = std::min(std::min(mag(m_surf.get_position(old_tri0[1],vref) - m_surf.get_position(old_tri0[0],vref)), mag(m_surf.get_position(old_tri0[2],vref) - m_surf.get_position(old_tri0[1],vref))), mag(m_surf.get_position(old_tri0[0],vref) - m_surf.get_position(old_tri0[2],vref)));
+    double old_min_edge_1 = std::min(std::min(mag(m_surf.get_position(old_tri1[1],vref) - m_surf.get_position(old_tri1[0],vref)), mag(m_surf.get_position(old_tri1[2],vref) - m_surf.get_position(old_tri1[1],vref))), mag(m_surf.get_position(old_tri1[0],vref) - m_surf.get_position(old_tri1[2],vref)));
+    double old_max_edge_0 = std::max(std::max(mag(m_surf.get_position(old_tri0[1],vref) - m_surf.get_position(old_tri0[0],vref)), mag(m_surf.get_position(old_tri0[2],vref) - m_surf.get_position(old_tri0[1],vref))), mag(m_surf.get_position(old_tri0[0],vref) - m_surf.get_position(old_tri0[2],vref)));
+    double old_max_edge_1 = std::max(std::max(mag(m_surf.get_position(old_tri1[1],vref) - m_surf.get_position(old_tri1[0],vref)), mag(m_surf.get_position(old_tri1[2],vref) - m_surf.get_position(old_tri1[1],vref))), mag(m_surf.get_position(old_tri1[0],vref) - m_surf.get_position(old_tri1[2],vref)));
+    double new_min_edge_0 = std::min(std::min(mag(m_surf.get_position(new_triangle0[1],vref) - m_surf.get_position(new_triangle0[0],vref)), mag(m_surf.get_position(new_triangle0[2],vref) - m_surf.get_position(new_triangle0[1],vref))), mag(m_surf.get_position(new_triangle0[0],vref) - m_surf.get_position(new_triangle0[2],vref)));
+    double new_min_edge_1 = std::min(std::min(mag(m_surf.get_position(new_triangle1[1],vref) - m_surf.get_position(new_triangle1[0],vref)), mag(m_surf.get_position(new_triangle1[2],vref) - m_surf.get_position(new_triangle1[1],vref))), mag(m_surf.get_position(new_triangle1[0],vref) - m_surf.get_position(new_triangle1[2],vref)));
+    double new_max_edge_0 = std::max(std::max(mag(m_surf.get_position(new_triangle0[1],vref) - m_surf.get_position(new_triangle0[0],vref)), mag(m_surf.get_position(new_triangle0[2],vref) - m_surf.get_position(new_triangle0[1],vref))), mag(m_surf.get_position(new_triangle0[0],vref) - m_surf.get_position(new_triangle0[2],vref)));
+    double new_max_edge_1 = std::max(std::max(mag(m_surf.get_position(new_triangle1[1],vref) - m_surf.get_position(new_triangle1[0],vref)), mag(m_surf.get_position(new_triangle1[2],vref) - m_surf.get_position(new_triangle1[1],vref))), mag(m_surf.get_position(new_triangle1[0],vref) - m_surf.get_position(new_triangle1[2],vref)));
     double AR_THRESHOLD = 10.0;
     double arthreshold = AR_THRESHOLD;
     arthreshold = std::max(arthreshold, 1 / (old_area0 * 2 / (old_max_edge_0 * old_max_edge_0)));
@@ -441,8 +443,8 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // Don't introduce a large or small angle
     
-    double min_angle = min_triangle_angle( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] );
-    min_angle = min( min_angle, min_triangle_angle( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] ) );
+    double min_angle =          min_triangle_angle( m_surf.get_position(new_triangle0[0],vref), m_surf.get_position(new_triangle0[1],vref), m_surf.get_position(new_triangle0[2],vref) );
+    min_angle = min( min_angle, min_triangle_angle( m_surf.get_position(new_triangle1[0],vref), m_surf.get_position(new_triangle1[1],vref), m_surf.get_position(new_triangle1[2],vref) ) );
     
     if ( rad2deg(min_angle) < m_surf.m_min_triangle_angle )
     {
@@ -450,8 +452,8 @@ bool EdgeFlipper::flip_edge( size_t edge,
         return false;
     }
     
-    double max_angle = max_triangle_angle( xs[new_triangle0[0]], xs[new_triangle0[1]], xs[new_triangle0[2]] );
-    max_angle = max( max_angle, max_triangle_angle( xs[new_triangle1[0]], xs[new_triangle1[1]], xs[new_triangle1[2]] ) );
+    double max_angle =          max_triangle_angle( m_surf.get_position(new_triangle0[0],vref), m_surf.get_position(new_triangle0[1],vref), m_surf.get_position(new_triangle0[2],vref) );
+    max_angle = max( max_angle, max_triangle_angle( m_surf.get_position(new_triangle1[0],vref), m_surf.get_position(new_triangle1[1],vref), m_surf.get_position(new_triangle1[2],vref) ) );
     
     if ( rad2deg(max_angle) > m_surf.m_max_triangle_angle )
     {
@@ -611,9 +613,9 @@ bool EdgeFlipper::is_Delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1
     
     conversion_matrix = inverse(conversion_matrix);
     Vec3d v0 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]);
-    Vec3d v1 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]);
-    Vec3d v2 = m_surf.get_position(third_vertex_0);
-    Vec3d v3 = m_surf.get_position(third_vertex_1);
+    Vec3d v1 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][1], m_surf.m_mesh.m_edges[edge][0]);
+    Vec3d v2 = m_surf.get_position(third_vertex_0, m_surf.m_mesh.m_edges[edge][0]);
+    Vec3d v3 = m_surf.get_position(third_vertex_1, m_surf.m_mesh.m_edges[edge][0]);
 
     Vec3d nv0 = conversion_matrix*v0;
     Vec3d nv1 = conversion_matrix*v1;
@@ -673,7 +675,7 @@ bool EdgeFlipper::flip_pass( )
     unsigned int num_flip_passes = 0;
     
     NonDestructiveTriMesh& m_mesh = m_surf.m_mesh;
-    const std::vector<Vec3d>& xs = m_surf.get_positions();
+//    const std::vector<Vec3d>& xs = m_surf.get_positions();    // PBC: all direct access to xs elements are replaced by m_surf.get_position(v, ref) calls
     
     //
     // Each "pass" is once over the entire set of edges (ignoring edges created during the current pass)
@@ -782,10 +784,10 @@ bool EdgeFlipper::flip_pass( )
             if(m_use_Delaunay_criterion) {
 
                //compute the angles that oppose the edge
-               Vec3d pos_3rd_0 = m_surf.get_position(third_vertex_0);
-               Vec3d pos_3rd_1 = m_surf.get_position(third_vertex_1);
+               Vec3d pos_3rd_0 = m_surf.get_position(third_vertex_0, vert_0);
+               Vec3d pos_3rd_1 = m_surf.get_position(third_vertex_1, vert_0);
                Vec3d pos_vert_0 = m_surf.get_position(vert_0);
-               Vec3d pos_vert_1 = m_surf.get_position(vert_1);
+               Vec3d pos_vert_1 = m_surf.get_position(vert_1, vert_0);
 
                Vec3d off0 = pos_vert_0 - pos_3rd_0;
                Vec3d off1 = pos_vert_1 - pos_3rd_0;
@@ -847,8 +849,8 @@ bool EdgeFlipper::flip_pass( )
                
                flip_required = score_before > score_after;
             
-               double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
-               double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
+//               double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );
+//               double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
             }
             
             if ( flip_required )
