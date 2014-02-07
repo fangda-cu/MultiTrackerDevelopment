@@ -288,7 +288,7 @@ bool T1Transition::t1_pass()
         {
             size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
             size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
-            mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+            mean_edge_length += mag(m_surf.get_position(v1,xj) - m_surf.get_position(v0,xj));
             edge_count++;
         }
         assert(edge_count > 0);
@@ -595,8 +595,8 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
         size_t v0 = mesh.m_edges[other_edge][0];
         size_t v1 = mesh.m_edges[other_edge][1];
         
-        Vec3d x0 = m_surf.get_position(v0);
-        Vec3d x1 = m_surf.get_position(v1);
+        Vec3d x0 = m_surf.get_position(v0,xj);
+        Vec3d x1 = m_surf.get_position(v1,xj);
         
         Vec2i label = mesh.get_triangle_label(triangle);
         if (label[0] == A || label[1] == A)
@@ -633,7 +633,7 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
     {
         size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
         size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
-        mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+        mean_edge_length += mag(m_surf.get_position(v1,xj) - m_surf.get_position(v0,xj));
         edge_count++;
     }
     assert(edge_count > 0);
@@ -672,7 +672,7 @@ double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int 
 //                pos[j] = xxj - pull_apart_direction * mean_edge_length * m_pull_apart_distance;
                 pos[j] = xxj - pull_apart_direction * m_pull_apart_distance;
             else
-                pos[j] = m_surf.get_position(t[j]);
+                pos[j] = m_surf.get_position(t[j],xj);
         }
         post_area += 0.5 * mag(cross(pos[1] - pos[0], pos[2] - pos[0]));
     }
@@ -713,8 +713,8 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
         size_t v0 = mesh.m_edges[other_edge][0];
         size_t v1 = mesh.m_edges[other_edge][1];
         
-        Vec3d x0 = m_surf.get_position(v0);
-        Vec3d x1 = m_surf.get_position(v1);
+        Vec3d x0 = m_surf.get_position(v0,xj);
+        Vec3d x1 = m_surf.get_position(v1,xj);
         
         Vec2i label = mesh.get_triangle_label(triangle);
         if (label[0] == A || label[1] == A)
@@ -751,7 +751,7 @@ double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A
     {
         size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
         size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
-        mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+        mean_edge_length += mag(m_surf.get_position(v1,xj) - m_surf.get_position(v0,xj));
         edge_count++;
     }
     assert(edge_count > 0);
@@ -887,7 +887,7 @@ bool T1Transition::pulling_vertex_apart_introduces_collision(size_t v, const Vec
     return collision0 || collision1;
 }
     
-bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos)
+bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos)  //&&&&&&& collision not included in PBC phase 1
 {
     // code adapted from EdgeSplitter::split_edge_pseudo_motion_introduces_intersection()
     
