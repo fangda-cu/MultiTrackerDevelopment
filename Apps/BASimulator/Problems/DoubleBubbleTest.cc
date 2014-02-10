@@ -415,6 +415,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene19,
   &DoubleBubbleTest::setupScene20,
   &DoubleBubbleTest::setupScene21,
+  &DoubleBubbleTest::setupScene22
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -1079,7 +1080,7 @@ void DoubleBubbleTest::AtEachTimestep()
 
 void DoubleBubbleTest::updateBBWallConstraints()
 {
-    if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 17 || m_active_scene == 18)
+    if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 17 || m_active_scene == 18 || m_active_scene == 20 || m_active_scene == 21 || m_active_scene == 22)
         return;
     
     
@@ -4379,6 +4380,99 @@ void DoubleBubbleTest::setupScene21()
   
   shell->setFaceLabels(faceLabels);
 
+}
+
+void DoubleBubbleTest::setupScene22()
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  for(int i = 0; i < 12; ++i)
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0,0,0);
+  }
+  
+  //create positions
+  positions[vertList[ 0]] = Vec3d(0.2,0.9,0.5);
+  positions[vertList[ 1]] = Vec3d(0.2,0.5,0.9);
+  positions[vertList[ 2]] = Vec3d(0.2,0.5,0.1);
+  positions[vertList[ 3]] = Vec3d(0.2,0.1,0.5);
+  positions[vertList[ 4]] = Vec3d(0.5,0.9,0.5);
+  positions[vertList[ 5]] = Vec3d(0.5,0.5,0.9);
+  positions[vertList[ 6]] = Vec3d(0.5,0.5,0.1);
+  positions[vertList[ 7]] = Vec3d(0.5,0.1,0.5);
+  positions[vertList[ 8]] = Vec3d(0.8,0.9,0.5);
+  positions[vertList[ 9]] = Vec3d(0.8,0.5,0.9);
+  positions[vertList[10]] = Vec3d(0.8,0.5,0.1);
+  positions[vertList[11]] = Vec3d(0.8,0.1,0.5);
+  
+  for(int i = 0; i < 12; ++i)
+    undeformed[vertList[i]] = positions[vertList[i]];
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 4], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 5], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 8], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 9], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 0], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(1,0);
+
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 3], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 6], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 7], vertList[10]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[10], vertList[11]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[11], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 3], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 4], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 7], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[ 8], vertList[11]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[11], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 0], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  
+  faceList.push_back(shellObj->addFace(vertList[ 1], vertList[ 2], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 5], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 6], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 9], vertList[10]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[10], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  //  shell->setEdgeUndeformed(undefAngle);
+  //  shell->setEdgeXis(edgeAngle);
+  //  shell->setEdgeVelocities(edgeVel);
+  
+  shell->setFaceLabels(faceLabels);
 }
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)

@@ -147,7 +147,7 @@ public:
    
   void setupScene20();  // periodic boundary condition MCF test
   void setupScene21();  // periodic boundary condition test with a simple geometry
-  
+  void setupScene22();  // PBC MCF, similar to scene 1 showing the different outcome due to PBC
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
