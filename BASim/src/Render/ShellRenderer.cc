@@ -175,7 +175,7 @@ void ShellRenderer::cycleMode(int inc)
 
 ShellRenderer::ShellRenderer( ElasticShell& shell )
 : m_shell(shell)
-, m_mode(DBG_MULTIPHASE)
+, m_mode(DBG_BUBBLE)
 //, m_refthickness( 2*thickness)
 , m_nregion(0)
 , m_solid_boundary_visible(true)
@@ -462,6 +462,22 @@ void ShellRenderer::render()
 //    Vec2d mdvs = Vec2d(mdvsh.x(), mdvsh.y()) / mdvsh.w();
 //    std::cout << "mouse = " << mousepos << " mind vertex = " << mdv << " -> " << mdvs << " distance = " << mind << std::endl;
 //  }
+  
+  // stats on total number of labels
+  int maxlabel = -1;
+  for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
+  {
+    FaceHandle f = *fit;
+    Vec2i regions = m_shell.getFaceLabel(f);
+    if (regions.x() >= maxlabel)
+      maxlabel = regions.x();
+    if (regions.y() >= maxlabel)
+      maxlabel = regions.y();
+  }
+  m_nregion = maxlabel + 1;
+  
+  while (m_region_visible.size() < (size_t)m_nregion)
+    m_region_visible.push_back(true);
   
   
 
@@ -866,6 +882,9 @@ void ShellRenderer::render()
         Vec3d p2 = m_shell.getVertexPosition(v2, v0);
         
         Vec3d c = (p0 + p1 + p2) / 3;
+//        double s0 = 0.2 * rand() / RAND_MAX + 0.9;
+//        double s1 = 0.2 * rand() / RAND_MAX + 0.9;
+//        c = (s0 * p0 + s1 * p1 + (3 - s0 - s1) * p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
           
         Scalar mean_edge_length = ((p0 - p1).norm() + (p1 - p2).norm() + (p2 - p0).norm()) / 3;
@@ -956,6 +975,7 @@ void ShellRenderer::render()
       Vec3d p2b = m_shell.getVertexPosition(v2);
       Vec3d p1 = m_shell.getVertexPosition(v1, v0);
       Vec3d p2 = m_shell.getVertexPosition(v2, v0);
+      Vec3d p21 = m_shell.getVertexPosition(v2, v1);
 
       Vec3d barycentre = (p0 + p1 + p2) / 3;
 
@@ -985,7 +1005,7 @@ void ShellRenderer::render()
         OpenGL::vertex(Vec3d(p1 + p1b - p1 + (barycentre - p1) * edge_shrink));
         OpenGL::vertex(Vec3d(p2 + p1b - p1 + (barycentre - p2) * edge_shrink));
       }
-      if (p2 != p2b)
+      if (p2 != p2b && p21 != p2b)
       {
         OpenGL::vertex(Vec3d(p0 + p2b - p2 + (barycentre - p0) * edge_shrink));
         OpenGL::vertex(Vec3d(p1 + p2b - p2 + (barycentre - p1) * edge_shrink));
@@ -1135,22 +1155,6 @@ void ShellRenderer::render()
     
     FaceProperty<Vec3d> faceNormals(&m_shell.getDefoObj());
     m_shell.getFaceNormals(faceNormals);
-    
-    // stats on total number of labels
-    int maxlabel = -1;
-    for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
-    {
-      FaceHandle f = *fit;
-      Vec2i regions = m_shell.getFaceLabel(f);
-      if (regions.x() >= maxlabel)
-        maxlabel = regions.x();
-      if (regions.y() >= maxlabel)
-        maxlabel = regions.y();
-    }
-    m_nregion = maxlabel + 1;
-    
-    while (m_region_visible.size() < (size_t)m_nregion)
-      m_region_visible.push_back(true);
     
     // Render all edges
     glLineWidth(1);
@@ -1342,6 +1346,7 @@ void ShellRenderer::render()
       Vec3d p2b = m_shell.getVertexPosition(v2);
       Vec3d p1 = m_shell.getVertexPosition(v1, v0);
       Vec3d p2 = m_shell.getVertexPosition(v2, v0);
+      Vec3d p21 = m_shell.getVertexPosition(v2, v1);
       
       Vec3d barycentre = (p0 + p1 + p2) / 3;
       
@@ -1387,7 +1392,7 @@ void ShellRenderer::render()
         OpenGL::vertex(Vec3d(p1 + p1b - p1));
         OpenGL::vertex(Vec3d(p2 + p1b - p1));
       }
-      if (p2 != p2b)
+      if (p2 != p2b && p21 != p2b)
       {
         OpenGL::vertex(Vec3d(p0 + p2b - p2));
         OpenGL::vertex(Vec3d(p1 + p2b - p2));
