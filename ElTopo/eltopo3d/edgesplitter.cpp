@@ -397,7 +397,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // --------------
   // set up point data for the various options
 
-  Vec3d new_vertex_average_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b ) );
+  Vec3d new_vertex_average_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b, vertex_a ) );
   Vec3d new_vertex_smooth_position;
   Vec3d new_vertex_constrained_position;
   Vec3d new_vertex_specified_position = use_specified_point? *pos : Vec3d(0,0,0);

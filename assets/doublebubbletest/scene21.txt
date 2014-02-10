@@ -9,7 +9,7 @@ shell-surface-tension 0
 volume-force-stiffness 0
 
 shell-remeshing 1
-shell-remeshing-resolution 0.2
+shell-remeshing-resolution 0.4
 shell-remeshing-iterations 1
 
 smooth-subdivision-scheme 0
