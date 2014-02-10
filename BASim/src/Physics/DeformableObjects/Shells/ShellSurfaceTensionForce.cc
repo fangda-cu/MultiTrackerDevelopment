@@ -31,10 +31,11 @@ bool ShellSurfaceTensionForce::gatherDOFs(const FaceHandle& fh, std::vector<Vec3
 
   //extract the relevant data for the local element
   FaceVertexIterator fv_it = m_shell.getDefoObj().fv_iter(fh);
+  VertexHandle vref = *fv_it;
   int i = 0;
   for(;fv_it; ++fv_it) {
     const VertexHandle& vh = *fv_it;
-    deformed[i] = m_shell.getVertexPosition(vh);
+    deformed[i] = m_shell.getVertexPosition(vh, vref);
     int dofBase = m_shell.getDefoObj().getPositionDofBase(vh);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
