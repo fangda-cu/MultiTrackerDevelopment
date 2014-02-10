@@ -1120,8 +1120,8 @@ void ShellRenderer::render()
       } else if (maxangle > 177 * M_PI / 180)
       {
           glColor4f(1.0, 0.0, 1.0, 1.0);
-      } else if(onBBWall(vertPos)) {
-        OpenGL::color(Color(0.0,1.0,0.0,1.0));
+//      } else if(onBBWall(vertPos)) {
+//        OpenGL::color(Color(0.0,1.0,0.0,1.0));
       }
       else {
         OpenGL::color(Color(0.0,0.0,0.0,0.1));
