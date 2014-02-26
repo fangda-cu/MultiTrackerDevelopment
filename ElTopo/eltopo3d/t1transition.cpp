@@ -556,8 +556,8 @@ bool T1Transition::t1_pass()
         
         if (m_surf.m_mesheventcallback)
             m_surf.m_mesheventcallback->t1(m_surf, xj);
-        
-        for (size_t i = 0; i < m_surf.m_mesh.nv(); i++) assert(m_surf.get_position(i) == m_surf.get_newposition(i));
+      
+        for (size_t i = 0; i < m_surf.m_mesh.nv(); i++) if (!m_surf.m_mesh.vertex_is_deleted(i)) assert(m_surf.get_position(i) == m_surf.get_newposition(i));
     }
   
     return pop_occurred;
