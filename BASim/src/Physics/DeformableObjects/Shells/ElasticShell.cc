@@ -359,7 +359,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     if (((w0 & w1) & w2) != 0)
     {
       //      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
-      m_obj->deleteFace(*fit, false);
+//      m_obj->deleteFace(*fit, false);
     }
   }
   
@@ -429,7 +429,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     if (((w0 & w1) & w2) != 0)
     {
       //      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
-      m_obj->deleteFace(*fit, false);
+//      m_obj->deleteFace(*fit, false);
     }
   }
   
@@ -723,7 +723,7 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
     if (((w0 & w1) & w2) != 0)
     {
 //      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
-      m_obj->deleteFace(*fit, false);
+//      m_obj->deleteFace(*fit, false);
     }
   }
   
@@ -741,6 +741,8 @@ void ElasticShell::remesh(Scalar timestep, bool initial)
 
 int ElasticShell::onBBWall(const Vec3d & pos) const
 {
+  return 0;
+  
   static const double WALL_THRESHOLD = 1e-6;
   
   int walls = 0;

@@ -435,6 +435,7 @@ sceneFunc db_scenes[] =
 
 int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 {
+  return false;
   static const double WALL_THRESHOLD = 1e-6;
   
   int walls = 0;
@@ -1080,6 +1081,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
 void DoubleBubbleTest::updateBBWallConstraints()
 {
+    return;
+  
     if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 17 || m_active_scene == 18 || m_active_scene == 20 || m_active_scene == 21 || m_active_scene == 22)
         return;
     
@@ -4227,7 +4230,7 @@ void DoubleBubbleTest::setupScene20()
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
-  std::ifstream objfile("assets/doublebubbletest/pbc100.OBJ");
+  std::ifstream objfile("assets/doublebubbletest/pbc500.OBJ");
   std::vector<Vec3d> obj_vs;
   std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
   
