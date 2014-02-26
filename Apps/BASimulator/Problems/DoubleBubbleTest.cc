@@ -533,6 +533,58 @@ void DoubleBubbleTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*db_scenes[sceneChoice])();
 
+  // mesh statistics
+  double max_face_area = -1;
+  double min_face_area = -1;
+  double max_edge_len = -1;
+  double min_edge_len = -1;
+  double max_ar = -1;
+  double min_ar = -1;
+  for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = shellObj->fv_iter(*fit); assert(fvit);
+    VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+    
+    Vec3d x0 = shell->getVertexPosition(v0);
+    Vec3d x1 = shell->getVertexPosition(v1, v0);
+    Vec3d x2 = shell->getVertexPosition(v2, v0);
+    Vec3d e01 = x1 - x0;
+    Vec3d e02 = x2 - x0;
+    Vec3d e12 = x2 - x1;
+    
+    double area = e01.cross(e02).norm();
+    assert(area > 0);
+    if (max_face_area < 0 || area > max_face_area)
+      max_face_area = area;
+    if (min_face_area < 0 || area < min_face_area)
+      min_face_area = area;
+    
+    double maxlen = std::max(std::max(e01.norm(), e02.norm()), e12.norm());
+    double minlen = std::min(std::min(e01.norm(), e02.norm()), e12.norm());
+    assert(maxlen > 0);
+    assert(minlen > 0);
+    if (max_edge_len < 0 || maxlen > max_edge_len)
+      max_edge_len = maxlen;
+    if (min_edge_len < 0 || minlen < min_edge_len)
+      min_edge_len = minlen;
+    
+    double ar = maxlen / minlen;
+    assert(ar == ar);
+    if (max_ar < 0 || ar > max_ar)
+    {
+      max_ar = ar;
+      std::cout << "max face aspect ratio so far: " << ar << "; edge lengths in the face: min = " << minlen << " max = " << maxlen << std::endl;
+    }
+    if (min_ar < 0 || ar < min_ar)
+      min_ar = ar;
+    
+  }
+  
+  std::cout << "Init mesh statistics: face area: min = " << min_face_area << " max = " << max_face_area << "; edge length: min = " << min_edge_len << " max = " << max_edge_len << "; face aspect ratio: min = " << min_ar << " max = " << max_ar << std::endl;
+  
+
   shell->setMeshEventCallback(this);
   shell->getVertexConstraintLabels().assign(0);
   
@@ -4230,7 +4282,7 @@ void DoubleBubbleTest::setupScene20()
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
-  std::ifstream objfile("assets/doublebubbletest/pbc500.OBJ");
+  std::ifstream objfile("assets/doublebubbletest/pbc100.OBJ");
   std::vector<Vec3d> obj_vs;
   std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
   
@@ -4322,7 +4374,6 @@ void DoubleBubbleTest::setupScene20()
   //  shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
-  
   
 }
 
