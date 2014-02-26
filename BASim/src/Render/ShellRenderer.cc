@@ -282,9 +282,6 @@ void ShellRenderer::keyboard(unsigned char key, int x, int y)
     for (size_t i = 0; i < m_region_visible.size(); i++)
       m_region_visible[i] = allinvisible;
     m_region_visible[2] = true;
-    m_region_visible[4] = true;
-    m_region_visible[6] = true;
-    m_region_visible[8] = true;
     glutPostRedisplay();
   } else if (key == 'b' || key == 'B')
   {
@@ -1145,8 +1142,11 @@ void ShellRenderer::render()
     glEnable(GL_LIGHTING);
     
   }
-  else if( m_mode == DBG_MULTIPHASE )
+  else if( m_mode == DBG_MULTIPHASE_PBC_ONCE || m_mode == DBG_MULTIPHASE_PBC_3x3x3 )
   {
+    int ds = (m_mode == DBG_MULTIPHASE_PBC_ONCE ? 0 : -1);
+    int de = (m_mode == DBG_MULTIPHASE_PBC_ONCE ? 0 : 1);
+    
     glDisable(GL_LIGHTING);
     DeformableObject& mesh = m_shell.getDefoObj();
     
@@ -1166,7 +1166,6 @@ void ShellRenderer::render()
     {
       EdgeHandle eh = *eit;
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-      Vec3d p1b = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit), mesh.fromVertex(*eit));
 
       bool visible = false;
@@ -1195,12 +1194,10 @@ void ShellRenderer::render()
       
       glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
       
-      OpenGL::vertex(p0);
-      OpenGL::vertex(p1);
-      if (p1b != p1) // this is an edge that crosses the domain boundary, i.e. p0 and p1 have different domain offsets due to PBC, so render a second istance on the opposite end of the domain (e.g. an edge from -0.1 to 0.1 is rendered twice, first as -0.1 to 0.1, then as 0.9 to 1.1)
+      for (int dx = ds; dx <= de; dx++) for (int dy = ds; dy <= de; dy++) for (int dz = ds; dz <= de; dz++)
       {
-        OpenGL::vertex(Vec3d(p0 + p1b - p1));
-        OpenGL::vertex(Vec3d(p1 + p1b - p1));
+        OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + p0));
+        OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + p1));
       }
     }
     glEnd();
@@ -1256,8 +1253,6 @@ void ShellRenderer::render()
         VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
 
         Vec3d p0  = m_shell.getVertexPosition(v0);
-        Vec3d p1b = m_shell.getVertexPosition(v1);
-        Vec3d p2b = m_shell.getVertexPosition(v2);
         Vec3d p1 = m_shell.getVertexPosition(v1, v0);
         Vec3d p2 = m_shell.getVertexPosition(v2, v0);
         
@@ -1269,17 +1264,10 @@ void ShellRenderer::render()
         
         if (regions.x() >= 0)
         {
-          OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.05));
-          if (p1 != p1b)
+          for (int dx = ds; dx <= de; dx++) for (int dy = ds; dy <= de; dy++) for (int dz = ds; dz <= de; dz++)
           {
-            OpenGL::vertex(Vec3d(c + p1b - p1));
-            OpenGL::vertex(Vec3d(c + p1b - p1 - n * 0.05));
-          }
-          if (p2 != p2b)
-          {
-            OpenGL::vertex(Vec3d(c + p2b - p2));
-            OpenGL::vertex(Vec3d(c + p2b - p2 - n * 0.05));
+            OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + c));
+            OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + c - n * 0.05));
           }
         }
         
@@ -1288,17 +1276,10 @@ void ShellRenderer::render()
         
         if (regions.y() >= 0)
         {
-          OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.05));          
-          if (p1 != p1b)
+          for (int dx = ds; dx <= de; dx++) for (int dy = ds; dy <= de; dy++) for (int dz = ds; dz <= de; dz++)
           {
-            OpenGL::vertex(Vec3d(c + p1b - p1));
-            OpenGL::vertex(Vec3d(c + p1b - p1 + n * 0.05));
-          }
-          if (p2 != p2b)
-          {
-            OpenGL::vertex(Vec3d(c + p2b - p2));
-            OpenGL::vertex(Vec3d(c + p2b - p2 + n * 0.05));
+            OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + c));
+            OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + c + n * 0.05));
           }
         }
       }
@@ -1342,11 +1323,8 @@ void ShellRenderer::render()
       VertexHandle v2 = *fvit;  ++fvit;   assert(!fvit);
       
       Vec3d p0  = m_shell.getVertexPosition(v0);
-      Vec3d p1b = m_shell.getVertexPosition(v1);
-      Vec3d p2b = m_shell.getVertexPosition(v2);
       Vec3d p1 = m_shell.getVertexPosition(v1, v0);
       Vec3d p2 = m_shell.getVertexPosition(v2, v0);
-      Vec3d p21 = m_shell.getVertexPosition(v2, v1);
       
       Vec3d barycentre = (p0 + p1 + p2) / 3;
       
@@ -1382,21 +1360,11 @@ void ShellRenderer::render()
       if (sorted_faces[i].first == mind_face)
         OpenGL::color(Color(color_combined.x(), color_combined.y(), color_combined.z(), 1.0));
       
-      OpenGL::vertex(Vec3d(p0));
-      OpenGL::vertex(Vec3d(p1));
-      OpenGL::vertex(Vec3d(p2));
-      
-      if (p1 != p1b)
+      for (int dx = ds; dx <= de; dx++) for (int dy = ds; dy <= de; dy++) for (int dz = ds; dz <= de; dz++)
       {
-        OpenGL::vertex(Vec3d(p0 + p1b - p1));
-        OpenGL::vertex(Vec3d(p1 + p1b - p1));
-        OpenGL::vertex(Vec3d(p2 + p1b - p1));
-      }
-      if (p2 != p2b && p21 != p2b)
-      {
-        OpenGL::vertex(Vec3d(p0 + p2b - p2));
-        OpenGL::vertex(Vec3d(p1 + p2b - p2));
-        OpenGL::vertex(Vec3d(p2 + p2b - p2));
+        OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + p0));
+        OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + p1));
+        OpenGL::vertex(Vec3d(Vec3d(dx, dy, dz) + p2));
       }
     }
     
