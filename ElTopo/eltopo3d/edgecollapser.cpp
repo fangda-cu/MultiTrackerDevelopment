@@ -17,6 +17,7 @@
 #include <subdivisionscheme.h>
 #include <surftrack.h>
 #include <trianglequality.h>
+#include <iomanip>
 
 // ---------------------------------------------------------
 //  Extern globals
@@ -671,6 +672,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
    
+    bool eoi = (vertex_to_delete == 897);
+    if (eoi) m_surf.m_verbose = true;
+    
    if (m_surf.m_aggressive_mode)
    {
       std::vector<size_t> incident_triangles;
@@ -731,6 +735,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
+    if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
   // --------------
 
   // If we're disallowing topology changes, don't let an edge collapse form a degenerate tet
@@ -814,6 +819,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
 
   }
+    if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
 
 
   // --------------
@@ -845,6 +851,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       }
     }
   }
+    if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
 
 
   // --------------
@@ -856,6 +863,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   bool can_collapse = get_new_vertex_position_dihedral(vertex_new_position, vertex_to_keep, vertex_to_delete, edge, new_vert_solid_label);
   if(!can_collapse)
      return false;
+    if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
 
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
@@ -866,19 +874,27 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1],m_surf.m_mesh.m_edges[edge][0]) != m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) )
   //if ( mag ( m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]) - m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]) ) > 0 )
   {
+      if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
 
     // Change source vertex predicted position to superimpose onto destination vertex
     m_surf.set_newposition( vertex_to_keep, vertex_new_position );
     m_surf.set_newposition( vertex_to_delete, vertex_new_position );
+      
+      if (eoi) std::cout << vertex_to_keep << " " << m_surf.get_position(vertex_to_keep) << " " << m_surf.get_newposition(vertex_to_keep) << " " << vertex_new_position << std::endl;
 
+      if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
     bool volume_change = collapse_edge_introduces_volume_change( vertex_to_delete, edge, vertex_new_position );
 
     if ( volume_change && !m_surf.m_aggressive_mode)
     {
+        if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
+        if (eoi) std::cout << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
 
+        if (eoi) std::cout << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") -> (" << m_surf.get_newposition(vertex_to_keep) << "; " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ") -> (" << m_surf.get_newposition(vertex_to_delete) << ")" << std::endl;
+        
       g_stats.add_to_int( "EdgeCollapser:collapse_volume_change", 1 );
 
       if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
@@ -1194,8 +1210,6 @@ bool EdgeCollapser::collapse_pass()
 
     for ( size_t si = 0; si < sortable_edges_to_try.size(); ++si )
     {
-        if (m_surf.m_mesh.nv() > 897) std::cout << "897: " << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
-        
         size_t e = sortable_edges_to_try[si].m_edge_index;
         
         assert( e < m_surf.m_mesh.m_edges.size() );
@@ -1203,7 +1217,8 @@ bool EdgeCollapser::collapse_pass()
         double dummy;
         if(edge_is_collapsible(e, dummy)) {
           bool result = collapse_edge( e );
-          
+            m_surf.m_verbose = false;
+            
           if ( result )
           { 
             // clean up degenerate triangles and tets
@@ -1213,12 +1228,11 @@ bool EdgeCollapser::collapse_pass()
           collapse_occurred |= result;
         }
         
-        if (m_surf.m_mesh.nv() > 897) std::cout << "897: " << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_surf.m_mesh.nv(); i++)
             if (!m_surf.m_mesh.vertex_is_deleted(i))
             {
                 if (m_surf.get_position(i) != m_surf.get_newposition(i))
-                    std::cout << "vertex: " << i << " (" << m_surf.get_position(i) << ") -> (" << m_surf.get_newposition(i) << ")" << std::endl;
+                    std::cout << std::setprecision(20) << "vertex: " << i << " (" << m_surf.get_position(i) << ") -> (" << m_surf.get_newposition(i) << ")" << std::endl;
                 assert(m_surf.get_position(i) == m_surf.get_newposition(i));
             }
 
