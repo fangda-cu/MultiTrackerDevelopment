@@ -1194,6 +1194,8 @@ bool EdgeCollapser::collapse_pass()
 
     for ( size_t si = 0; si < sortable_edges_to_try.size(); ++si )
     {
+        if (m_surf.m_mesh.nv() > 897) std::cout << "897: " << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
+        
         size_t e = sortable_edges_to_try[si].m_edge_index;
         
         assert( e < m_surf.m_mesh.m_edges.size() );
@@ -1211,6 +1213,7 @@ bool EdgeCollapser::collapse_pass()
           collapse_occurred |= result;
         }
         
+        if (m_surf.m_mesh.nv() > 897) std::cout << "897: " << m_surf.get_position(897) << " -> " << m_surf.get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_surf.m_mesh.nv(); i++)
             if (!m_surf.m_mesh.vertex_is_deleted(i))
             {

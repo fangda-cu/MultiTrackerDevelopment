@@ -859,6 +859,7 @@ void SurfTrack::improve_mesh( )
 
       int i = 0;
       
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
       
       // edge splitting
       std::cout << "Splits\n";
@@ -869,6 +870,7 @@ void SurfTrack::improve_mesh( )
         std::cout << "Splits\n";
       }
         
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge flipping
@@ -877,6 +879,7 @@ void SurfTrack::improve_mesh( )
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge collapsing
@@ -889,6 +892,7 @@ void SurfTrack::improve_mesh( )
         std::cout << "Collapses\n";
       }
 
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
 
       // process t1 transitions (vertex separation)
@@ -902,6 +906,7 @@ void SurfTrack::improve_mesh( )
          i++;
       }
 
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // smoothing
@@ -913,6 +918,7 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
       
+        if (m_mesh.nv() > 897) std::cout << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
         for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
 
       ////////////////////////////////////////////////////////////
