@@ -383,22 +383,26 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     for (size_t i = 0; i < incident_tris.size(); i++)
     {
         const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(incident_tris[i]);
+        if (current_triangle[0] == current_triangle[1])
+            continue;
         double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area, min_area_triangle = incident_tris[i];
     }
-    std::cout << "pre split local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+//    std::cout << "pre split local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
     assert(min_triangle_area > 0);
 
     min_triangle_area = -1;
     for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
     {
         const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+        if (current_triangle[0] == current_triangle[1])
+            continue;
         double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area, min_area_triangle = i;
     }
-    std::cout << "pre split global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+//    std::cout << "pre split global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
     assert(min_triangle_area > 0);
 
   // --------------
@@ -770,31 +774,35 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   //store the resulting vertex as output.
   result_vert = vertex_e;
 
-    std::cout << "split: " << std::endl;
-    for (size_t i = 0; i < created_tris.size(); i++) std::cout << created_tris[i] <<  " "; std::cout << std::endl;
-    std::cout << vertex_a << " " << vertex_b << std::endl;
-    for (size_t i = 0; i < created_tri_data.size(); i++) std::cout << created_tri_data[i] << std::endl;
+//    std::cout << "split: " << std::endl;
+//    for (size_t i = 0; i < created_tris.size(); i++) std::cout << created_tris[i] <<  " "; std::cout << std::endl;
+//    std::cout << vertex_a << " " << vertex_b << std::endl;
+//    for (size_t i = 0; i < created_tri_data.size(); i++) std::cout << created_tri_data[i] << std::endl;
 
     min_triangle_area = -1;
     for (size_t i = 0; i < created_tris.size(); i++)
     {
         const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(created_tris[i]);
+        if (current_triangle[0] == current_triangle[1])
+            continue;
         double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area, min_area_triangle = created_tris[i];
     }
-    std::cout << "post split local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+//    std::cout << "post split local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
     assert(min_triangle_area > 0);
     
     min_triangle_area = -1;
     for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
     {
         const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+        if (current_triangle[0] == current_triangle[1])
+            continue;
         double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area, min_area_triangle = i;
     }
-    std::cout << "post split global min area = " << min_triangle_area << " triangle = " << min_area_triangle << " (" << m_surf.m_mesh.get_triangle(min_area_triangle) << ")" << std::endl;
+//    std::cout << "post split global min area = " << min_triangle_area << " triangle = " << min_area_triangle << " (" << m_surf.m_mesh.get_triangle(min_area_triangle) << ")" << std::endl;
     assert(min_triangle_area > 0);
     
     

@@ -863,6 +863,8 @@ void SurfTrack::improve_mesh( )
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
             const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
             double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
             if (area == 0)
                 std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
@@ -886,9 +888,11 @@ void SurfTrack::improve_mesh( )
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
             const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
             double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
             if (area == 0)
-//                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area;
         }
@@ -905,6 +909,8 @@ void SurfTrack::improve_mesh( )
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
             const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
             double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
             if (area == 0)
                 std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
