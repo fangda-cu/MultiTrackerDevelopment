@@ -1,0 +1,44 @@
+shell-scene 20
+dt 0.01	# time-step size
+max-time 100
+
+gravity 0 0 0	# gravity
+
+shell-surface-tension 0
+volume-force-stiffness 0
+
+shell-remeshing 1
+shell-init-remesh 1
+shell-remeshing-resolution 0.01
+shell-remeshing-iterations 1
+
+integrator symplectic	# type of integrator to use for the shell
+
+shell-density 0.1	# volumetric density of the shell 
+shell-thickness 0.1	# velocity scaling
+shell-height 0.02	# unused
+shell-width 0.1		# init scaling
+shell-x-resolution 2	# init sphere subdivision level
+shell-y-resolution 60	# the number of segments along the vertical edge
+
+iterations 100	# maximum number of iterations for the implicit method
+atol 1e-008	# absolute convergence tolerance
+rtol 1e-008	# relative convergence tolerance
+atol 1e-008	# absolute convergence tolerance
+stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+
+eltopo-collision-epsilon-fraction 0.001
+eltopo-merge-proximity-epsilon-fraction 0.02
+eltopo-perform-smoothing 0
+eltopo-max-volume-change-fraction 1e-4
+eltopo-min-triangle-angle 3
+eltopo-max-triangle-angle 177
+eltopo-large-triangle-angle-to-split 160
+eltopo-min-triangle-area-fraction 0.02
+eltopo-t1-transition-enabled 1
+eltopo-t1-pull-apart-distance-fraction 0.1
+eltopo-smooth-subdivision 1
+
+generate-OBJ 1
+obj-mode 4
+render 0
