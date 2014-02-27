@@ -1010,6 +1010,8 @@ void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 
 void SurfTrack::topology_changes( )
 {
+    if (m_mesh.nv() > 897) std::cout << std::setprecision(20) << "897: " << get_position(897) << " -> " << get_newposition(897) << std::endl;
+
   if (m_mesheventcallback)
     m_mesheventcallback->log() << "Topology changes began" << std::endl;
 
