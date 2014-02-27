@@ -117,7 +117,7 @@ namespace BASim
 //    const VertexProperty<Vec3d>& getUndeformedPositions() const         { return m_undeformed_positions; }
     const VertexProperty<Vec3d>& getDampingUndeformedPositions() const  { return m_damping_undeformed_positions; }
     
-    void setPositions                 (const VertexProperty<Vec3d>& pos) { m_positions = pos; }
+    void setPositions                 (const VertexProperty<Vec3d>& pos) { m_positions = pos; for (VertexIterator vit = m_obj.vertices_begin(); vit != m_obj.vertices_end(); ++vit) m_positions[*vit] -= get_domain_offset(m_positions[*vit]); }
     void setVelocities                (const VertexProperty<Vec3d>& vel) { m_velocities = vel; }
 //    void setUndeformedPositions       (const VertexProperty<Vec3d>& pos) { m_undeformed_positions = pos; }
     void setDampingUndeformedPositions(const VertexProperty<Vec3d>& pos) { m_damping_undeformed_positions = pos; }
@@ -129,12 +129,14 @@ namespace BASim
 //    Vec3d getUndeformedPosition       (const VertexHandle& v) const { return m_undeformed_positions[v]; }
     Vec3d getDampingUndeformedPosition(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
     
-    void setPosition                  (const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
+    void setPosition                  (const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos - get_domain_offset(pos);  }
     void setVelocity                  (const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
 //    void setMass                      (const VertexHandle& v, Scalar m)         { m_vertex_masses[v] = m; }
 //    void setUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
     void setDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_damping_undeformed_positions[v] = pos; }
     
+    static Vec3d get_domain_offset(const Vec3d & pos);
+
     // Masses computation
     // Masses are computed by summing the masses computed by all models
 //    void clearMasses() { m_vertex_masses.assign(0); }

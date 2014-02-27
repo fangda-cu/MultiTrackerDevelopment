@@ -8,6 +8,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
+#include <surftrack.h>
 
 namespace BASim
 {
@@ -98,6 +99,17 @@ namespace BASim
         return true;
     return false;
   }
+
+    Vec3d PositionDofsModel::get_domain_offset(const Vec3d & pos)
+    {
+        // essentially dividing each component by the corresponding PBC_DOMAIN_SIZE_? and taking the floor
+        Vec3d offset;
+        offset[0] = std::floor(pos[0] / PBC_DOMAIN_SIZE_X) * PBC_DOMAIN_SIZE_X;
+        offset[1] = std::floor(pos[1] / PBC_DOMAIN_SIZE_Y) * PBC_DOMAIN_SIZE_Y;
+        offset[2] = std::floor(pos[2] / PBC_DOMAIN_SIZE_Z) * PBC_DOMAIN_SIZE_Z;
+        
+        return offset;
+    }
 
 
   void PositionDofsModel::getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const

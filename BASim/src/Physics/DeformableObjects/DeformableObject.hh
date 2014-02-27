@@ -97,6 +97,7 @@ public:
   
   //Individual DOFs
   Vec3d getVertexPosition                 (const VertexHandle& v) const;
+  Vec3d getVertexPosition                 (const VertexHandle& v, const VertexHandle& v0) const;
   Vec3d getVertexVelocity                 (const VertexHandle& v) const;
 //  Scalar getVertexMass                    (const VertexHandle& v) const;
 //  Vec3d getVertexUndeformedPosition       (const VertexHandle& v) const;

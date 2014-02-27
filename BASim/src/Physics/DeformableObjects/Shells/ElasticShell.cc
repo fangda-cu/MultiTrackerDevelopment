@@ -39,20 +39,6 @@ ElasticShell::~ElasticShell() {
   
 }
 
-Vec3d ElasticShell::getVertexPosition(const VertexHandle& v, const VertexHandle& v0) const
-{
-  Vec3d ref_base = getVertexPosition(v0);
-  Vec3d voi_base = getVertexPosition(v);
-  Vec3d voi_pos = voi_base;
-  if      (voi_pos.x() < ref_base.x() - 0.5 * PBC_DOMAIN_SIZE_X) voi_pos.x() += PBC_DOMAIN_SIZE_X;
-  else if (voi_pos.x() > ref_base.x() + 0.5 * PBC_DOMAIN_SIZE_X) voi_pos.x() -= PBC_DOMAIN_SIZE_X;
-  if      (voi_pos.y() < ref_base.y() - 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos.y() += PBC_DOMAIN_SIZE_Y;
-  else if (voi_pos.y() > ref_base.y() + 0.5 * PBC_DOMAIN_SIZE_Y) voi_pos.y() -= PBC_DOMAIN_SIZE_Y;
-  if      (voi_pos.z() < ref_base.z() - 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos.z() += PBC_DOMAIN_SIZE_Z;
-  else if (voi_pos.z() > ref_base.z() + 0.5 * PBC_DOMAIN_SIZE_Z) voi_pos.z() -= PBC_DOMAIN_SIZE_Z;
-  return voi_pos;
-}
-  
 void ElasticShell::computeConservativeForcesEnergy( VecXd& force , Scalar& energy)
 {
   const std::vector<ElasticShellForce*>& forces = getForces();
@@ -341,6 +327,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
+    
+    // make sure the vertex positions are those of their base instances (e.g. (1.5, 0, 0) will be moved to (0.5, 0, 0). If this is not done, the following remeshing code would have trouble because something as simple as this "m_surf.set_newpoisition(i, m_surf.get_position(i)); assert(m_surf.get_position(i) == m_surf.get_newposition(i)); " will fail.)
+    for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+        setVertexPosition(*vit, getVertexPosition(*vit));
   
   // remove faces completely inside BB walls
   for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
