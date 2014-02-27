@@ -1038,6 +1038,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
 
+    std::cout << "collapse: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") -> " << " (" << m_surf.get_newposition(vertex_to_keep) << "); " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ") -> (" << m_surf.get_newposition(vertex_to_delete) << ") to (" << vertex_new_position << ")" << std::endl;
+    
+    
   return true;
 }
 
@@ -1207,6 +1210,15 @@ bool EdgeCollapser::collapse_pass()
 
           collapse_occurred |= result;
         }
+        
+        for (size_t i = 0; i < m_surf.m_mesh.nv(); i++)
+            if (!m_surf.m_mesh.vertex_is_deleted(i))
+            {
+                if (m_surf.get_position(i) != m_surf.get_newposition(i))
+                    std::cout << "vertex: " << i << " (" << m_surf.get_position(i) << ") -> (" << m_surf.get_newposition(i) << ")" << std::endl;
+                assert(m_surf.get_position(i) == m_surf.get_newposition(i));
+            }
+
     }
     
     return collapse_occurred;
