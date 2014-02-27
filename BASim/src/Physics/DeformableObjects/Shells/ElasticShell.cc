@@ -384,7 +384,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //El Topo collision processing.
   
-//  resolveCollisions(timestep);
+//  resolveCollisions(timestep);    //&&&&& PBC phase 1: collision not included
 
   //Remeshing
   if(m_do_remeshing) {
