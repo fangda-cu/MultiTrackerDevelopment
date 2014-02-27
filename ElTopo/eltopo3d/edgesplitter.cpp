@@ -378,6 +378,27 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     }
   }
   
+    double min_triangle_area = -1;
+    for (size_t i = 0; i < incident_tris.size(); i++)
+    {
+        const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(incident_tris[i]);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    std::cout << "pre split local min area = " << min_triangle_area << std::endl;
+    assert(min_triangle_area > 0);
+
+    min_triangle_area = -1;
+    for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
+    {
+        const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    std::cout << "pre split global min area = " << min_triangle_area << std::endl;
+    assert(min_triangle_area > 0);
 
   // --------------
   // convert each incident triangle abc into a pair of triangles aec, ebc
@@ -748,6 +769,28 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   //store the resulting vertex as output.
   result_vert = vertex_e;
 
+    min_triangle_area = -1;
+    for (size_t i = 0; i < created_tris.size(); i++)
+    {
+        const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(created_tris[i]);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    std::cout << "post split local min area = " << min_triangle_area << std::endl;
+    assert(min_triangle_area > 0);
+    
+    min_triangle_area = -1;
+    for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
+    {
+        const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    std::cout << "post split global min area = " << min_triangle_area << std::endl;
+    assert(min_triangle_area > 0);
+    
   return true;
 
 }
@@ -985,7 +1028,7 @@ bool EdgeSplitter::split_pass()
     }
     
     // Now split to reduce large angles
-    bool large_angle_split_occurred = large_angle_split_pass();
+    bool large_angle_split_occurred = false;//large_angle_split_pass();
     
     return split_occurred || large_angle_split_occurred;
     

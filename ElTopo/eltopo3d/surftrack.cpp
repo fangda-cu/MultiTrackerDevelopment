@@ -859,6 +859,19 @@ void SurfTrack::improve_mesh( )
 
       int i = 0;
       
+        double min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
+
       
       // edge splitting
       std::cout << "Splits\n";
@@ -869,12 +882,37 @@ void SurfTrack::improve_mesh( )
         std::cout << "Splits\n";
       }
       
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+//                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
+
       // edge flipping
       std::cout << "Flips\n";
       m_flipper.flip_pass();		
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
       
       // edge collapsing
       i = 0;

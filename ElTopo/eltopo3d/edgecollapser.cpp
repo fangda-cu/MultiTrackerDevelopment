@@ -266,6 +266,8 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
     {
         Vec3st current_triangle = m_surf.m_mesh.get_triangle(moving_triangles[i]);
         double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+        if (area == 0)
+            std::cout << m_surf.get_position(current_triangle[0]) << " " << m_surf.get_position(current_triangle[1]) << " " << m_surf.get_position(current_triangle[2]) << std::endl;
         if (min_triangle_area < 0 || area < min_triangle_area)
             min_triangle_area = area;
     }
