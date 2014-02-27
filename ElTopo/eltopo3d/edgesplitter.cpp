@@ -742,6 +742,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
       
     m_surf.m_mesheventcallback->split(m_surf, edge);
   }
+    
+//    std::cout << "split edge " << vertex_a << " (" << m_surf.get_position(vertex_a) << ") - " << vertex_b << " (" << m_surf.get_position(vertex_b) << ") at " << vertex_e << " (" << new_vertex_proposed_final_position << ")" << (ignore_bad_angles && use_specified_point ? " angle" : " length") << std::endl;
   
   ////////////////////////////////////////////////////////////
 
@@ -880,6 +882,7 @@ bool EdgeSplitter::large_angle_split_pass()
          std::cout << "edgepoint0:" << edge_point0 << "  edge_point1: " << edge_point1 << "   Opp0:" << opposite_point0 << std::endl;
          std::cout << "Difone: " << edge_point0-opposite_point0 <<  "  Diftwo: " << edge_point1-opposite_point0 << std::endl;
          std::cout << "Left: " << mag(edge_point0-opposite_point0)  <<  "  Right: " << mag(edge_point1-opposite_point0) << std::endl;
+          assert(false);
       }
       double angle0 = rad2deg( acos( acos_input ) );
     
@@ -985,7 +988,7 @@ bool EdgeSplitter::split_pass()
     }
     
     // Now split to reduce large angles
-    bool large_angle_split_occurred = large_angle_split_pass();
+    bool large_angle_split_occurred = false; //large_angle_split_pass();
     
     return split_occurred || large_angle_split_occurred;
     

@@ -868,6 +868,8 @@ void SurfTrack::improve_mesh( )
         i++;
         std::cout << "Splits\n";
       }
+        
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge flipping
       std::cout << "Flips\n";
@@ -875,6 +877,7 @@ void SurfTrack::improve_mesh( )
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // edge collapsing
       i = 0;
@@ -885,7 +888,9 @@ void SurfTrack::improve_mesh( )
         i++;
         std::cout << "Collapses\n";
       }
-      
+
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
+
       // process t1 transitions (vertex separation)
       i = 0;
       
@@ -897,6 +902,7 @@ void SurfTrack::improve_mesh( )
          i++;
       }
 
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
       
       // smoothing
       if ( m_perform_smoothing)
@@ -907,6 +913,7 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
       
+        for (size_t i = 0; i < m_mesh.nv(); i++) if (!m_mesh.vertex_is_deleted(i)) assert(get_position(i) == get_newposition(i));
 
       ////////////////////////////////////////////////////////////
       //enter aggressive improvement mode to improve remaining bad triangles up to minimum bounds, 
