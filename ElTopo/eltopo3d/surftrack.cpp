@@ -933,6 +933,21 @@ void SurfTrack::improve_mesh( )
       // process t1 transitions (vertex separation)
       i = 0;
       
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
+
       while (m_t1_transition_enabled && m_t1transition.t1_pass())
       {
          std::cout << "T1's\n";
@@ -941,7 +956,21 @@ void SurfTrack::improve_mesh( )
          i++;
       }
 
-      
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
+
       // smoothing
       if ( m_perform_smoothing)
       {
@@ -951,6 +980,20 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
       
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+            if (area == 0)
+                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area;
+        }
+        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 0);
 
       ////////////////////////////////////////////////////////////
       //enter aggressive improvement mode to improve remaining bad triangles up to minimum bounds, 
@@ -968,12 +1011,42 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive split pass " << i << " finished" << std::endl;
          
+          min_triangle_area = -1;
+          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+          {
+              const Vec3st & current_triangle = m_mesh.get_triangle(i);
+              if (current_triangle[0] == current_triangle[1])
+                  continue;
+              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+              if (area == 0)
+                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+              if (min_triangle_area < 0 || area < min_triangle_area)
+                  min_triangle_area = area;
+          }
+          std::cout << "min area = " << min_triangle_area << std::endl;
+          assert(min_triangle_area > 0);
+
          //switch to delaunay criterion for this, since it is purported to produce better angles for a given vertex set.
          m_flipper.m_use_Delaunay_criterion = true;
          m_flipper.flip_pass();
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive flip pass " << i << " finished" << std::endl;
          m_flipper.m_use_Delaunay_criterion = false; //switch back to valence-based mode
+
+          min_triangle_area = -1;
+          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+          {
+              const Vec3st & current_triangle = m_mesh.get_triangle(i);
+              if (current_triangle[0] == current_triangle[1])
+                  continue;
+              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+              if (area == 0)
+                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+              if (min_triangle_area < 0 || area < min_triangle_area)
+                  min_triangle_area = area;
+          }
+          std::cout << "min area = " << min_triangle_area << std::endl;
+          assert(min_triangle_area > 0);
 
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 
@@ -983,6 +1056,21 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive collapse pass " << i << " finished" << std::endl;
 
+          min_triangle_area = -1;
+          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+          {
+              const Vec3st & current_triangle = m_mesh.get_triangle(i);
+              if (current_triangle[0] == current_triangle[1])
+                  continue;
+              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
+              if (area == 0)
+                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
+              if (min_triangle_area < 0 || area < min_triangle_area)
+                  min_triangle_area = area;
+          }
+          std::cout << "min area = " << min_triangle_area << std::endl;
+          assert(min_triangle_area > 0);
+          
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 
             break;

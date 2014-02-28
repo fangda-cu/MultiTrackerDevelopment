@@ -325,7 +325,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             assert( current_triangle[2] == source_vertex || current_triangle[2] == destination_vertex ); 
             new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
             new_area = triangle_area( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
-        }      
+        }
         
         if ( dot( new_normal, old_normal ) < 1e-5 )
         {
@@ -334,6 +334,9 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
             return true;
         } 
+        
+        if (m_surf.m_aggressive_mode)
+            std::cout << "new area = " << new_area << std::endl;
         
         if ( new_area < min_triangle_area )
         {
@@ -689,6 +692,42 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if (!bad_angle)   // do not collapse in aggressive mode if none of the involved triangles have bad angles.
          return false;
    }
+    
+    if (m_surf.m_aggressive_mode)
+    {
+        std::vector<size_t> incident_triangles;
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep].size(); i++)
+            incident_triangles.push_back(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]);
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete].size(); i++)
+            incident_triangles.push_back(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete][i]);
+        
+        double min_triangle_area = -1;
+        int min_area_triangle = -1;
+        for (size_t i = 0; i < incident_triangles.size(); i++)
+        {
+            const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(incident_triangles[i]);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area, min_area_triangle = incident_triangles[i];
+        }
+        std::cout << "pre collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        assert(min_triangle_area > 0);
+
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area, min_area_triangle = i;
+        }
+        std::cout << "pre collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        assert(min_triangle_area > 0);
+    }
   
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
@@ -1041,6 +1080,46 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
+    
+    std::cout << "collapse:" << std::endl;
+    for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
+    std::cout << vertex_to_keep << " " << vertex_to_delete << std::endl;
+    for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << std::endl;
+    
+    if (m_surf.m_aggressive_mode)
+    {
+        std::vector<size_t> incident_triangles;
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep].size(); i++)
+            incident_triangles.push_back(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]);
+        
+        double min_triangle_area = -1;
+        int min_area_triangle = -1;
+        for (size_t i = 0; i < incident_triangles.size(); i++)
+        {
+            const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(incident_triangles[i]);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area, min_area_triangle = incident_triangles[i];
+        }
+        std::cout << "post collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        assert(min_triangle_area > 0);
+        
+        min_triangle_area = -1;
+        for (size_t i = 0; i < m_surf.m_mesh.m_tris.size(); i++)
+        {
+            const Vec3st & current_triangle = m_surf.m_mesh.get_triangle(i);
+            if (current_triangle[0] == current_triangle[1])
+                continue;
+            double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1],current_triangle[0]), m_surf.get_position(current_triangle[2],current_triangle[0]));
+            if (min_triangle_area < 0 || area < min_triangle_area)
+                min_triangle_area = area, min_area_triangle = i;
+        }
+        std::cout << "post collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        assert(min_triangle_area > 1e-12);
+    }
+
 
   return true;
 }
@@ -1210,6 +1289,7 @@ bool EdgeCollapser::collapse_pass()
           }
 
           collapse_occurred |= result;
+        
         }
     }
     
