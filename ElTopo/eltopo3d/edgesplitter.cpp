@@ -805,6 +805,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 //    std::cout << "post split global min area = " << min_triangle_area << " triangle = " << min_area_triangle << " (" << m_surf.m_mesh.get_triangle(min_area_triangle) << ")" << std::endl;
     assert(min_triangle_area > 0);
     
+    if (result_vert == 1777)
+        std::cout << "--------------------------" << std::endl << "1777 from splitting " << vertex_a << " - " << vertex_b << std::endl;
     
   return true;
 

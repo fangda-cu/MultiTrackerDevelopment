@@ -979,6 +979,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     }
   }
 
+    std::cout << "keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") -> (" << vertex_new_position << ") delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
+    
   // --------------
 
   // start building history data
@@ -1083,8 +1085,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     
     std::cout << "collapse:" << std::endl;
     for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
-    std::cout << vertex_to_keep << " " << vertex_to_delete << std::endl;
-    for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << std::endl;
+    for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; coords = (" << m_surf.get_position(collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0]) << ") area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << std::endl;
     
     if (m_surf.m_aggressive_mode)
     {
