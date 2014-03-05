@@ -855,6 +855,9 @@ void SurfTrack::improve_mesh( )
         //// assert mesh labeling is consistent
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
+            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
+                continue;
+
             Vec2i li = m_mesh.get_triangle_label(i);
             const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
             for (int j = 0; j < 3; j++)
@@ -1040,6 +1043,52 @@ void SurfTrack::improve_mesh( )
         std::cout << "min area = " << min_triangle_area << std::endl;
         assert(min_triangle_area > 0);
 
+        //// assert mesh labeling is consistent
+        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
+        {
+            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
+                continue;
+            
+            Vec2i li = m_mesh.get_triangle_label(i);
+            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
+            for (int j = 0; j < 3; j++)
+            {
+                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
+                {
+                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
+                    if (nb == i)
+                        continue;
+                    Vec2i lk = m_mesh.get_triangle_label(nb);
+
+                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
+                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
+                    
+//                    std::cout << "------------------------------" << std::endl;
+//                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
+                    
+                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
+                        if (oriented_i != oriented_k)
+                        {
+                            assert(li[0] == lk[0]);
+                            assert(li[1] == lk[1]);
+                        } else
+                        {
+                            assert(li[1] == lk[0]);
+                            assert(li[0] == lk[1]);
+                        }
+                        else
+                            if (oriented_i != oriented_k)
+                            {
+                                assert(li[0] == lk[0] || li[1] == lk[1]);
+                            } else
+                            {
+                                assert(li[1] == lk[0] || li[0] == lk[1]);
+                            }
+                }
+                
+            }
+        }
+        
       ////////////////////////////////////////////////////////////
       //enter aggressive improvement mode to improve remaining bad triangles up to minimum bounds, 
       //potentially at the expense of some shape deterioration. (aka. BEAST MODE!!1!1!!) 
