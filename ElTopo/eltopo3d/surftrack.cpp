@@ -1063,8 +1063,8 @@ void SurfTrack::improve_mesh( )
                     bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
                     bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
                     
-//                    std::cout << "------------------------------" << std::endl;
-//                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
+                    std::cout << "------------------------------" << std::endl;
+                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
                     
                     if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
                         if (oriented_i != oriented_k)
