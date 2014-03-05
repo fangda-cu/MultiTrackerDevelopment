@@ -314,17 +314,23 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
         { 
             new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
             new_area = triangle_area( vertex_new_position, m_surf.get_position(current_triangle[1],vertex_new_position), m_surf.get_position(current_triangle[2],vertex_new_position) );
+            if (m_surf.m_aggressive_mode)
+                std::cout << current_triangle[0] << " (" << vertex_new_position << ") " << current_triangle[1] << " (" << m_surf.get_position(current_triangle[1], vertex_new_position) << ") " << current_triangle[2] << " (" << m_surf.get_position(current_triangle[2], vertex_new_position) << ") = " << new_area << std::endl;
         }
         else if ( current_triangle[1] == source_vertex || current_triangle[1] == destination_vertex ) 
         { 
             new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
             new_area = triangle_area( m_surf.get_position(current_triangle[0],vertex_new_position), vertex_new_position, m_surf.get_position(current_triangle[2],vertex_new_position) );
+            if (m_surf.m_aggressive_mode)
+                std::cout << current_triangle[0] << " (" << m_surf.get_position(current_triangle[0], vertex_new_position) << ") " << current_triangle[1] << " (" << vertex_new_position << ") " << current_triangle[2] << " (" << m_surf.get_position(current_triangle[2], vertex_new_position) << ") = " << new_area << std::endl;
         }
         else 
         { 
             assert( current_triangle[2] == source_vertex || current_triangle[2] == destination_vertex ); 
             new_normal = triangle_normal( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
             new_area = triangle_area( m_surf.get_position(current_triangle[0],vertex_new_position), m_surf.get_position(current_triangle[1],vertex_new_position), vertex_new_position );
+            if (m_surf.m_aggressive_mode)
+                std::cout << current_triangle[0] << " (" << m_surf.get_position(current_triangle[0], vertex_new_position) << ") " << current_triangle[1] << " (" << m_surf.get_position(current_triangle[1], vertex_new_position) << ") " << current_triangle[2] << " (" << vertex_new_position << ") = " << new_area << std::endl;
         }
         
         if ( dot( new_normal, old_normal ) < 1e-5 )
@@ -338,7 +344,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
         } 
         
 //        if (m_surf.m_aggressive_mode)
-//            std::cout << "new area = " << new_area << std::endl;
+//            std::cout << "new area of " << current_triangle[0] << " " << current_triangle[1] << " " << current_triangle[2] << " = " << new_area << std::endl;
         
         if ( new_area < min_triangle_area ) // tiny triangle area is disallowed regardless of aggressive mode or not
         {
@@ -1085,9 +1091,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
     
-//    std::cout << "collapse:" << std::endl;
-//    for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
-//    for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; coords = (" << m_surf.get_position(collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0]) << ") area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << std::endl;
+    std::cout << "collapse: " << vertex_to_keep << " " << vertex_to_delete << " (" << vertex_new_position << ")" << std::endl;
+    for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
+    for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; coords = (" << m_surf.get_position(collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0]) << ") area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << std::endl;
     
     if (m_surf.m_aggressive_mode)
     {
