@@ -885,14 +885,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                    else
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0] || li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0] || li[0] == lk[1]);
-                        }
                 }
                 
             }
@@ -965,14 +957,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                        else
-                            if (oriented_i != oriented_k)
-                            {
-                                assert(li[0] == lk[0] || li[1] == lk[1]);
-                            } else
-                            {
-                                assert(li[1] == lk[0] || li[0] == lk[1]);
-                            }
                 }
                 
             }
@@ -1032,14 +1016,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                        else
-                            if (oriented_i != oriented_k)
-                            {
-                                assert(li[0] == lk[0] || li[1] == lk[1]);
-                            } else
-                            {
-                                assert(li[1] == lk[0] || li[0] == lk[1]);
-                            }
                 }
                 
             }
@@ -1089,9 +1065,9 @@ void SurfTrack::improve_mesh( )
                     
                     bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
                     bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-
-                    if (i == 719 && nb == 27308)
-                        std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
+                    
+                    //                    std::cout << "------------------------------" << std::endl;
+                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
                     
                     if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
                         if (oriented_i != oriented_k)
@@ -1103,14 +1079,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                        else
-                            if (oriented_i != oriented_k)
-                            {
-                                assert(li[0] == lk[0] || li[1] == lk[1]);
-                            } else
-                            {
-                                assert(li[1] == lk[0] || li[0] == lk[1]);
-                            }
                 }
                 
             }
@@ -1175,14 +1143,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                        else
-                            if (oriented_i != oriented_k)
-                            {
-                                assert(li[0] == lk[0] || li[1] == lk[1]);
-                            } else
-                            {
-                                assert(li[1] == lk[0] || li[0] == lk[1]);
-                            }
                 }
                 
             }
@@ -1243,12 +1203,12 @@ void SurfTrack::improve_mesh( )
                     if (nb == i)
                         continue;
                     Vec2i lk = m_mesh.get_triangle_label(nb);
-
+                    
                     bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
                     bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
                     
-//                    std::cout << "------------------------------" << std::endl;
-//                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
+                    //                    std::cout << "------------------------------" << std::endl;
+                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
                     
                     if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
                         if (oriented_i != oriented_k)
@@ -1260,14 +1220,6 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
-                        else
-                            if (oriented_i != oriented_k)
-                            {
-                                assert(li[0] == lk[0] || li[1] == lk[1]);
-                            } else
-                            {
-                                assert(li[1] == lk[0] || li[0] == lk[1]);
-                            }
                 }
                 
             }
