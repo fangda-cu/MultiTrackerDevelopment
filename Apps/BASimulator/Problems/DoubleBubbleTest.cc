@@ -4282,7 +4282,7 @@ void DoubleBubbleTest::setupScene20()
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
-  std::ifstream objfile("assets/doublebubbletest/pbc100.OBJ");
+  std::ifstream objfile("assets/doublebubbletest/pbc500.OBJ");
   std::vector<Vec3d> obj_vs;
   std::vector<std::pair<Vec3i, Vec2i> > obj_fs;
   
