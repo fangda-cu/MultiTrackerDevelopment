@@ -332,13 +332,15 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
-            return true;
+            
+            if (!m_surf.m_aggressive_mode)  // normal inversion is not disallowed in aggressive mode
+                return true;
         } 
         
         if (m_surf.m_aggressive_mode)
             std::cout << "new area = " << new_area << std::endl;
         
-        if ( new_area < min_triangle_area )
+        if ( new_area < min_triangle_area ) // tiny triangle area is disallowed regardless of aggressive mode or not
         {
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
@@ -930,7 +932,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
 
-    if ( normal_inversion && !m_surf.m_aggressive_mode)//&& (edge_len >= m_t1_pull_apart_distance) )
+    if ( normal_inversion)//&& (edge_len >= m_t1_pull_apart_distance) )
     {
       // Restore saved positions which were changed by the function we just called.
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
