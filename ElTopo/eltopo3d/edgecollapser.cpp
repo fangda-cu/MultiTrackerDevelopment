@@ -198,6 +198,7 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
             // edge-edge
             Vec2st e0 = m_surf.m_mesh.m_edges[candidate[0]];
             Vec2st e1 = m_surf.m_mesh.m_edges[candidate[1]];
+            Vec3d ref = m_surf.get_newposition(e0[0]);
             
             if (e0[0] == e0[1]) continue;
             if (e1[0] == e1[1]) continue;
@@ -206,7 +207,7 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
             {
                 double distance, s0, s2;
                 Vec3d normal;
-                check_edge_edge_proximity(m_surf.get_newposition(e0[0]), m_surf.get_newposition(e0[1]), m_surf.get_newposition(e1[0]), m_surf.get_newposition(e1[1]), distance, s0, s2, normal);
+                check_edge_edge_proximity(m_surf.get_newposition(e0[0], ref), m_surf.get_newposition(e0[1], ref), m_surf.get_newposition(e1[0], ref), m_surf.get_newposition(e1[1], ref), distance, s0, s2, normal);
                 if (distance == 0)
                     return true;
             }
@@ -217,6 +218,7 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
             size_t t = candidate[0];
             const Vec3st & tri = m_surf.m_mesh.get_triangle(t);
             size_t v = candidate[1];
+            Vec3d ref = m_surf.get_newposition(v);
             
             if (tri[0] == tri[1]) continue;
             
@@ -224,7 +226,7 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
             {
                 double distance, s1, s2, s3;
                 Vec3d normal;
-                check_point_triangle_proximity(m_surf.get_newposition(v), m_surf.get_newposition(tri[0]), m_surf.get_newposition(tri[1]), m_surf.get_newposition(tri[2]), distance, s1, s2, s3, normal);
+                check_point_triangle_proximity(m_surf.get_newposition(v, ref), m_surf.get_newposition(tri[0], ref), m_surf.get_newposition(tri[1], ref), m_surf.get_newposition(tri[2], ref), distance, s1, s2, s3, normal);
                 if (distance == 0)
                     return true;
             }
