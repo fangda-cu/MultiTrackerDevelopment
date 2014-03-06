@@ -909,6 +909,8 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
             }
         }
 
+        assert_mesh_is_intersection_free(false);
+        
     }
     
     void SurfTrack::savePartOfMeshToOBJ(size_t vertex, int nrings, const std::string & filename)
@@ -1032,12 +1034,14 @@ void SurfTrack::improve_mesh( )
          
          std::cout << "Aggressive mesh improvement iteration #" << i << "." << std::endl;
 
+          std::cout << "aggressive split" << std::endl;
          m_splitter.split_pass();
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive split pass " << i << " finished" << std::endl;
-         
+          
           check();
 
+          std::cout << "aggressive flip" << std::endl;
          //switch to delaunay criterion for this, since it is purported to produce better angles for a given vertex set.
          m_flipper.m_use_Delaunay_criterion = true;
          m_flipper.flip_pass();
@@ -1051,6 +1055,7 @@ void SurfTrack::improve_mesh( )
          if(!any_triangles_with_bad_angles()) 
             break;
 
+          std::cout << "aggressive collapse" << std::endl;
          m_collapser.collapse_pass();
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive collapse pass " << i << " finished" << std::endl;
