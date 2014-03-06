@@ -711,7 +711,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             }
             
             if (vertex_to_keep == 1902 && vertex_to_delete == 1402)
-                m_surf.savePartOfMeshToOBJ(5074, 2);
+                m_surf.savePartOfMeshToOBJ(5074, 1);
         } else
         {
             std::cout << "edge 5074-1489 not found" << std::endl;
