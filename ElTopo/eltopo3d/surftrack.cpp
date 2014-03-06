@@ -937,7 +937,7 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
         fo << "# nf = " << m_mesh.nt() << std::endl;
         for (size_t i = 0; i < m_mesh.nt(); i++)
             if (f_included[i])
-                fo << "f " << m_mesh.m_tris[i] << " " << m_mesh.get_triangle_label(i) << std::endl;
+                fo << "f " << m_mesh.m_tris[i][0] + 1 << " " << m_mesh.m_tris[i][1] + 1 << " " << m_mesh.m_tris[i][2] + 1 << " " << m_mesh.get_triangle_label(i) << std::endl;
         
     }
     
