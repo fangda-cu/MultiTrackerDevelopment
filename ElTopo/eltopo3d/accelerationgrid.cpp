@@ -173,25 +173,25 @@ void AccelerationGrid::boundstoindices(const Vec3d& xmin, const Vec3d& xmax, Vec
     xmaxi[1] = (int) std::floor((xmax[1] - m_gridxmin[1]) * m_invcellsize[1]);
     xmaxi[2] = (int) std::floor((xmax[2] - m_gridxmin[2]) * m_invcellsize[2]);
     
-    if(xmini[0] < 0) xmini[0] = 0;
-    if(xmini[1] < 0) xmini[1] = 0;
-    if(xmini[2] < 0) xmini[2] = 0;
-    
-    if(xmaxi[0] < 0) xmaxi[0] = 0;
-    if(xmaxi[1] < 0) xmaxi[1] = 0;
-    if(xmaxi[2] < 0) xmaxi[2] = 0;
+//    if(xmini[0] < 0) xmini[0] = 0;
+//    if(xmini[1] < 0) xmini[1] = 0;
+//    if(xmini[2] < 0) xmini[2] = 0;
+//    
+//    if(xmaxi[0] < 0) xmaxi[0] = 0;
+//    if(xmaxi[1] < 0) xmaxi[1] = 0;
+//    if(xmaxi[2] < 0) xmaxi[2] = 0;
     
     assert( m_cells.ni < INT_MAX );
     assert( m_cells.nj < INT_MAX );
     assert( m_cells.nk < INT_MAX );
     
-    if(xmaxi[0] >= (int)m_cells.ni) xmaxi[0] = (int)m_cells.ni-1;
-    if(xmaxi[1] >= (int)m_cells.nj) xmaxi[1] = (int)m_cells.nj-1;
-    if(xmaxi[2] >= (int)m_cells.nk) xmaxi[2] = (int)m_cells.nk-1;
-    
-    if(xmini[0] >= (int)m_cells.ni) xmini[0] = (int)m_cells.ni-1;
-    if(xmini[1] >= (int)m_cells.nj) xmini[1] = (int)m_cells.nj-1;
-    if(xmini[2] >= (int)m_cells.nk) xmini[2] = (int)m_cells.nk-1;
+//    if(xmaxi[0] >= (int)m_cells.ni) xmaxi[0] = (int)m_cells.ni-1;
+//    if(xmaxi[1] >= (int)m_cells.nj) xmaxi[1] = (int)m_cells.nj-1;
+//    if(xmaxi[2] >= (int)m_cells.nk) xmaxi[2] = (int)m_cells.nk-1;
+//    
+//    if(xmini[0] >= (int)m_cells.ni) xmini[0] = (int)m_cells.ni-1;
+//    if(xmini[1] >= (int)m_cells.nj) xmini[1] = (int)m_cells.nj-1;
+//    if(xmini[2] >= (int)m_cells.nk) xmini[2] = (int)m_cells.nk-1;
     
 }
 
@@ -500,7 +500,7 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
          for(int i = xmini[0]; i <= xmaxi[0]; ++i)
          {
 
-                std::vector<size_t>* cell = m_cells(i, j, k);
+                std::vector<size_t>* cell = m_cells((i % m_cells.ni), (j % m_cells.nj), (k % m_cells.nk));
                 
                 if(cell)
                 {
@@ -520,12 +520,22 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
                             const Vec3d& oxmin = m_elementxmins[oidx];
                             const Vec3d& oxmax = m_elementxmaxs[oidx];
                             
-                            if( (xmin[0] <= oxmax[0] && xmin[1] <= oxmax[1] && xmin[2] <= oxmax[2]) &&
-                               (xmax[0] >= oxmin[0] && xmax[1] >= oxmin[1] && xmax[2] >= oxmin[2]) )
-                            {
-                                results.push_back(oidx);
-                            }
+                            bool overlap = false;
+                            for (int dx = -2; dx <= 2; dx++)
+                                for (int dy = -2; dy <= 2; dy++)
+                                    for (int dz = -2; dz <= 2; dz++)
+                                    {
+                                        if((xmin[0] <= oxmax[0] && xmin[1] <= oxmax[1] && xmin[2] <= oxmax[2]) &&
+                                           (xmax[0] >= oxmin[0] && xmax[1] >= oxmin[1] && xmax[2] >= oxmin[2]) )
+                                        {
+                                            assert(!overlap);
+                                            overlap = true;
+                                        }
+                                    }
                             
+                            if (overlap)
+                                results.push_back(oidx);
+
                         }
                     }
                 }
