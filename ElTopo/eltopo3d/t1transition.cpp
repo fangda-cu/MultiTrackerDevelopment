@@ -345,7 +345,7 @@ bool T1Transition::t1_pass()
             continue;
         }
         
-        std::cout << "xj = " << xj << " pos: " << m_surf.get_position(xj) << " -> " << b_desired_position << std::endl;
+//        std::cout << "xj = " << xj << " pos: " << m_surf.get_position(xj) << " -> " << b_desired_position << std::endl;
         m_surf.set_position(xj, b_desired_position);
         
         if (vertex_pseudo_motion_introduces_collision(xj, b_desired_position, a_desired_position, A_faces, A_edges))
@@ -558,6 +558,8 @@ bool T1Transition::t1_pass()
             m_surf.m_mesheventcallback->t1(m_surf, xj);
       
         for (size_t i = 0; i < m_surf.m_mesh.nv(); i++) if (!m_surf.m_mesh.vertex_is_deleted(i)) assert(m_surf.get_position(i) == m_surf.get_newposition(i));
+        
+        std::cout << "successful t1: a = " << a << " (" << m_surf.get_position(a) << ") b = " << b << " (" << m_surf.get_position(b, a) << ")" << std::endl;
     }
   
     return pop_occurred;
