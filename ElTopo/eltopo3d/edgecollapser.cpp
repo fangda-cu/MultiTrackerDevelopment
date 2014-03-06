@@ -686,39 +686,39 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
    
-    if (m_surf.m_aggressive_mode)
-    {
-        std::vector<size_t> moving_triangles;
-        get_moving_triangles(vertex_to_keep, vertex_to_delete, moving_triangles);
-        for (size_t i = 0; i < moving_triangles.size(); i++)
-            std::cout << "moving triangle: " << m_surf.m_mesh.m_tris[moving_triangles[i]] << " <" << m_surf.m_mesh.get_triangle_label(moving_triangles[i]) << ">" << std::endl;
-
-        size_t edge = m_surf.m_mesh.ne();
-        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[5074].size(); i++)
-            if (m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][0] == 1489 || m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][1] == 1489)
-                edge = m_surf.m_mesh.m_vertex_to_edge_map[5074][i];
-        if (edge < m_surf.m_mesh.ne())
-        {
-            for (size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); i++)
-            {
-                std::cout << "triangle around edge 5074-1489: " << m_surf.m_mesh.m_edge_to_triangle_map[edge][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_edge_to_triangle_map[edge][i]) << ">";
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0], 5074) << ")" << std::endl;
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1], 5074) << ")" << std::endl;
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2], 5074) << ")" << std::endl;
-            }
-            
-            if (vertex_to_keep == 1902 && vertex_to_delete == 1402)
-                m_surf.savePartOfMeshToOBJ(5074, 1);
-        } else
-        {
-            std::cout << "edge 5074-1489 not found" << std::endl;
-        }
-        
-        std::cout << "positions: 5074: " << m_surf.get_position(5074) << " 1489: " << m_surf.get_position(1489, 5074) << std::endl;
-    }
+//    if (m_surf.m_aggressive_mode)
+//    {
+//        std::vector<size_t> moving_triangles;
+//        get_moving_triangles(vertex_to_keep, vertex_to_delete, moving_triangles);
+//        for (size_t i = 0; i < moving_triangles.size(); i++)
+//            std::cout << "moving triangle: " << m_surf.m_mesh.m_tris[moving_triangles[i]] << " <" << m_surf.m_mesh.get_triangle_label(moving_triangles[i]) << ">" << std::endl;
+//
+//        size_t edge = m_surf.m_mesh.ne();
+//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[5074].size(); i++)
+//            if (m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][0] == 1489 || m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][1] == 1489)
+//                edge = m_surf.m_mesh.m_vertex_to_edge_map[5074][i];
+//        if (edge < m_surf.m_mesh.ne())
+//        {
+//            for (size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); i++)
+//            {
+//                std::cout << "triangle around edge 5074-1489: " << m_surf.m_mesh.m_edge_to_triangle_map[edge][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_edge_to_triangle_map[edge][i]) << ">";
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0], 5074) << ")" << std::endl;
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1], 5074) << ")" << std::endl;
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2], 5074) << ")" << std::endl;
+//            }
+//            
+//            if (vertex_to_keep == 1902 && vertex_to_delete == 1402)
+//                m_surf.savePartOfMeshToOBJ(5074, 1);
+//        } else
+//        {
+//            std::cout << "edge 5074-1489 not found" << std::endl;
+//        }
+//        
+////        std::cout << "positions: 5074: " << m_surf.get_position(5074) << " 1489: " << m_surf.get_position(1489, 5074) << std::endl;
+//    }
     
    if (m_surf.m_aggressive_mode)
    {
@@ -1125,37 +1125,37 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
     
-    if (m_surf.m_aggressive_mode)
-    {
-        std::cout << "collapse successful: " << vertex_to_keep << " " << vertex_to_delete << " (" << vertex_new_position << ")" << std::endl;
-//        for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
-//        for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; coords = (" << m_surf.get_position(collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0]) << ") area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << " label = " << collapse.m_created_tri_labels[i] << std::endl;
-        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep].size(); i++)
-            std::cout << m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]) << ">" << std::endl;
-        
-        size_t edge = m_surf.m_mesh.ne();
-        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[5074].size(); i++)
-            if (m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][0] == 1489 || m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][1] == 1489)
-                edge = m_surf.m_mesh.m_vertex_to_edge_map[5074][i];
-        if (edge < m_surf.m_mesh.ne())
-        {
-            for (size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); i++)
-            {
-                std::cout << "triangle around edge 5074-1489: " << m_surf.m_mesh.m_edge_to_triangle_map[edge][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_edge_to_triangle_map[edge][i]) << ">";
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0], 5074) << ")" << std::endl;
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1], 5074) << ")" << std::endl;
-                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 5074)
-                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2], 5074) << ")" << std::endl;
-            }
-        } else
-        {
-            std::cout << "edge 5074-1489 not found" << std::endl;
-        }
-
-        std::cout << "positions: 5074: " << m_surf.get_position(5074) << " 1489: " << m_surf.get_position(1489, 5074) << std::endl;
-    }
+//    if (m_surf.m_aggressive_mode)
+//    {
+//        std::cout << "collapse successful: " << vertex_to_keep << " " << vertex_to_delete << " (" << vertex_new_position << ")" << std::endl;
+////        for (size_t i = 0; i < collapse.m_created_tris.size(); i++) std::cout << collapse.m_created_tris[i] <<  " "; std::cout << std::endl;
+////        for (size_t i = 0; i < collapse.m_created_tri_data.size(); i++) std::cout << collapse.m_created_tri_data[i] << "; coords = (" << m_surf.get_position(collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]) << "), (" << m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0]) << ") area = " << triangle_area(m_surf.get_position(collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][1], collapse.m_created_tri_data[i][0]), m_surf.get_position(collapse.m_created_tri_data[i][2], collapse.m_created_tri_data[i][0])) << " label = " << collapse.m_created_tri_labels[i] << std::endl;
+//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep].size(); i++)
+//            std::cout << m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_keep][i]) << ">" << std::endl;
+//        
+//        size_t edge = m_surf.m_mesh.ne();
+//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[5074].size(); i++)
+//            if (m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][0] == 1489 || m_surf.m_mesh.m_edges[m_surf.m_mesh.m_vertex_to_edge_map[5074][i]][1] == 1489)
+//                edge = m_surf.m_mesh.m_vertex_to_edge_map[5074][i];
+//        if (edge < m_surf.m_mesh.ne())
+//        {
+//            for (size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); i++)
+//            {
+//                std::cout << "triangle around edge 5074-1489: " << m_surf.m_mesh.m_edge_to_triangle_map[edge][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_edge_to_triangle_map[edge][i]) << ">";
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][0], 5074) << ")" << std::endl;
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][1], 5074) << ")" << std::endl;
+//                if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 5074)
+//                    std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2], 5074) << ")" << std::endl;
+//            }
+//        } else
+//        {
+//            std::cout << "edge 5074-1489 not found" << std::endl;
+//        }
+//
+////        std::cout << "positions: 5074: " << m_surf.get_position(5074) << " 1489: " << m_surf.get_position(1489, 5074) << std::endl;
+//    }
     
     if (m_surf.m_aggressive_mode)
     {
