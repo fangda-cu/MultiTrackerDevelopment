@@ -126,7 +126,6 @@ DynamicSurface::~DynamicSurface()
 
 double DynamicSurface::distance_to_surface( const Vec3d& p, size_t& closest_triangle ) const
 {
-    //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
     double padding = m_aabb_padding;
     double min_distance = BIG_DOUBLE;
     
@@ -147,7 +146,7 @@ double DynamicSurface::distance_to_surface( const Vec3d& p, size_t& closest_tria
             if ( tri[0] == tri[1] || tri[1] == tri[2] || tri[0] == tri[2] ) { continue; }
             
             double curr_distance;
-            check_point_triangle_proximity( p, get_position(tri[0]), get_position(tri[1]), get_position(tri[2]), curr_distance );
+            check_point_triangle_proximity( p, get_position(tri[0], p), get_position(tri[1], p), get_position(tri[2], p), curr_distance );
             if ( curr_distance < padding )
             {   
                 min_distance = min( min_distance, curr_distance );
@@ -296,7 +295,6 @@ void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a,
                                                 std::vector<size_t>& hit_triangles,
                                                 bool verbose ) const
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     Vec3d aabb_low, aabb_high;
     minmax( segment_point_a, segment_point_b, aabb_low, aabb_high );
     
@@ -311,9 +309,9 @@ void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a,
         //Vec3st t = sort_triangle( tri );
         //assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
         
-        const Vec3d& v0 = get_position( t[0] );
-        const Vec3d& v1 = get_position( t[1] );
-        const Vec3d& v2 = get_position( t[2] );      
+        const Vec3d& v0 = get_position( t[0], segment_point_a );
+        const Vec3d& v1 = get_position( t[1], segment_point_a );
+        const Vec3d& v2 = get_position( t[2], segment_point_a );      
         
         size_t dummy_index = get_num_vertices();
         
@@ -364,9 +362,9 @@ size_t DynamicSurface::get_number_of_triangle_intersections( const Vec3d& segmen
         //Vec3st t = sort_triangle( tri );
         //assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
         
-        const Vec3d& v0 = get_position( t[0] );
-        const Vec3d& v1 = get_position( t[1] );
-        const Vec3d& v2 = get_position( t[2] );      
+        const Vec3d& v0 = get_position( t[0], segment_point_a );
+        const Vec3d& v1 = get_position( t[1], segment_point_a );
+        const Vec3d& v2 = get_position( t[2], segment_point_a );
         
         size_t dummy_index = get_num_vertices();
         static const bool degenerate_counts_as_hit = true;
@@ -580,8 +578,6 @@ double DynamicSurface::get_largest_dihedral(size_t edge, const std::vector<Vec3d
 // ---------------------------------------------------------
 int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end) {
 
-   //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
-
    std::vector<double> hit_ss;
    std::vector<size_t> hit_tris;
    get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
@@ -602,9 +598,9 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
 
    // get the normal of this triangle, check it's orientation relative to the ray
    const Vec3st& t = m_mesh.m_tris[ hit_tris[first_hit] ];
-   const Vec3d& v0 = pm_positions[ t[0] ];
-   const Vec3d& v1 = pm_positions[ t[1] ];
-   const Vec3d& v2 = pm_positions[ t[2] ];     
+   const Vec3d& v0 = get_position(t[0], p);
+   const Vec3d& v1 = get_position(t[1], p);
+   const Vec3d& v2 = get_position(t[2], p);
    Vec3d tri_normal = -cross(v2-v0, v1-v0);
 
    Vec2i labels = m_mesh.get_triangle_label(hit_tris[first_hit]);
@@ -617,8 +613,6 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
 
 int DynamicSurface::get_region_containing_point( const Vec3d& p )
 {
-   //&&&&&& this function relies on the collision broadphase, so phase 1 conversion to PBC may not work
-
    //
    // The point is inside if the dot product between the normal of the first
    // triangle intersection and the ray direction is positive.
@@ -679,7 +673,6 @@ int DynamicSurface::get_region_containing_point( const Vec3d& p )
 
 void DynamicSurface::integrate( double desired_dt, double& actual_dt )
 {     
-    
     if ( m_collision_safety )
     {
       std::cout << "Checking collisions before integration.\n";
@@ -708,7 +701,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
         m_velocities.resize( get_num_vertices() );
         for(size_t i = 0; i < get_num_vertices(); i++)
         {
-            m_velocities[i] = ( get_newposition(i) - get_position(i) ) / curr_dt;  
+            m_velocities[i] = ( get_newposition(i, get_position(i)) - get_position(i) ) / curr_dt;
         }
         
         // Handle proximities
@@ -756,7 +749,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
                 curr_dt = 0.5 * curr_dt;
                 for ( size_t i = 0; i < get_num_vertices(); ++i )
                 {
-                    set_newposition(i, get_position(i) + 0.5 * (saved_predicted_positions[i] - get_position(i)) ) ;
+                    set_newposition(i, get_position(i) + 0.5 * (saved_predicted_positions[i] - get_position(i, saved_predicted_positions[i])) ) ;
                 }
                 
                 continue;      
@@ -787,7 +780,7 @@ void DynamicSurface::integrate( double desired_dt, double& actual_dt )
                 curr_dt = 0.5 * curr_dt;
                 for ( size_t i = 0; i < get_num_vertices(); ++i )
                 {
-                    set_newposition( i, get_position(i) + 0.5 * ( saved_predicted_positions[i] - get_position(i) ) );
+                    set_newposition( i, get_position(i) + 0.5 * ( saved_predicted_positions[i] - get_position(i, saved_predicted_positions[i]) ) );
                 }
                 
                 continue;      
@@ -1522,7 +1515,6 @@ void DynamicSurface::check_continuous_broad_phase_is_up_to_date() const
 
 bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( size_t tri_index  )
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     return check_triangle_vs_all_triangles_for_intersection( m_mesh.get_triangle(tri_index) );
 }
 
@@ -1534,15 +1526,15 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( size_t tr
 
 bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec3st& tri )
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
     bool any_intersection = false;
+    Vec3d ref = get_position(tri[0]);
     
     static std::vector<size_t> overlapping_triangles(20);
     overlapping_triangles.clear();
 
     Vec3d low, high;
     
-    minmax( get_position(tri[0]), get_position(tri[1]), low, high );
+    minmax( get_position(tri[0], ref), get_position(tri[1], ref), low, high );
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
@@ -1554,21 +1546,21 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
         const Vec3st& curr_tri = m_mesh.get_triangle( overlapping_triangles[i] );
         bool result = check_edge_triangle_intersection_by_index( tri[0], tri[1],
                                                                 curr_tri[0], curr_tri[1], curr_tri[2],
-                                                                get_positions(),
+                                                                this, false,
                                                                 false );
         
         if ( result )
         {
             check_edge_triangle_intersection_by_index( tri[0], tri[1],
                                                       curr_tri[0], curr_tri[1], curr_tri[2],
-                                                      get_positions(),
+                                                      this, false,
                                                       true );
             
             any_intersection = true;
         }
     }
     
-    minmax( get_position(tri[1]), get_position(tri[2]), low, high );
+    minmax( get_position(tri[1], ref), get_position(tri[2], ref), low, high );
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
@@ -1581,21 +1573,21 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
         
         bool result = check_edge_triangle_intersection_by_index( tri[1], tri[2],
                                                                 curr_tri[0], curr_tri[1], curr_tri[2],
-                                                                get_positions(),
+                                                                this, false,
                                                                 false );
         
         if ( result )
         {
             check_edge_triangle_intersection_by_index( tri[1], tri[2],
                                                       curr_tri[0], curr_tri[1], curr_tri[2],
-                                                      get_positions(),
+                                                      this, false,
                                                       true );
             
             any_intersection = true;
         }
     }
     
-    minmax( get_position(tri[2]), get_position(tri[0]), low, high );
+    minmax( get_position(tri[2], ref), get_position(tri[0], ref), low, high );
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
@@ -1608,14 +1600,14 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
         
         bool result = check_edge_triangle_intersection_by_index( tri[2], tri[0],
                                                                 curr_tri[0], curr_tri[1], curr_tri[2],
-                                                                get_positions(),
+                                                                this, false,
                                                                 false );
         
         if ( result )
         {
             check_edge_triangle_intersection_by_index( tri[2], tri[0],
                                                       curr_tri[0], curr_tri[1], curr_tri[2],
-                                                      get_positions(),
+                                                      this, false,
                                                       true );
             
             any_intersection = true;         
@@ -1626,7 +1618,7 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
     // edges
     //
     
-    minmax( get_position(tri[0]), get_position(tri[1]), get_position(tri[2]), low, high );
+    minmax( get_position(tri[0], ref), get_position(tri[1], ref), get_position(tri[2], ref), low, high );
     low -= Vec3d(m_aabb_padding);
     high += Vec3d(m_aabb_padding);
     
@@ -1640,7 +1632,7 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
         bool result = check_edge_triangle_intersection_by_index(m_mesh.m_edges[overlapping_edges[i]][0], 
                                                                 m_mesh.m_edges[overlapping_edges[i]][1], 
                                                                 tri[0], tri[1], tri[2],
-                                                                get_positions(),
+                                                                this, false,
                                                                 false );
         
         if ( result )
@@ -1648,7 +1640,7 @@ bool DynamicSurface::check_triangle_vs_all_triangles_for_intersection( const Vec
             check_edge_triangle_intersection_by_index(m_mesh.m_edges[overlapping_edges[i]][0], 
                                                       m_mesh.m_edges[overlapping_edges[i]][1], 
                                                       tri[0], tri[1], tri[2],
-                                                      get_positions(),
+                                                      this, false,
                                                       true );
             
             any_intersection = true;         
@@ -1669,7 +1661,6 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
                                        bool use_new_positions, 
                                        std::vector<Intersection>& intersections )
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
 
     //assert( degeneracy_counts_as_intersection == false );
     
@@ -1686,6 +1677,7 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     //#pragma omp parallel for schedule(guided)
     for ( int i = 0; i < (int)m_mesh.num_triangles(); ++i )
     {
+        Vec3d ref = get_position(m_mesh.m_tris[i][0]);
         
        std::vector<size_t> edge_candidates(50);
 
@@ -1720,11 +1712,11 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
 
             assert( !triangle_is_all_solid( i ) || !edge_is_all_solid( edge_candidates[j] ) );
             
-            const Vec3d& e0 = use_new_positions ? get_newposition(edge[0]) : get_position(edge[0]);
-            const Vec3d& e1 = use_new_positions ? get_newposition(edge[1]) : get_position(edge[1]);
-            const Vec3d& t0 = use_new_positions ? get_newposition(triangle[0]) : get_position(triangle[0]);
-            const Vec3d& t1 = use_new_positions ? get_newposition(triangle[1]) : get_position(triangle[1]);
-            const Vec3d& t2 = use_new_positions ? get_newposition(triangle[2]) : get_position(triangle[2]);
+            const Vec3d& e0 = use_new_positions ? get_newposition(edge[0], ref) : get_position(edge[0], ref);
+            const Vec3d& e1 = use_new_positions ? get_newposition(edge[1], ref) : get_position(edge[1], ref);
+            const Vec3d& t0 = use_new_positions ? get_newposition(triangle[0], ref) : get_position(triangle[0], ref);
+            const Vec3d& t1 = use_new_positions ? get_newposition(triangle[1], ref) : get_position(triangle[1], ref);
+            const Vec3d& t2 = use_new_positions ? get_newposition(triangle[2], ref) : get_position(triangle[2], ref);
             
             if ( segment_triangle_intersection( e0, edge[0], 
                                                e1, edge[1],
@@ -1759,8 +1751,6 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
 
 void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
-  
     std::vector<Intersection> intersections;
     get_intersections( degeneracy_counts_as_intersection, false, intersections );
     
@@ -1770,13 +1760,15 @@ void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as
         const Vec3st& triangle = m_mesh.get_triangle( intersections[i].m_triangle_index );
         const Vec2st& edge = m_mesh.m_edges[ intersections[i].m_edge_index ];
         
+        Vec3d ref = get_position(triangle[0]);
+
         std::cout << "Intersection!  Triangle " << triangle << " vs edge " << edge << std::endl;
         
-        segment_triangle_intersection( get_position(edge[0]), edge[0], 
-                                      get_position(edge[1]), edge[1],
-                                      get_position(triangle[0]), triangle[0],
-                                      get_position(triangle[1]), triangle[1], 
-                                      get_position(triangle[2]), triangle[2],
+        segment_triangle_intersection( get_position(edge[0], ref), edge[0],
+                                      get_position(edge[1], ref), edge[1],
+                                      get_position(triangle[0], ref), triangle[0],
+                                      get_position(triangle[1], ref), triangle[1],
+                                      get_position(triangle[2], ref), triangle[2],
                                       true, true );
         
         assert( false );
@@ -1796,8 +1788,6 @@ void DynamicSurface::assert_mesh_is_intersection_free( bool degeneracy_counts_as
 
 void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy_counts_as_intersection )
 {
-    //&&&&&& collision broadphase not included in phase 1 conversion to PBC
-
     std::vector<Intersection> intersections;
     get_intersections( degeneracy_counts_as_intersection, true, intersections );
     
@@ -1807,20 +1797,22 @@ void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy
         const Vec3st& triangle = m_mesh.get_triangle( intersections[i].m_triangle_index );
         const Vec2st& edge = m_mesh.m_edges[ intersections[i].m_edge_index ];
         
+        Vec3d ref = get_position(triangle[0]);
+
         std::cout << "Intersection!  Triangle " << triangle << " vs edge " << edge << std::endl;
         
-        segment_triangle_intersection(get_position(edge[0]), edge[0], 
-                                      get_position(edge[1]), edge[1],
-                                      get_position(triangle[0]), triangle[0],
-                                      get_position(triangle[1]), triangle[1], 
-                                      get_position(triangle[2]), triangle[2],
+        segment_triangle_intersection(get_position(edge[0], ref), edge[0],
+                                      get_position(edge[1], ref), edge[1],
+                                      get_position(triangle[0], ref), triangle[0],
+                                      get_position(triangle[1], ref), triangle[1],
+                                      get_position(triangle[2], ref), triangle[2],
                                       true, true );
         
-        const Vec3d& ea = get_position(edge[0]);
-        const Vec3d& eb = get_position(edge[1]);
-        const Vec3d& ta = get_position(triangle[0]);
-        const Vec3d& tb = get_position(triangle[1]);
-        const Vec3d& tc = get_position(triangle[2]);
+        const Vec3d& ea = get_position(edge[0], ref);
+        const Vec3d& eb = get_position(edge[1], ref);
+        const Vec3d& ta = get_position(triangle[0], ref);
+        const Vec3d& tb = get_position(triangle[1], ref);
+        const Vec3d& tc = get_position(triangle[2], ref);
         
        
         std::vector<Collision> check_collisions;
@@ -1845,11 +1837,11 @@ void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy
         
         std::cout << "-----\n edge-triangle check using m_positions:" << std::endl;
         
-        bool result = segment_triangle_intersection( get_position(edge[0]), edge[0], 
-                                                    get_position(edge[1]), edge[1],
-                                                    get_position(triangle[0]), triangle[0], 
-                                                    get_position(triangle[1]), triangle[1],
-                                                    get_position(triangle[2]), triangle[2],
+        bool result = segment_triangle_intersection( get_position(edge[0], ref), edge[0],
+                                                    get_position(edge[1], ref), edge[1],
+                                                    get_position(triangle[0], ref), triangle[0],
+                                                    get_position(triangle[1], ref), triangle[1],
+                                                    get_position(triangle[2], ref), triangle[2],
                                                     degeneracy_counts_as_intersection, 
                                                     m_verbose );
         
@@ -1857,21 +1849,21 @@ void DynamicSurface::assert_predicted_mesh_is_intersection_free( bool degeneracy
         
         std::cout << "-----\n edge-triangle check using new m_positions" << std::endl;
         
-        result = segment_triangle_intersection( get_newposition(edge[0]), edge[0], 
-                                               get_newposition(edge[1]), edge[1],
-                                               get_newposition(triangle[0]), triangle[0], 
-                                               get_newposition(triangle[1]), triangle[1],
-                                               get_newposition(triangle[2]), triangle[2],
+        result = segment_triangle_intersection( get_newposition(edge[0], ref), edge[0],
+                                               get_newposition(edge[1], ref), edge[1],
+                                               get_newposition(triangle[0], ref), triangle[0],
+                                               get_newposition(triangle[1], ref), triangle[1],
+                                               get_newposition(triangle[2], ref), triangle[2],
                                                degeneracy_counts_as_intersection, 
                                                m_verbose );
         
         std::cout << "result: " << result << std::endl;
         
-        const Vec3d& ea_new = get_newposition(edge[0]);
-        const Vec3d& eb_new = get_newposition(edge[1]);
-        const Vec3d& ta_new = get_newposition(triangle[0]);
-        const Vec3d& tb_new = get_newposition(triangle[1]);
-        const Vec3d& tc_new = get_newposition(triangle[2]);
+        const Vec3d& ea_new = get_newposition(edge[0], ref);
+        const Vec3d& eb_new = get_newposition(edge[1], ref);
+        const Vec3d& ta_new = get_newposition(triangle[0], ref);
+        const Vec3d& tb_new = get_newposition(triangle[1], ref);
+        const Vec3d& tc_new = get_newposition(triangle[2], ref);
         
         std::cout.precision(20);
         

@@ -694,8 +694,8 @@ inline Vec3d DynamicSurface::get_vertex_normal_angleweighted_by_label( size_t ve
       unsigned int verti = curr_tri[other_two[0]];
       unsigned int vertnext = curr_tri[other_two[1]];
 
-      Vec3d vi = get_position(verti) - get_position(vertex_index);
-      Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+      Vec3d vi = get_position(verti, vertex_index) - get_position(vertex_index);
+      Vec3d vnext = get_position(vertnext, vertex_index) - get_position(vertex_index);
       normalize(vi);
       normalize(vnext);
 
@@ -740,8 +740,8 @@ inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( size_t vertex_inde
       unsigned int verti = curr_tri[other_two[0]];
       unsigned int vertnext = curr_tri[other_two[1]];
 
-      Vec3d vi = get_position(verti) - get_position(vertex_index);
-      Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+      Vec3d vi = get_position(verti, vertex_index) - get_position(vertex_index);
+      Vec3d vnext = get_position(vertnext, vertex_index) - get_position(vertex_index);
       normalize(vi);
       normalize(vnext);
 
@@ -782,8 +782,8 @@ inline Vec3d DynamicSurface::get_vertex_normal_max( size_t vertex_index ) const
         size_t verti = curr_tri[other_two[0]];
         size_t vertnext = curr_tri[other_two[1]];
         
-        Vec3d vi = get_position(verti) - get_position(vertex_index);
-        Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+        Vec3d vi = get_position(verti, vertex_index) - get_position(vertex_index);
+        Vec3d vnext = get_position(vertnext, vertex_index) - get_position(vertex_index);
         
         sum_cross_products += cross( vi, vnext ) / ( mag2(vi)*mag2(vnext) );
     }
