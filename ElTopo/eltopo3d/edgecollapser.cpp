@@ -709,6 +709,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
                 if (m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 1489 && m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2] != 5074)
                     std::cout << " (" << m_surf.get_position(m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]][2], 5074) << ")" << std::endl;
             }
+            
+            m_surf.savePartOfMeshToOBJ(5074, 3);
         } else
         {
             std::cout << "edge 5074-1489 not found" << std::endl;

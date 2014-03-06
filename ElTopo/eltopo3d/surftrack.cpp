@@ -33,7 +33,7 @@
 #include <vec.h>
 #include <vector>
 #include <wallclocktime.h>
-
+#include <fstream>
 
 // ---------------------------------------------------------
 //  Global externs
@@ -840,12 +840,6 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
     
 }
 
-// --------------------------------------------------------
-///
-/// One pass: split long edges, flip non-delaunay edges, collapse short edges, null-space smoothing
-///
-// --------------------------------------------------------
-
     void SurfTrack::check()
     {
         //// assert mesh labeling is consistent
@@ -917,6 +911,42 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
 
     }
     
+    void SurfTrack::savePartOfMeshToOBJ(size_t vertex, int nrings, const std::string & filename)
+    {
+        assert(nrings > 0);
+        std::vector<bool> f_included(m_mesh.nt(), false);
+        for (size_t i = 0; i < m_mesh.m_vertex_to_triangle_map[vertex].size(); i++)
+            f_included[m_mesh.m_vertex_to_triangle_map[vertex][i]] = true;
+        
+        std::vector<bool> f_included_new = f_included;
+        for (int i = 1; i < nrings; i++)
+        {
+            f_included_new = f_included;
+            for (size_t j = 0; j < m_mesh.nt(); j++)
+                if (f_included[j])
+                    for (int k = 0; k < 3; k++)
+                        for (size_t l = 0; l < m_mesh.m_vertex_to_triangle_map[m_mesh.m_tris[j][k]].size(); l++)
+                            f_included_new[m_mesh.m_vertex_to_triangle_map[m_mesh.m_tris[j][k]][l]] = true;
+            f_included = f_included_new;
+        }
+        
+        std::ofstream fo(filename.c_str());
+        fo << "# nv = " << m_mesh.nv() << std::endl;
+        for (size_t i = 0; i < m_mesh.nv(); i++)
+            fo << "v " << get_position(i) << std::endl;
+        fo << "# nf = " << m_mesh.nt() << std::endl;
+        for (size_t i = 0; i < m_mesh.nt(); i++)
+            if (f_included[i])
+                fo << "f " << m_mesh.m_tris[i] << " " << m_mesh.get_triangle_label(i) << std::endl;
+        
+    }
+    
+// --------------------------------------------------------
+///
+/// One pass: split long edges, flip non-delaunay edges, collapse short edges, null-space smoothing
+///
+// --------------------------------------------------------
+
     
 void SurfTrack::improve_mesh( )
 {     
