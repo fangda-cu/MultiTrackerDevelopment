@@ -191,7 +191,8 @@ bool ImpactZoneSolver::iterated_inelastic_projection( ImpactZone& iz, double dt 
             
             Collision& collision = iz.m_collisions[c];
             const Vec4st& vs = collision.m_vertex_indices;
-            
+            Vec3d ref = m_surface.get_position(vs[0]);
+
             m_surface.set_newposition( vs[0], m_surface.get_position(vs[0]) + dt * m_surface.m_velocities[vs[0]]);
             m_surface.set_newposition( vs[1], m_surface.get_position(vs[1]) + dt * m_surface.m_velocities[vs[1]]);
             m_surface.set_newposition( vs[2], m_surface.get_position(vs[2]) + dt * m_surface.m_velocities[vs[2]]);
@@ -207,10 +208,10 @@ bool ImpactZoneSolver::iterated_inelastic_projection( ImpactZone& iz, double dt 
                 
                 assert( vs[0] < vs[1] && vs[2] < vs[3] );       // should have been sorted by original collision detection
                 
-                if ( segment_segment_collision( m_surface.get_position(vs[0]), m_surface.get_newposition(vs[0]), vs[0],
-                                               m_surface.get_position(vs[1]), m_surface.get_newposition(vs[1]), vs[1],
-                                               m_surface.get_position(vs[2]), m_surface.get_newposition(vs[2]), vs[2],
-                                               m_surface.get_position(vs[3]), m_surface.get_newposition(vs[3]), vs[3],
+                if ( segment_segment_collision( m_surface.get_position(vs[0], ref), m_surface.get_newposition(vs[0], ref), vs[0],
+                                               m_surface.get_position(vs[1], ref), m_surface.get_newposition(vs[1], ref), vs[1],
+                                               m_surface.get_position(vs[2], ref), m_surface.get_newposition(vs[2], ref), vs[2],
+                                               m_surface.get_position(vs[3], ref), m_surface.get_newposition(vs[3], ref), vs[3],
                                                s0, s2,
                                                normal,
                                                rel_disp ) )               
@@ -230,10 +231,10 @@ bool ImpactZoneSolver::iterated_inelastic_projection( ImpactZone& iz, double dt 
                 
                 assert( vs[1] < vs[2] && vs[2] < vs[3] && vs[1] < vs[3] );    // should have been sorted by original collision detection
                 
-                if ( point_triangle_collision( m_surface.get_position(vs[0]), m_surface.get_newposition(vs[0]), vs[0],
-                                              m_surface.get_position(vs[1]), m_surface.get_newposition(vs[1]), vs[1],
-                                              m_surface.get_position(vs[2]), m_surface.get_newposition(vs[2]), vs[2],
-                                              m_surface.get_position(vs[3]), m_surface.get_newposition(vs[3]), vs[3],
+                if ( point_triangle_collision( m_surface.get_position(vs[0], ref), m_surface.get_newposition(vs[0], ref), vs[0],
+                                              m_surface.get_position(vs[1], ref), m_surface.get_newposition(vs[1], ref), vs[1],
+                                              m_surface.get_position(vs[2], ref), m_surface.get_newposition(vs[2], ref), vs[2],
+                                              m_surface.get_position(vs[3], ref), m_surface.get_newposition(vs[3], ref), vs[3],
                                               s1, s2, s3,
                                               normal,
                                               rel_disp ) )                                 
@@ -633,6 +634,8 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     Vec3d vcm(0,0,0);
     double mass = 0;
     
+    Vec3d ref = m_surface.get_position(vs[0]);
+
     for(size_t i = 0; i < vs.size(); i++)
     {
         size_t idx = vs[i];
@@ -648,9 +651,9 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
         
         mass += m;
         
-        m_surface.m_velocities[idx] = ( m_surface.get_newposition(idx) - m_surface.get_position(idx) ) / dt;
+        m_surface.m_velocities[idx] = ( m_surface.get_newposition(idx, ref) - m_surface.get_position(idx, ref) ) / dt;
         
-        xcm += m * m_surface.get_position(idx);
+        xcm += m * m_surface.get_position(idx, ref);
         vcm += m * m_surface.m_velocities[idx];
     }
     
@@ -661,8 +664,8 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     {
         for(size_t j = i+1; j < vs.size(); j++)
         {
-            min_dist_t0 = min( min_dist_t0, dist( m_surface.get_position(vs[i]), m_surface.get_position(vs[j]) ) );
-            min_dist_t1 = min( min_dist_t1, dist( m_surface.get_newposition(vs[i]), m_surface.get_newposition(vs[j]) ) );
+            min_dist_t0 = min( min_dist_t0, dist( m_surface.get_position(vs[i], ref), m_surface.get_position(vs[j], ref) ) );
+            min_dist_t1 = min( min_dist_t1, dist( m_surface.get_newposition(vs[i], ref), m_surface.get_newposition(vs[j], ref) ) );
         }
     }
     
@@ -686,7 +689,7 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
         
         assert( m != std::numeric_limits<double>::infinity() );
         
-        Vec3d xdiff = m_surface.get_position(idx) - xcm;
+        Vec3d xdiff = m_surface.get_position(idx, ref) - xcm;
         Vec3d vdiff = m_surface.m_velocities[idx] - vcm;
         
         L += m * cross(xdiff, vdiff);
@@ -706,7 +709,7 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
         
         assert( m != std::numeric_limits<double>::infinity() );
         
-        Vec3d xdiff = m_surface.get_position(idx) - xcm;
+        Vec3d xdiff = m_surface.get_position(idx, ref) - xcm;
         Mat33d tens = outer(-xdiff, xdiff);
         
         double d = mag2(xdiff);
@@ -742,13 +745,13 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     {
         size_t idx = vs[i];
         
-        Vec3d xdiff = m_surface.get_position(idx) - xcm;
+        Vec3d xdiff = m_surface.get_position(idx, ref) - xcm;
         Vec3d xf = dot(xdiff, wnorm) * wnorm;
         Vec3d xr = xdiff - xf;
         
         m_surface.set_newposition( idx, xrigid + xf + cosdtw * xr + cross(sindtww, xr) );
         
-        m_surface.m_velocities[idx] = ( m_surface.get_newposition(idx) - m_surface.get_position(idx) ) / dt;
+        m_surface.m_velocities[idx] = ( m_surface.get_newposition(idx, ref) - m_surface.get_position(idx, ref) ) / dt;
         
         max_velocity_mag = max( max_velocity_mag, mag( m_surface.m_velocities[idx] ) );
         
@@ -759,7 +762,7 @@ bool ImpactZoneSolver::calculate_rigid_motion(double dt, std::vector<size_t>& vs
     {
         for(size_t j = i+1; j < vs.size(); j++)
         {
-            min_dist_t1 = min( min_dist_t1, dist( m_surface.get_newposition(vs[i]), m_surface.get_newposition(vs[j]) ) );
+            min_dist_t1 = min( min_dist_t1, dist( m_surface.get_newposition(vs[i], ref), m_surface.get_newposition(vs[j], ref) ) );
         }
     }
     
