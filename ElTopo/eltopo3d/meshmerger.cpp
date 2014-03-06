@@ -280,7 +280,7 @@ bool MeshMerger::zippering_introduces_collision( const std::vector<Vec3st>& new_
             
             if ( check_triangle_triangle_intersection( new_triangles[i], 
                                                       m_surf.m_mesh.get_triangle(overlapping_triangles[t]), 
-                                                      m_surf.get_positions() ) )
+                                                      &m_surf, false ) )
             {
                 return true;
             }     
@@ -293,7 +293,7 @@ bool MeshMerger::zippering_introduces_collision( const std::vector<Vec3st>& new_
             
             if ( check_triangle_triangle_intersection( new_triangles[i], 
                                                       new_triangles[j], 
-                                                      m_surf.get_positions() ) )
+                                                      &m_surf, false ) )
             {
                 return true;
             }

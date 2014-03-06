@@ -403,7 +403,7 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
 
         assert( tri_j[0] != tri_j[1] );
 
-        if ( check_triangle_triangle_intersection( current_triangle, tri_j, m_surf.get_positions() ) )
+        if ( check_triangle_triangle_intersection( current_triangle, tri_j, &m_surf, false  ) )
         {
           // collision occurs - abort separation
           collision_occurs = true;
@@ -421,7 +421,7 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
       {
         for ( size_t j = i+1; j < triangles_to_add.size(); ++j ) 
         {
-          if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], m_surf.get_positions() ) )
+          if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], &m_surf, false ) )
           {
             // collision occurs - abort separation
             collision_occurs = true;

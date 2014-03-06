@@ -179,7 +179,7 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
                 
                 assert( tri_j[0] != tri_j[1] );
                 
-                if ( check_triangle_triangle_intersection( current_triangle, tri_j, m_surf.get_positions() ) )
+                if ( check_triangle_triangle_intersection( current_triangle, tri_j, &m_surf, false ) )
                 {
                     // collision occurs - abort separation
                     collision_occurs = true;
@@ -197,7 +197,7 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
           {
               for ( size_t j = i+1; j < triangles_to_add.size(); ++j ) 
               {
-                  if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], m_surf.get_positions() ) )
+                  if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], &m_surf, false ) )
                   {
                       // collision occurs - abort separation
                       collision_occurs = true;
