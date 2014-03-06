@@ -777,6 +777,7 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
                     } else
                     {
                         // shouldn't happen
+                        std::cout << "label = " << current_label << "; " << other_label << std::endl;
                         assert(!"Face label inconsistency detected.");
                     }
 
