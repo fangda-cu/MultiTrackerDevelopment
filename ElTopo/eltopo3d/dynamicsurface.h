@@ -1297,8 +1297,9 @@ inline bool check_edge_triangle_intersection_by_index( size_t edge_a,
                                                       size_t edge_b, 
                                                       size_t triangle_a, 
                                                       size_t triangle_b, 
-                                                      size_t triangle_c, 
-                                                      const std::vector<Vec3d>& m_positions, 
+                                                      size_t triangle_c,
+                                                      DynamicSurface * ds,
+                                                      bool usenewpos,
                                                       bool verbose )
 {
     if (    edge_a == triangle_a || edge_a == triangle_b || edge_a == triangle_c 
@@ -1309,11 +1310,25 @@ inline bool check_edge_triangle_intersection_by_index( size_t edge_a,
     
     static const bool DEGEN_COUNTS_AS_INTERSECTION = true;
     
-    return segment_triangle_intersection(m_positions[edge_a], edge_a, m_positions[edge_b], edge_b,
-                                         m_positions[triangle_a], triangle_a, 
-                                         m_positions[triangle_b], triangle_b, 
-                                         m_positions[triangle_c], triangle_c,
-                                         DEGEN_COUNTS_AS_INTERSECTION, verbose);
+    if (usenewpos)
+    {
+        Vec3d ref = ds->get_position(edge_a);
+        segment_triangle_intersection(ds->get_position(edge_a, ref), edge_a,
+                                      ds->get_position(edge_b, ref), edge_b,
+                                      ds->get_position(triangle_a, ref), triangle_a,
+                                      ds->get_position(triangle_b, ref), triangle_b,
+                                      ds->get_position(triangle_c, ref), triangle_c,
+                                      DEGEN_COUNTS_AS_INTERSECTION, verbose);
+    } else
+    {
+        Vec3d ref = ds->get_newposition(edge_a);
+        segment_triangle_intersection(ds->get_newposition(edge_a, ref), edge_a,
+                                      ds->get_newposition(edge_b, ref), edge_b,
+                                      ds->get_newposition(triangle_a, ref), triangle_a,
+                                      ds->get_newposition(triangle_b, ref), triangle_b,
+                                      ds->get_newposition(triangle_c, ref), triangle_c,
+                                      DEGEN_COUNTS_AS_INTERSECTION, verbose);
+    }
     
 }
 
@@ -1326,8 +1341,9 @@ inline bool check_edge_triangle_intersection_by_index( size_t edge_a,
 // --------------------------------------------------------
 
 inline bool check_triangle_triangle_intersection( Vec3st triangle_a, 
-                                                 Vec3st triangle_b, 
-                                                 const std::vector<Vec3d>& positions )
+                                                 Vec3st triangle_b,
+                                                 DynamicSurface * ds,
+                                                 bool usenewpos )
 {
     if ( triangle_a[0] == triangle_a[1] || triangle_b[0] == triangle_b[1] )    
     { 
@@ -1335,43 +1351,43 @@ inline bool check_triangle_triangle_intersection( Vec3st triangle_a,
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_a[0], triangle_a[1], 
-                                                   triangle_b[0], triangle_b[1], triangle_b[2], 
-                                                   positions, false ) )
+                                                   triangle_b[0], triangle_b[1], triangle_b[2],
+                                                   ds, usenewpos, false ) )
     {
         return true;
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_a[1], triangle_a[2], 
                                                    triangle_b[0], triangle_b[1], triangle_b[2], 
-                                                   positions, false ) )
+                                                   ds, usenewpos, false ) )
     {
         return true;
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_a[2], triangle_a[0], 
                                                    triangle_b[0], triangle_b[1], triangle_b[2], 
-                                                   positions, false ) )
+                                                   ds, usenewpos, false ) )
     {
         return true;
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_b[0], triangle_b[1], 
                                                    triangle_a[0], triangle_a[1], triangle_a[2], 
-                                                   positions, false ) )
+                                                   ds, usenewpos, false ) )
     {
         return true;
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_b[1], triangle_b[2], 
                                                    triangle_a[0], triangle_a[1], triangle_a[2], 
-                                                   positions, false ) )
+                                                   ds, usenewpos, false ) )
     {
         return true;
     }
     
     if ( check_edge_triangle_intersection_by_index( triangle_b[2], triangle_b[0], 
                                                    triangle_a[0], triangle_a[1], triangle_a[2], 
-                                                   positions, false ) )
+                                                   ds, usenewpos, false ) )
     {
 		return true;
     }

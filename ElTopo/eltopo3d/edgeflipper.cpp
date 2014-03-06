@@ -36,7 +36,6 @@ extern RunStats g_stats;
 ///
 // --------------------------------------------------------
 
-    //&&&&&&&& collision not included in PBC phase 1
 bool EdgeFlipper::flip_introduces_collision( size_t edge_index, 
                                             const Vec2st& new_edge, 
                                             const Vec3st& new_triangle_a, 
@@ -44,8 +43,8 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
 {  
     
     NonDestructiveTriMesh& m_mesh = m_surf.m_mesh;
-    const std::vector<Vec3d>& xs = m_surf.get_positions();
-    
+    Vec3d ref = m_surf.get_position(m_mesh.m_edges[edge_index][0]);
+   
     if ( !m_surf.m_collision_safety )
     {
         return false;
@@ -55,10 +54,11 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
     
     size_t tet_vertex_indices[4] = { old_edge[0], old_edge[1], new_edge[0], new_edge[1] };
     
-    const Vec3d tet_vertex_positions[4] = { xs[ tet_vertex_indices[0] ], 
-        xs[ tet_vertex_indices[1] ], 
-        xs[ tet_vertex_indices[2] ], 
-        xs[ tet_vertex_indices[3] ] };
+    const Vec3d tet_vertex_positions[4] = {
+        m_surf.get_position(tet_vertex_indices[0], ref),
+        m_surf.get_position(tet_vertex_indices[1], ref),
+        m_surf.get_position(tet_vertex_indices[2], ref),
+        m_surf.get_position(tet_vertex_indices[3], ref) };
     
     Vec3d low, high;
     minmax( tet_vertex_positions[0], tet_vertex_positions[1], tet_vertex_positions[2], tet_vertex_positions[3], low, high );
@@ -75,7 +75,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
             continue;
         }
         
-        if ( point_tetrahedron_intersection( xs[overlapping_vertices[i]], overlapping_vertices[i],
+        if ( point_tetrahedron_intersection( m_surf.get_position(overlapping_vertices[i], ref), overlapping_vertices[i],
                                             tet_vertex_positions[0], tet_vertex_indices[0],
                                             tet_vertex_positions[1], tet_vertex_indices[1],
                                             tet_vertex_positions[2], tet_vertex_indices[2],
@@ -89,7 +89,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
     // Check new triangle A vs existing edges
     //
     
-    minmax( xs[new_triangle_a[0]], xs[new_triangle_a[1]], xs[new_triangle_a[2]], low, high );
+    minmax( m_surf.get_position(new_triangle_a[0], ref), m_surf.get_position(new_triangle_a[1], ref), m_surf.get_position(new_triangle_a[2], ref), low, high );
     std::vector<size_t> overlapping_edges;
     m_surf.m_broad_phase->get_potential_edge_collisions( low, high, true, true, overlapping_edges );
     
@@ -100,7 +100,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
         
         if ( check_edge_triangle_intersection_by_index( edge[0], edge[1], 
                                                        new_triangle_a[0], new_triangle_a[1], new_triangle_a[2], 
-                                                       xs, m_surf.m_verbose ) )
+                                                       &m_surf, false, m_surf.m_verbose ) )
         {
             return true;
         }      
@@ -110,7 +110,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
     // Check new triangle B vs existing edges
     //
     
-    minmax( xs[new_triangle_b[0]], xs[new_triangle_b[1]], xs[new_triangle_b[2]], low, high );
+    minmax( m_surf.get_position(new_triangle_b[0], ref), m_surf.get_position(new_triangle_b[1], ref), m_surf.get_position(new_triangle_b[2], ref), low, high );
     
     overlapping_edges.clear();
     m_surf.m_broad_phase->get_potential_edge_collisions( low, high, true, true, overlapping_edges );
@@ -122,7 +122,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
         
         if ( check_edge_triangle_intersection_by_index( edge[0], edge[1], 
                                                        new_triangle_b[0], new_triangle_b[1], new_triangle_b[2], 
-                                                       xs, m_surf.m_verbose ) )
+                                                       &m_surf, false, m_surf.m_verbose ) )
         {
             return true;
         }      
@@ -132,7 +132,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
     // Check new edge vs existing triangles
     //   
     
-    minmax( xs[new_edge[0]], xs[new_edge[1]], low, high );
+    minmax( m_surf.get_position(new_edge[0], ref), m_surf.get_position(new_edge[1], ref), low, high );
     std::vector<size_t> overlapping_triangles;
     m_surf.m_broad_phase->get_potential_triangle_collisions( low, high, true, true, overlapping_triangles );
     
@@ -142,7 +142,7 @@ bool EdgeFlipper::flip_introduces_collision( size_t edge_index,
         
         if ( check_edge_triangle_intersection_by_index( new_edge[0], new_edge[1],
                                                        tri[0], tri[1], tri[2],
-                                                       xs, m_surf.m_verbose ) )
+                                                       &m_surf, false, m_surf.m_verbose ) )
         {         
             return true;
         }                                              
