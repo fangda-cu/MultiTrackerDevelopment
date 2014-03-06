@@ -43,11 +43,11 @@ namespace ElTopo {
 void MidpointScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
 {
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
-    const std::vector<Vec3d>& positions = surface.get_positions();
     size_t p1_index = mesh.m_edges[edge_index][0];
 	size_t p2_index = mesh.m_edges[edge_index][1];   
+    Vec3d ref = surface.get_position(p1_index);
     
-    new_point = 0.5 * ( positions[ p1_index ] + positions[ p2_index ] );
+    new_point = 0.5 * ( surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref) );
 }
 
 
@@ -60,10 +60,10 @@ void MidpointScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& 
 void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
 {
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
-    const std::vector<Vec3d>& positions = surface.get_positions();
     
     size_t p1_index = mesh.m_edges[edge_index][0];
 	size_t p2_index = mesh.m_edges[edge_index][1];
+    Vec3d ref = surface.get_position(p1_index);
 	
    //Butterfly doesn't support non-manifold scenarios, really.  We revert to midpoint below.
    //Better to straight-up use midpoint, or go with modified butterfly.
@@ -87,7 +87,7 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
 		if ( adj_tris.size() != 2 )
 		{
             // abort! revert to midpoint here.
-			new_point = 0.5 * ( positions[ p1_index ] + positions[ p2_index ] );
+			new_point = 0.5 * ( surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref) );
             return;
 		}
 		
@@ -101,8 +101,8 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
 		}
 	}
     
-	new_point =   8. * positions[ p1_index ] + 8. * positions[ p2_index ] + 2. * positions[ p3_index ] + 2. * positions[ p4_index ]
-    - positions[ q_indices[0] ] - positions[ q_indices[1] ] - positions[ q_indices[2] ] - positions[ q_indices[3] ];
+	new_point =   8. * surface.get_position(p1_index, ref) + 8. * surface.get_position(p2_index, ref) + 2. * surface.get_position(p3_index, ref) + 2. * surface.get_position(p4_index, ref)
+    - surface.get_position(q_indices[0], ref) - surface.get_position(q_indices[1], ref) - surface.get_position(q_indices[2], ref) - surface.get_position(q_indices[3], ref);
     
 	new_point *= 0.0625;
     
@@ -119,11 +119,11 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
 void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
 {
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
-    const std::vector<Vec3d>& positions = surface.get_positions();
     
     size_t v0 = mesh.m_edges[edge_index][0];
     size_t v1 = mesh.m_edges[edge_index][1];
-    
+    Vec3d ref = surface.get_position(v0);
+
     Mat33d Q;
     zero(Q);
     Vec3d b;
@@ -139,8 +139,8 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
         size_t t = mesh.m_vertex_to_triangle_map[v0][i];
         const Vec3d& plane_normal = surface.get_triangle_normal( t );
         Q += outer( plane_normal, plane_normal );
-        b += dot( positions[v0], plane_normal ) * plane_normal;
-        constant_dist.a[0] += dot( plane_normal, positions[v0] ) * dot( plane_normal, positions[v0] );
+        b += dot( surface.get_position(v0, ref), plane_normal ) * plane_normal;
+        constant_dist.a[0] += dot( plane_normal, surface.get_position(v0, ref) ) * dot( plane_normal, surface.get_position(v0, ref) );
         triangles_counted.push_back(t);
     }
     
@@ -161,8 +161,8 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
         {
             const Vec3d& plane_normal = surface.get_triangle_normal( t );
             Q += outer( plane_normal, plane_normal );
-            b += dot( positions[v1], plane_normal ) * plane_normal;
-            constant_dist.a[0] += dot( plane_normal, positions[v1] ) * dot( plane_normal, positions[v1] );
+            b += dot( surface.get_position(v1, ref), plane_normal ) * plane_normal;
+            constant_dist.a[0] += dot( plane_normal, surface.get_position(v1, ref) ) * dot( plane_normal, surface.get_position(v1, ref) );
         }
     }
     
@@ -176,7 +176,7 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
     n(2,0) = normal[2];
     
     // Compute edge midpoint
-    Vec3d midpoint = 0.5 * (positions[v0] + positions[v1]);   
+    Vec3d midpoint = 0.5 * (surface.get_position(v0, ref) + surface.get_position(v1, ref));
     Mat<3,1,double> m;
     m(0,0) = midpoint[0];
     m(1,0) = midpoint[1];
@@ -262,10 +262,10 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 {
    
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
-    const std::vector<Vec3d>& positions = surface.get_positions();
 
     size_t p1_index = mesh.m_edges[edge_index][0];
     size_t p2_index = mesh.m_edges[edge_index][1];
+    Vec3d ref = surface.get_position(p1_index);
 
     new_point = Vec3d(0,0,0);
     Vec2st edge_data = mesh.m_edges[edge_index];
@@ -316,9 +316,9 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                        ++which_tri;
                     
                     size_t third_vert = mesh.get_third_vertex(cur_edge_ind, adj_tris[which_tri]);
-                    Vec3d reflected_point = surface.get_position(cur_edge[0]) +
-                                            surface.get_position(cur_edge[1]) - 
-                                            surface.get_position(third_vert);
+                    Vec3d reflected_point = surface.get_position(cur_edge[0], ref) +
+                                            surface.get_position(cur_edge[1], ref) -
+                                            surface.get_position(third_vert, ref);
                     surround_vert_sum += reflected_point;
                 }
                 else {
@@ -327,13 +327,13 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                         mesh.get_triangle( adj_tris[1] ) : 
                         mesh.get_triangle( adj_tris[0] );
                     size_t vert = mesh.get_third_vertex( cur_edge[0], cur_edge[1], cur_tri );
-                    surround_vert_sum += surface.get_position(vert);
+                    surround_vert_sum += surface.get_position(vert, ref);
                 }
             }
             //Note: this implements the standard w=0 case described in the paper, which avoids the need for the
             //9th and 10th vertices (i.e. the outer ones labeled "d" in figure 3).
-            new_point = alpha * (surface.get_position(p1_index) + surface.get_position(p2_index)) + 
-                        beta * (surface.get_position(p3_index) + surface.get_position(p4_index)) + 
+            new_point = alpha * (surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref)) +
+                        beta * (surface.get_position(p3_index, ref) + surface.get_position(p4_index, ref)) +
                         gamma * (surround_vert_sum);
         }
         else { //both vertices are either: (a) not 6-valence or (b) not incident on boundary/non-manifold/feature edges
@@ -362,7 +362,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                     for(int i = 0; i < cur_valence; ++i) {
                         Vec2st edge_data = mesh.m_edges[cur_edge];
                         size_t nbr_vert = edge_data[0] == cur_vert_index ? edge_data[1] : edge_data[0];
-                        new_point += local_weights[i] * surface.get_position(nbr_vert);
+                        new_point += local_weights[i] * surface.get_position(nbr_vert, ref);
                     
                         //advance to next edge around the vertex, by grabbing the next tri
                         const std::vector<size_t>& edge_to_tris = mesh.m_edge_to_triangle_map[cur_edge];
@@ -389,7 +389,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                     }
                     
                     //add the central vertex too
-                    new_point += local_weights[cur_valence] * surface.get_position(cur_vert_index);
+                    new_point += local_weights[cur_valence] * surface.get_position(cur_vert_index, ref);
                     norm_factor += 1;
                 }
                 else {
@@ -407,7 +407,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
     else if(surface.edge_is_feature(edge_index)) {
        //sharp feature edge - treat as a curve if possible, exactly like the boundary case
 
-       new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
+       new_point = 9.0 / 16.0 *(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
 
        //find the next and previous feature edges, fit a curve, and away you go.
        //if we can't find next/prev feature edges do midpoint subdivision instead.
@@ -421,7 +421,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
              if(!found_next_feature) {
                 //grab the other vertex
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
                 found_next_feature = true;
              } else {
                 found_next_feature = false;
@@ -433,7 +433,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
        //TODO Treat it like a straight line if there isn't another one?
        if(!found_next_feature) {
           //couldn't find another feature-edge, so fail back to midpoint.
-          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
           return;
        }
 
@@ -444,7 +444,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
           if(nbr_edge == edge_index) continue;
           if(surface.edge_is_feature(nbr_edge)){
              size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-             new_point += -1.0/16.0 * surface.get_position(other_vert);
+             new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
              found_next_feature = true;
           } else {
              found_next_feature = false;
@@ -455,7 +455,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
        //TODO Treat it like a straight line if there isn't another one?
        if(!found_next_feature) {
           //couldn't find another feature-edge, so fail back to midpoint.
-          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
           return;
        }
 
@@ -463,7 +463,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
     else if(mesh.is_edge_nonmanifold(edge_index)) {
        //non-manifold edge - treat as a curve if possible, exactly like the boundary case
 
-       new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
+       new_point = 9.0 / 16.0 *(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
 
        //find the next and previous non-manifold edges, fit a curve, and away you go.
        //if this is not just a single smooth curve (i.e. there are > 2 non-manifold edges come out of the
@@ -478,7 +478,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
              if(!found_next_nmf) {
                 //grab the other vertex
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
                 found_next_nmf = true;
              } else {
                 found_next_nmf = false;
@@ -490,7 +490,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
        //TODO Treat it like a straight line if there isn't another one?
        if(!found_next_nmf) {
           //couldn't find another nmf-edge, so fail back to midpoint.
-          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
           return;
        }
        
@@ -501,7 +501,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
           if(nbr_edge == edge_index) continue;
           if(mesh.is_edge_nonmanifold(nbr_edge)){
             size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-            new_point += -1.0/16.0 * surface.get_position(other_vert);
+            new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
             found_next_nmf = true;
           } else {
             found_next_nmf = false;
@@ -512,7 +512,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
        //TODO Treat it like a straight line if there isn't another one?
        if(!found_next_nmf) {
           //couldn't find another nmf-edge, so fail back to midpoint.
-          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
           return;
        }
 
@@ -520,7 +520,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
     else if(mesh.m_is_boundary_edge[edge_index]) { //use the 4 point boundary scheme
         //boundary edge - treat as a curve if possible
         
-        new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
+        new_point = 9.0 / 16.0 *(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
         
         //find the next and previous boundary edges, fit a curve, and away you go.
         //if this is not just a single smooth curve (i.e. there are > 2 boundary edges come out of the
@@ -535,7 +535,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 if(!found_next_nmf) {
                     //grab the other vertex
                     size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                    new_point += -1.0/16.0 * surface.get_position(other_vert);
+                    new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
                     found_next_nmf = true;
                 } else {
                     found_next_nmf = false;
@@ -547,7 +547,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
         //TODO Treat it like a straight line if there isn't another one?
         if(!found_next_nmf) {
             //couldn't find another nmf-edge, so fail back to midpoint.
-            new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+            new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
             return;
         }
         
@@ -558,7 +558,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
             if(nbr_edge == edge_index) continue;
             if(mesh.m_is_boundary_edge[nbr_edge]) {
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                new_point += -1.0/16.0 * surface.get_position(other_vert, ref);
                 found_next_nmf = true;
             } else {
                 found_next_nmf = false;
@@ -569,7 +569,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
         //TODO Treat it like a straight line if there isn't another one?
         if(!found_next_nmf) {
             //couldn't find another nmf-edge, so fail back to midpoint.
-            new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+            new_point = 0.5*(surface.get_position(p1_index, ref) + surface.get_position(p2_index, ref));
             return;
         }
         
