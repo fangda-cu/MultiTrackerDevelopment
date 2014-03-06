@@ -846,19 +846,14 @@ void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
 ///
 // --------------------------------------------------------
 
-void SurfTrack::improve_mesh( )
-{     
-    if (m_mesheventcallback)
-      m_mesheventcallback->log() << "Improve mesh began" << std::endl;
-  
-    if ( m_perform_improvement ) {
-        
+    void SurfTrack::check()
+    {
         //// assert mesh labeling is consistent
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
             if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
                 continue;
-
+            
             Vec2i li = m_mesh.get_triangle_label(i);
             const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
             for (int j = 0; j < 3; j++)
@@ -877,6 +872,7 @@ void SurfTrack::improve_mesh( )
 //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
                     
                     if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
+                    {
                         if (oriented_i != oriented_k)
                         {
                             assert(li[0] == lk[0]);
@@ -886,20 +882,13 @@ void SurfTrack::improve_mesh( )
                             assert(li[1] == lk[0]);
                             assert(li[0] == lk[1]);
                         }
+                    }
                 }
                 
             }
         }
         
-        
-      
-      ////////////////////////////////////////////////////////////
-      
-      //standard mesh improvement pass is gentle, seeks to preserve volume, prevent flips, preserve features, avoid popping.
-      m_aggressive_mode = false;
-
-      int i = 0;
-      
+        // detect tiny area triangles
         double min_triangle_area = -1;
         for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
         {
@@ -912,10 +901,39 @@ void SurfTrack::improve_mesh( )
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area;
         }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
+//        std::cout << "min area = " << min_triangle_area << std::endl;
+        assert(min_triangle_area > 1e-12);
+        
+        // detect long edges that can defeat PBC
+        for (size_t i = 0; i < m_mesh.m_edges.size(); i++)
+        {
+            double l = get_edge_length(i);
+            if (l > 0.25)
+            {
+                std::cout << "long edge: " << i << ": " << m_mesh.m_edges[i][0] << " (" << get_position(m_mesh.m_edges[i][0]) << ") - " << m_mesh.m_edges[i][1] << " (" << get_position(m_mesh.m_edges[i][1], m_mesh.m_edges[i][0]) << ") len = " << l << std::endl;
+//                assert(!"Edge too long for PBC to handle");
+            }
+        }
 
+    }
+    
+    
+void SurfTrack::improve_mesh( )
+{     
+    if (m_mesheventcallback)
+      m_mesheventcallback->log() << "Improve mesh began" << std::endl;
+  
+    if ( m_perform_improvement ) {
+        
+      ////////////////////////////////////////////////////////////
       
+      //standard mesh improvement pass is gentle, seeks to preserve volume, prevent flips, preserve features, avoid popping.
+      m_aggressive_mode = false;
+
+      int i = 0;
+      
+        check();
+        
       // edge splitting
       std::cout << "Splits\n";
       while ( m_splitter.split_pass() ) {
@@ -925,118 +943,16 @@ void SurfTrack::improve_mesh( )
         std::cout << "Splits\n";
       }
       
-        //// assert mesh labeling is consistent
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
-                continue;
-            
-            Vec2i li = m_mesh.get_triangle_label(i);
-            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
-            for (int j = 0; j < 3; j++)
-            {
-                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
-                {
-                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
-                    if (nb == i)
-                        continue;
-                    Vec2i lk = m_mesh.get_triangle_label(nb);
-                    
-                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
-                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-                    
-                    //                    std::cout << "------------------------------" << std::endl;
-                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
-                    
-                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0]);
-                            assert(li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0]);
-                            assert(li[0] == lk[1]);
-                        }
-                }
-                
-            }
-        }
+        check();
         
-        min_triangle_area = -1;
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            const Vec3st & current_triangle = m_mesh.get_triangle(i);
-            if (current_triangle[0] == current_triangle[1])
-                continue;
-            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-            if (area == 0)
-                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-            if (min_triangle_area < 0 || area < min_triangle_area)
-                min_triangle_area = area;
-        }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
-
       // edge flipping
       std::cout << "Flips\n";
       m_flipper.flip_pass();		
       if (m_mesheventcallback)
         m_mesheventcallback->log() << "Flip pass finished" << std::endl;
 
-        //// assert mesh labeling is consistent
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
-                continue;
-            
-            Vec2i li = m_mesh.get_triangle_label(i);
-            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
-            for (int j = 0; j < 3; j++)
-            {
-                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
-                {
-                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
-                    if (nb == i)
-                        continue;
-                    Vec2i lk = m_mesh.get_triangle_label(nb);
-                    
-                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
-                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-                    
-                    //                    std::cout << "------------------------------" << std::endl;
-                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
-                    
-                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0]);
-                            assert(li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0]);
-                            assert(li[0] == lk[1]);
-                        }
-                }
-                
-            }
-        }
+        check();
         
-        min_triangle_area = -1;
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            const Vec3st & current_triangle = m_mesh.get_triangle(i);
-            if (current_triangle[0] == current_triangle[1])
-                continue;
-            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-            if (area == 0)
-                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-            if (min_triangle_area < 0 || area < min_triangle_area)
-                min_triangle_area = area;
-        }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
-      
       // edge collapsing
       i = 0;
       std::cout << "Collapses\n";
@@ -1047,59 +963,8 @@ void SurfTrack::improve_mesh( )
         std::cout << "Collapses\n";
       }
       
-        //// assert mesh labeling is consistent
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
-                continue;
-            
-            Vec2i li = m_mesh.get_triangle_label(i);
-            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
-            for (int j = 0; j < 3; j++)
-            {
-                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
-                {
-                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
-                    if (nb == i)
-                        continue;
-                    Vec2i lk = m_mesh.get_triangle_label(nb);
-                    
-                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
-                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-                    
-                    //                    std::cout << "------------------------------" << std::endl;
-                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
-                    
-                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0]);
-                            assert(li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0]);
-                            assert(li[0] == lk[1]);
-                        }
-                }
-                
-            }
-        }
-
-        min_triangle_area = -1;
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            const Vec3st & current_triangle = m_mesh.get_triangle(i);
-            if (current_triangle[0] == current_triangle[1])
-                continue;
-            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-            if (area == 0)
-                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-            if (min_triangle_area < 0 || area < min_triangle_area)
-                min_triangle_area = area;
-        }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
-
+        check();
+        
       // process t1 transitions (vertex separation)
       i = 0;
         
@@ -1111,59 +976,8 @@ void SurfTrack::improve_mesh( )
          i++;
       }
 
-        //// assert mesh labeling is consistent
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
-                continue;
-            
-            Vec2i li = m_mesh.get_triangle_label(i);
-            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
-            for (int j = 0; j < 3; j++)
-            {
-                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
-                {
-                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
-                    if (nb == i)
-                        continue;
-                    Vec2i lk = m_mesh.get_triangle_label(nb);
-                    
-                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
-                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-                    
-                    //                    std::cout << "------------------------------" << std::endl;
-                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
-                    
-                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0]);
-                            assert(li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0]);
-                            assert(li[0] == lk[1]);
-                        }
-                }
-                
-            }
-        }
-
-        min_triangle_area = -1;
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            const Vec3st & current_triangle = m_mesh.get_triangle(i);
-            if (current_triangle[0] == current_triangle[1])
-                continue;
-            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-            if (area == 0)
-                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-            if (min_triangle_area < 0 || area < min_triangle_area)
-                min_triangle_area = area;
-        }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
-
+        check();
+        
       // smoothing
       if ( m_perform_smoothing)
       {
@@ -1173,58 +987,7 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Smoothing pass finished" << std::endl;
       }
       
-        min_triangle_area = -1;
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            const Vec3st & current_triangle = m_mesh.get_triangle(i);
-            if (current_triangle[0] == current_triangle[1])
-                continue;
-            double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-            if (area == 0)
-                std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-            if (min_triangle_area < 0 || area < min_triangle_area)
-                min_triangle_area = area;
-        }
-        std::cout << "min area = " << min_triangle_area << std::endl;
-        assert(min_triangle_area > 0);
-
-        //// assert mesh labeling is consistent
-        for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-        {
-            if (m_mesh.m_tris[i][0] == m_mesh.m_tris[i][1])
-                continue;
-            
-            Vec2i li = m_mesh.get_triangle_label(i);
-            const Vec3st & edges = m_mesh.m_triangle_to_edge_map[i];
-            for (int j = 0; j < 3; j++)
-            {
-                for (size_t k = 0; k < m_mesh.m_edge_to_triangle_map[edges[j]].size(); k++)
-                {
-                    size_t nb = m_mesh.m_edge_to_triangle_map[edges[j]][k];
-                    if (nb == i)
-                        continue;
-                    Vec2i lk = m_mesh.get_triangle_label(nb);
-                    
-                    bool oriented_i = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[i]);
-                    bool oriented_k = m_mesh.oriented(m_mesh.m_edges[edges[j]][0], m_mesh.m_edges[edges[j]][1], m_mesh.m_tris[nb]);
-                    
-                    //                    std::cout << "------------------------------" << std::endl;
-                    //                    std::cout << "i = " << i << " tris[i] = " << m_mesh.m_tris[i] << " <" << li << ">" << " j = " << j << " edge = " << edges[j] << " (" << m_mesh.m_edges[edges[j]] << ") nnb = " << m_mesh.m_edge_to_triangle_map[edges[j]].size() << " k = " << k << " nb = " << nb << " tris[nb] = " << m_mesh.m_tris[nb] << " <" << lk << "> oriented_i = " << oriented_i << " oriented_k = " << oriented_k << std::endl;
-                    
-                    if (m_mesh.m_edge_to_triangle_map[edges[j]].size() == 2)
-                        if (oriented_i != oriented_k)
-                        {
-                            assert(li[0] == lk[0]);
-                            assert(li[1] == lk[1]);
-                        } else
-                        {
-                            assert(li[1] == lk[0]);
-                            assert(li[0] == lk[1]);
-                        }
-                }
-                
-            }
-        }
+        check();
         
       ////////////////////////////////////////////////////////////
       //enter aggressive improvement mode to improve remaining bad triangles up to minimum bounds, 
@@ -1242,20 +1005,7 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive split pass " << i << " finished" << std::endl;
          
-          min_triangle_area = -1;
-          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-          {
-              const Vec3st & current_triangle = m_mesh.get_triangle(i);
-              if (current_triangle[0] == current_triangle[1])
-                  continue;
-              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-              if (area == 0)
-                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-              if (min_triangle_area < 0 || area < min_triangle_area)
-                  min_triangle_area = area;
-          }
-          std::cout << "min area = " << min_triangle_area << std::endl;
-          assert(min_triangle_area > 0);
+          check();
 
          //switch to delaunay criterion for this, since it is purported to produce better angles for a given vertex set.
          m_flipper.m_use_Delaunay_criterion = true;
@@ -1264,21 +1014,8 @@ void SurfTrack::improve_mesh( )
             m_mesheventcallback->log() << "Aggressive flip pass " << i << " finished" << std::endl;
          m_flipper.m_use_Delaunay_criterion = false; //switch back to valence-based mode
 
-          min_triangle_area = -1;
-          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-          {
-              const Vec3st & current_triangle = m_mesh.get_triangle(i);
-              if (current_triangle[0] == current_triangle[1])
-                  continue;
-              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-              if (area == 0)
-                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-              if (min_triangle_area < 0 || area < min_triangle_area)
-                  min_triangle_area = area;
-          }
-          std::cout << "min area = " << min_triangle_area << std::endl;
-          assert(min_triangle_area > 0);
-
+          check();
+          
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 
             break;
@@ -1287,20 +1024,7 @@ void SurfTrack::improve_mesh( )
          if (m_mesheventcallback)
             m_mesheventcallback->log() << "Aggressive collapse pass " << i << " finished" << std::endl;
 
-          min_triangle_area = -1;
-          for (size_t i = 0; i < m_mesh.m_tris.size(); i++)
-          {
-              const Vec3st & current_triangle = m_mesh.get_triangle(i);
-              if (current_triangle[0] == current_triangle[1])
-                  continue;
-              double area = triangle_area(get_position(current_triangle[0]), get_position(current_triangle[1],current_triangle[0]), get_position(current_triangle[2],current_triangle[0]));
-              if (area == 0)
-                  std::cout << "zero area triangle: " << get_position(current_triangle[0]) << ", " << get_position(current_triangle[1], current_triangle[0]) << ", " << get_position(current_triangle[2], current_triangle[0]) << std::endl;
-              if (min_triangle_area < 0 || area < min_triangle_area)
-                  min_triangle_area = area;
-          }
-          std::cout << "min area = " << min_triangle_area << std::endl;
-          assert(min_triangle_area > 0);
+          check();
           
          //try to cut out early if things have already gotten better.
          if(!any_triangles_with_bad_angles()) 
@@ -1326,6 +1050,8 @@ void SurfTrack::improve_mesh( )
         assert_mesh_is_intersection_free( false );
       }      
     }
+    
+    check();
     
   if (m_mesheventcallback)
     m_mesheventcallback->log() << "Improve mesh finished" << std::endl;

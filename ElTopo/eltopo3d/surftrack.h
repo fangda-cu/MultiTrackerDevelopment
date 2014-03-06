@@ -747,7 +747,10 @@ public:
     ///    
     std::vector<MeshUpdateEvent> m_mesh_change_history;
 
+
     
+    ////
+    void check();
 };
 
 // ---------------------------------------------------------
