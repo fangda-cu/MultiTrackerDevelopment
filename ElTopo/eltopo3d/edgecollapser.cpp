@@ -1107,6 +1107,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (m_surf.m_mesheventcallback)
     m_surf.m_mesheventcallback->collapse(m_surf, edge);
 
+    std::cout << "positions: 1047: " << m_surf.get_position(1047) << " 2375: " << m_surf.get_position(2375, 1047) << " 2574: " << m_surf.get_position(2375, 1047) << std::endl;
     if (m_surf.m_aggressive_mode)
     {
         std::cout << "collapse successful: " << vertex_to_keep << " " << vertex_to_delete << " (" << vertex_new_position << ")" << std::endl;
@@ -1122,7 +1123,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         assert(edge < m_surf.m_mesh.ne());
         for (size_t i = 0; i < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); i++)
             std::cout << "triangle around edge 1047-2375: " << m_surf.m_mesh.m_edge_to_triangle_map[edge][i] << " (" << m_surf.m_mesh.m_tris[m_surf.m_mesh.m_edge_to_triangle_map[edge][i]] << ") <" << m_surf.m_mesh.get_triangle_label(m_surf.m_mesh.m_edge_to_triangle_map[edge][i]) << ">" << std::endl;
-        
+
+        std::cout << "positions: 1047: " << m_surf.get_position(1047) << " 2375: " << m_surf.get_position(2375, 1047) << " 2574: " << m_surf.get_position(2375, 1047) << " 259: " << m_surf.get_position(259, 1047) << std::endl;
     }
     
     if (m_surf.m_aggressive_mode)
