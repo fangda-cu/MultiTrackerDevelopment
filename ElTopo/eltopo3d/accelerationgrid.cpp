@@ -228,14 +228,14 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
         {
            for(cur_index[0] = xmini[0]; cur_index[0] <= xmaxi[0]; cur_index[0]++)
            {
-                std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                std::vector<size_t>*& cell = m_cells((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk);
                 if(!cell) {
                     cell = new std::vector<size_t>();
                     cell->reserve(10);
                 }
                 
                 cell->push_back(idx);
-                m_elementidxs[idx].push_back(Vec3st(cur_index));
+                m_elementidxs[idx].push_back(Vec3st((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk));
             }
         }
     }
@@ -355,7 +355,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                if(in_new) //in new set 
                {
                   if(!in_old) { //not in old, we need to add it
-                     std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                     std::vector<size_t>*& cell = m_cells((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk);
                      if(!cell) {
                         cell = new std::vector<size_t>();
                         cell->reserve(10);
@@ -367,7 +367,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                   //else: in both new and old, so we don't need to change anything!
                }
                else if(in_old) {//not in new set, but it is in the old set; must delete it
-                  std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+                  std::vector<size_t>*& cell = m_cells((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk);
 
                   //erase the index of the element in the cell
                   std::vector<size_t>::iterator it = cell->begin();
@@ -420,7 +420,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
          {
             for(cur_index[0] = xmini[0]; cur_index[0] <= xmaxi[0]; cur_index[0]++)
             {
-               std::vector<size_t>*& cell = m_cells(cur_index[0], cur_index[1], cur_index[2]);
+               std::vector<size_t>*& cell = m_cells((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk);
                if(!cell) {
                   cell = new std::vector<size_t>();
                   cell->reserve(10);
@@ -500,7 +500,7 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
          for(int i = xmini[0]; i <= xmaxi[0]; ++i)
          {
 
-                std::vector<size_t>* cell = m_cells((i % m_cells.ni), (j % m_cells.nj), (k % m_cells.nk));
+                std::vector<size_t>* cell = m_cells((i + m_cells.ni * 2) % m_cells.ni, (j + m_cells.nj * 2) % m_cells.nj, (k + m_cells.nk * 2) % m_cells.nk);
                 
                 if(cell)
                 {
