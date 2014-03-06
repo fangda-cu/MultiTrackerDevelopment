@@ -156,14 +156,14 @@ void AccelerationGrid::boundstoindices(const Vec3d& xmin, const Vec3d& xmax, Vec
    xmaxi[0] = (int) std::floor((xmax[0] - m_gridxmin[0]) * m_invcellsize[0]);
    xmaxi[1] = (int) std::floor((xmax[1] - m_gridxmin[1]) * m_invcellsize[1]);
    xmaxi[2] = (int) std::floor((xmax[2] - m_gridxmin[2]) * m_invcellsize[2]);
-      
-   if(xmini[0] < 0) xmini[0] = 0;
-   if(xmini[1] < 0) xmini[1] = 0;
-   if(xmini[2] < 0) xmini[2] = 0;
-   
-   if(xmaxi[0] >= m_cells.ni) xmaxi[0] = m_cells.ni-1;
-   if(xmaxi[1] >= m_cells.nj) xmaxi[1] = m_cells.nj-1;
-   if(xmaxi[2] >= m_cells.nk) xmaxi[2] = m_cells.nk-1;
+
+//   if(xmini[0] < 0) xmini[0] = 0;
+//   if(xmini[1] < 0) xmini[1] = 0;
+//   if(xmini[2] < 0) xmini[2] = 0;
+//   
+//   if(xmaxi[0] >= m_cells.ni) xmaxi[0] = m_cells.ni-1;
+//   if(xmaxi[1] >= m_cells.nj) xmaxi[1] = m_cells.nj-1;
+//   if(xmaxi[2] >= m_cells.nk) xmaxi[2] = m_cells.nk-1;
 }
 
 // --------------------------------------------------------
@@ -300,7 +300,7 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
       {
          for(int k = xmini[2]; k <= xmaxi[2]; ++k)
          {
-            std::vector<unsigned int>* cell = m_cells(i, j, k);
+            std::vector<unsigned int>* cell = m_cells((i % m_cells.ni), (j % m_cells.nj), (k % m_cells.nk));
             
             if(cell)
             {
@@ -319,13 +319,22 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
                   
                      const Vec3d& oxmin = m_elementxmins[oidx];
                      const Vec3d& oxmax = m_elementxmaxs[oidx];
+
+                     bool overlap = false;
+                     for (int dx = -1; dx <= 1; dx++)
+                        for (int dy = -1; dy <= 1; dy++)
+                           for (int dz = -1; dz <= 1; dz++)
+                           {
+                              if( (xmin[0] <= oxmax[0] + dx && xmin[1] <= oxmax[1] + dy && xmin[2] <= oxmax[2] + dz) &&
+                                  (xmax[0] >= oxmin[0] + dx && xmax[1] >= oxmin[1] + dy && xmax[2] >= oxmin[2] + dz) )
+                              {
+                                 assert(!overlap);
+                                 overlap = true;
+                              }
+                           }
                      
-                     if( (xmin[0] <= oxmax[0] && xmin[1] <= oxmax[1] && xmin[2] <= oxmax[2]) &&
-                         (xmax[0] >= oxmin[0] && xmax[1] >= oxmin[1] && xmax[2] >= oxmin[2]) )
-                     {
+                     if (overlap)
                         results.push_back(oidx);
-                     }
-                  
                   }
                }
             }
