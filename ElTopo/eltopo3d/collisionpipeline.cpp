@@ -215,10 +215,12 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     // friction not implemented
     assert(m_friction_coefficient == 0);
     
-    m_surface.set_newposition( e0, m_surface.get_position(e0) + dt * m_surface.m_velocities[e0] );
-    m_surface.set_newposition( e1, m_surface.get_position(e1) + dt * m_surface.m_velocities[e1] );
-    m_surface.set_newposition( e2, m_surface.get_position(e2) + dt * m_surface.m_velocities[e2] );
-    m_surface.set_newposition( e3, m_surface.get_position(e3) + dt * m_surface.m_velocities[e3] );
+    Vec3d ref = m_surface.get_position(e0);
+    
+    m_surface.set_newposition( e0, m_surface.get_position(e0, ref) + dt * m_surface.m_velocities[e0] );
+    m_surface.set_newposition( e1, m_surface.get_position(e1, ref) + dt * m_surface.m_velocities[e1] );
+    m_surface.set_newposition( e2, m_surface.get_position(e2, ref) + dt * m_surface.m_velocities[e2] );
+    m_surface.set_newposition( e3, m_surface.get_position(e3, ref) + dt * m_surface.m_velocities[e3] );
     
 }
 
@@ -414,7 +416,8 @@ void CollisionPipeline::process_proximity_candidates( double dt,
             
             Vec2st e0 = m_surface.m_mesh.m_edges[candidate[0]];
             Vec2st e1 = m_surface.m_mesh.m_edges[candidate[1]];
-            
+            Vec3d ref = m_surface.get_position(e0[0]);
+
             if (e0[0] == e0[1]) { continue; }
             if (e1[0] == e1[1]) { continue; }
             
@@ -423,10 +426,10 @@ void CollisionPipeline::process_proximity_candidates( double dt,
                 double distance, s0, s2;
                 Vec3d normal;
                 
-                check_edge_edge_proximity(m_surface.get_position( e0[0] ), 
-                                          m_surface.get_position( e0[1] ), 
-                                          m_surface.get_position( e1[0] ), 
-                                          m_surface.get_position( e1[1] ),
+                check_edge_edge_proximity(m_surface.get_position( e0[0], ref ),
+                                          m_surface.get_position( e0[1], ref ),
+                                          m_surface.get_position( e1[0], ref ),
+                                          m_surface.get_position( e1[1], ref ),
                                           distance, s0, s2, normal );
                 
                 if (distance < m_surface.m_proximity_epsilon)
@@ -438,10 +441,10 @@ void CollisionPipeline::process_proximity_candidates( double dt,
                                         s2 * m_surface.m_velocities[e1[0]] -
                                         (1.0 - s2) * m_surface.m_velocities[e1[1]] );
                     
-                    Vec3d diff = s0 * m_surface.get_position(e0[0]) + 
-                    (1.0 - s0) * m_surface.get_position(e0[1]) - 
-                    s2 * m_surface.get_position(e1[0]) - 
-                    (1.0 - s2) * m_surface.get_position(e1[1]);
+                    Vec3d diff = s0 * m_surface.get_position(e0[0], ref) +
+                         (1.0 - s0) * m_surface.get_position(e0[1], ref) -
+                                 s2 * m_surface.get_position(e1[0], ref) -
+                         (1.0 - s2) * m_surface.get_position(e1[1], ref);
                     
                     if ( dot( normal, diff ) < 0.0 )
                     {
@@ -480,16 +483,17 @@ void CollisionPipeline::process_proximity_candidates( double dt,
             size_t t = candidate[0];
             const Vec3st& tri = m_surface.m_mesh.get_triangle(t);
             size_t v = candidate[1];
+            Vec3d ref = m_surface.get_position(v);
             
             if ( tri[0] != v && tri[1] != v && tri[2] != v )
             {
                 double distance, s1, s2, s3;
                 Vec3d normal;
                 
-                check_point_triangle_proximity( m_surface.get_position(v), 
-                                               m_surface.get_position(tri[0]),
-                                               m_surface.get_position(tri[1]),
-                                               m_surface.get_position(tri[2]),
+                check_point_triangle_proximity( m_surface.get_position(v, ref),
+                                               m_surface.get_position(tri[0], ref),
+                                               m_surface.get_position(tri[1], ref),
+                                               m_surface.get_position(tri[2], ref),
                                                distance, s1, s2, s3, normal );
                 
                 if (distance == 0)
@@ -498,10 +502,10 @@ void CollisionPipeline::process_proximity_candidates( double dt,
                     ElTopo::Vec3d normal;
                     double rel_disp;
                     
-                    ElTopo::Vec3d a = m_surface.get_position(tri[0]);
-                    ElTopo::Vec3d b = m_surface.get_position(tri[1]);
-                    ElTopo::Vec3d c = m_surface.get_position(tri[2]);
-                    ElTopo::Vec3d d = m_surface.get_position(v);
+                    ElTopo::Vec3d a = m_surface.get_position(tri[0], ref);
+                    ElTopo::Vec3d b = m_surface.get_position(tri[1], ref);
+                    ElTopo::Vec3d c = m_surface.get_position(tri[2], ref);
+                    ElTopo::Vec3d d = m_surface.get_position(v, ref);
                     bool col = ElTopo::point_triangle_collision(d, d, 0, a, a, 1, b, b, 2, c, c, 3, s1, s2, s3, normal, rel_disp);
                     std::cout << "collision = " << col << std::endl;
                     std::cout << "s = " << s1 << " " << s2 << " " << s3 << std::endl;
@@ -528,10 +532,10 @@ void CollisionPipeline::process_proximity_candidates( double dt,
                                          s2 * m_surface.m_velocities[tri[1]] +
                                          s3 * m_surface.m_velocities[tri[2]] ) );
                     
-                    Vec3d diff = m_surface.get_position(v) -
-                    ( s1 * m_surface.get_position(tri[0]) +
-                     s2 * m_surface.get_position(tri[1]) +
-                     s3 * m_surface.get_position(tri[2]) );
+                    Vec3d diff = m_surface.get_position(v, ref) -
+                    ( s1 * m_surface.get_position(tri[0], ref) +
+                     s2 * m_surface.get_position(tri[1], ref) +
+                     s3 * m_surface.get_position(tri[2], ref) );
                     
                     if ( dot( normal, diff ) < 0.0 )
                     {
@@ -694,6 +698,7 @@ bool CollisionPipeline::detect_segment_segment_collision( const Vec3st& candidat
     
     Vec2st e0 = m_surface.m_mesh.m_edges[candidate[0]];
     Vec2st e1 = m_surface.m_mesh.m_edges[candidate[1]];
+    Vec3d ref = m_surface.get_position(e0[0]);
     
     if (e0[0] == e0[1]) { return false; }
     if (e1[0] == e1[1]) { return false; }
@@ -720,10 +725,10 @@ bool CollisionPipeline::detect_segment_segment_collision( const Vec3st& candidat
     size_t c = e1[0];
     size_t d = e1[1];
     
-    if (segment_segment_collision(m_surface.get_position(a), m_surface.get_newposition(a), a, 
-                                  m_surface.get_position(b), m_surface.get_newposition(b), b, 
-                                  m_surface.get_position(c), m_surface.get_newposition(c), c,
-                                  m_surface.get_position(d), m_surface.get_newposition(d), d, 
+    if (segment_segment_collision(m_surface.get_position(a, ref), m_surface.get_newposition(a, ref), a,
+                                  m_surface.get_position(b, ref), m_surface.get_newposition(b, ref), b,
+                                  m_surface.get_position(c, ref), m_surface.get_newposition(c, ref), c,
+                                  m_surface.get_position(d, ref), m_surface.get_newposition(d, ref), d,
                                   s0, s2, normal, rel_disp) )
     {
         collision = Collision( true, Vec4st( a,b,c,d ), normal, Vec4d( s0, (1-s0), s2, (1-s2) ), rel_disp );         
@@ -748,7 +753,8 @@ bool CollisionPipeline::detect_point_triangle_collision( const Vec3st& candidate
     size_t t = candidate[0];
     const Vec3st& tri = m_surface.m_mesh.get_triangle( candidate[0] );
     size_t v = candidate[1];
-    
+    Vec3d ref = m_surface.get_position(v);
+
     if ( tri[0] == v || tri[1] == v || tri[2] == v )
     {
         return false;
@@ -764,10 +770,10 @@ bool CollisionPipeline::detect_point_triangle_collision( const Vec3st& candidate
     Vec3d normal;
     Vec3st sorted_tri = sort_triangle(tri);
     
-    if ( point_triangle_collision(m_surface.get_position(v), m_surface.get_newposition(v), v,
-                                  m_surface.get_position(sorted_tri[0]), m_surface.get_newposition(sorted_tri[0]), sorted_tri[0],
-                                  m_surface.get_position(sorted_tri[1]), m_surface.get_newposition(sorted_tri[1]), sorted_tri[1],
-                                  m_surface.get_position(sorted_tri[2]), m_surface.get_newposition(sorted_tri[2]), sorted_tri[2],
+    if ( point_triangle_collision(m_surface.get_position(v, ref), m_surface.get_newposition(v, ref), v,
+                                  m_surface.get_position(sorted_tri[0], ref), m_surface.get_newposition(sorted_tri[0], ref), sorted_tri[0],
+                                  m_surface.get_position(sorted_tri[1], ref), m_surface.get_newposition(sorted_tri[1], ref), sorted_tri[1],
+                                  m_surface.get_position(sorted_tri[2], ref), m_surface.get_newposition(sorted_tri[2], ref), sorted_tri[2],
                                   s1, s2, s3, normal, rel_disp) )
         
     {
@@ -1423,15 +1429,16 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     double s0, s1, s2, s3, rel_disp;
     Vec3d normal;
     
-    
+    Vec3d ref = m_surface.get_position(e0);
+
     simplex_verbose = true;
     
     // edge vs triangle edge 0
     
-    if (segment_segment_collision(m_surface.get_position(e0), m_surface.get_newposition(e0), e0,
-                                  m_surface.get_position(e1), m_surface.get_newposition(e1), e1,
-                                  m_surface.get_position(t0), m_surface.get_newposition(t0), t0,
-                                  m_surface.get_position(t1), m_surface.get_newposition(t1), t1,
+    if (segment_segment_collision(m_surface.get_position(e0, ref), m_surface.get_newposition(e0, ref), e0,
+                                  m_surface.get_position(e1, ref), m_surface.get_newposition(e1, ref), e1,
+                                  m_surface.get_position(t0, ref), m_surface.get_newposition(t0, ref), t0,
+                                  m_surface.get_position(t1, ref), m_surface.get_newposition(t1, ref), t1,
                                   s0, s2, normal, rel_disp) )
         
     {      
@@ -1449,10 +1456,10 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     
     // edge vs triangle edge 1
     
-    if (segment_segment_collision(m_surface.get_position(e0), m_surface.get_newposition(e0), e0,
-                                  m_surface.get_position(e1), m_surface.get_newposition(e1), e1,
-                                  m_surface.get_position(t1), m_surface.get_newposition(t1), t1,
-                                  m_surface.get_position(t2), m_surface.get_newposition(t2), t2,
+    if (segment_segment_collision(m_surface.get_position(e0, ref), m_surface.get_newposition(e0, ref), e0,
+                                  m_surface.get_position(e1, ref), m_surface.get_newposition(e1, ref), e1,
+                                  m_surface.get_position(t1, ref), m_surface.get_newposition(t1, ref), t1,
+                                  m_surface.get_position(t2, ref), m_surface.get_newposition(t2, ref), t2,
                                   s0, s2, normal, rel_disp) )
         
     {      
@@ -1472,10 +1479,10 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     // edge vs triangle edge 2
     
     
-    if (segment_segment_collision(m_surface.get_position(e0), m_surface.get_newposition(e0), e0,
-                                  m_surface.get_position(e1), m_surface.get_newposition(e1), e1,
-                                  m_surface.get_position(t0), m_surface.get_newposition(t0), t0,
-                                  m_surface.get_position(t2), m_surface.get_newposition(t2), t2,
+    if (segment_segment_collision(m_surface.get_position(e0, ref), m_surface.get_newposition(e0, ref), e0,
+                                  m_surface.get_position(e1, ref), m_surface.get_newposition(e1, ref), e1,
+                                  m_surface.get_position(t0, ref), m_surface.get_newposition(t0, ref), t0,
+                                  m_surface.get_position(t2, ref), m_surface.get_newposition(t2, ref), t2,
                                   s0, s2, normal, rel_disp) )
         
     {      
@@ -1493,10 +1500,10 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     
     // edge point 0 vs triangle
     
-    if ( point_triangle_collision(m_surface.get_position(e0), m_surface.get_newposition(e0), e0,
-                                  m_surface.get_position(t0), m_surface.get_newposition(t0), t0,
-                                  m_surface.get_position(t1), m_surface.get_newposition(t1), t1,
-                                  m_surface.get_position(t2), m_surface.get_newposition(t2), t2,
+    if ( point_triangle_collision(m_surface.get_position(e0, ref), m_surface.get_newposition(e0, ref), e0,
+                                  m_surface.get_position(t0, ref), m_surface.get_newposition(t0, ref), t0,
+                                  m_surface.get_position(t1, ref), m_surface.get_newposition(t1, ref), t1,
+                                  m_surface.get_position(t2, ref), m_surface.get_newposition(t2, ref), t2,
                                   s1, s2, s3, normal, rel_disp) )
     {
         Collision new_collision( false, Vec4st( e0, t0, t1, t2 ), normal, Vec4d( 1.0, s1, s2, s3 ), rel_disp );
@@ -1505,10 +1512,10 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     
     // edge point 1 vs triangle
     
-    if ( point_triangle_collision(m_surface.get_position(e1), m_surface.get_newposition(e1), e1,
-                                  m_surface.get_position(t0), m_surface.get_newposition(t0), t0,
-                                  m_surface.get_position(t1), m_surface.get_newposition(t1), t1,
-                                  m_surface.get_position(t2), m_surface.get_newposition(t2), t2,
+    if ( point_triangle_collision(m_surface.get_position(e1, ref), m_surface.get_newposition(e1, ref), e1,
+                                  m_surface.get_position(t0, ref), m_surface.get_newposition(t0, ref), t0,
+                                  m_surface.get_position(t1, ref), m_surface.get_newposition(t1, ref), t1,
+                                  m_surface.get_position(t2, ref), m_surface.get_newposition(t2, ref), t2,
                                   s1, s2, s3, normal, rel_disp) )
     {
         Collision new_collision( false, Vec4st( e1, t0, t1, t2 ), normal, Vec4d( 1.0, s1, s2, s3 ), rel_disp );
@@ -1617,22 +1624,23 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
 bool CollisionPipeline::check_if_collision_persists( const Collision& collision )
 {
     const Vec4st& vs = collision.m_vertex_indices;
-    
+    Vec3d ref = m_surface.get_position(vs[0]);
+
     
     if ( collision.m_is_edge_edge )
     {
-        return segment_segment_collision( m_surface.get_position(vs[0]), m_surface.get_newposition(vs[0]), vs[0], 
-                                         m_surface.get_position(vs[1]), m_surface.get_newposition(vs[1]), vs[1], 
-                                         m_surface.get_position(vs[2]), m_surface.get_newposition(vs[2]), vs[2],
-                                         m_surface.get_position(vs[3]), m_surface.get_newposition(vs[3]), vs[3] ); 
+        return segment_segment_collision( m_surface.get_position(vs[0], ref), m_surface.get_newposition(vs[0], ref), vs[0],
+                                         m_surface.get_position(vs[1], ref), m_surface.get_newposition(vs[1], ref), vs[1],
+                                         m_surface.get_position(vs[2], ref), m_surface.get_newposition(vs[2], ref), vs[2],
+                                         m_surface.get_position(vs[3], ref), m_surface.get_newposition(vs[3], ref), vs[3] );
         
     }
     else
     {
-        return point_triangle_collision( m_surface.get_position(vs[0]), m_surface.get_newposition(vs[0]), vs[0], 
-                                        m_surface.get_position(vs[1]), m_surface.get_newposition(vs[1]), vs[1], 
-                                        m_surface.get_position(vs[2]), m_surface.get_newposition(vs[2]), vs[2],
-                                        m_surface.get_position(vs[3]), m_surface.get_newposition(vs[3]), vs[3] ); 
+        return point_triangle_collision( m_surface.get_position(vs[0], ref), m_surface.get_newposition(vs[0], ref), vs[0],
+                                        m_surface.get_position(vs[1], ref), m_surface.get_newposition(vs[1], ref), vs[1],
+                                        m_surface.get_position(vs[2], ref), m_surface.get_newposition(vs[2], ref), vs[2],
+                                        m_surface.get_position(vs[3], ref), m_surface.get_newposition(vs[3], ref), vs[3] );
         
     }
     
