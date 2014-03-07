@@ -19,6 +19,7 @@
 #include <vec.h>
 #include <vector>
 #include <wallclocktime.h>
+#include <dynamicsurface.h>
 
 // ---------------------------------------------------------
 // Global externs
@@ -527,8 +528,8 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
                                 for (int dy = -2; dy <= 2; dy++)
                                     for (int dz = -2; dz <= 2; dz++)
                                     {
-                                        if((xmin[0] <= oxmax[0] && xmin[1] <= oxmax[1] && xmin[2] <= oxmax[2]) &&
-                                           (xmax[0] >= oxmin[0] && xmax[1] >= oxmin[1] && xmax[2] >= oxmin[2]) )
+                                        if((xmin[0] <= oxmax[0] + dx * PBC_DOMAIN_SIZE_X && xmin[1] <= oxmax[1] + dy * PBC_DOMAIN_SIZE_Y && xmin[2] <= oxmax[2] + dz * PBC_DOMAIN_SIZE_Z) &&
+                                           (xmax[0] >= oxmin[0] + dx * PBC_DOMAIN_SIZE_X && xmax[1] >= oxmin[1] + dy * PBC_DOMAIN_SIZE_Y && xmax[2] >= oxmin[2] + dz * PBC_DOMAIN_SIZE_Z) )
                                         {
                                             assert(!overlap);
                                             overlap = true;
