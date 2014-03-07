@@ -375,7 +375,7 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, const Vec3d& new
     
     if ( m_collision_safety )
     {
-        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) ); //&&&&&& collision not included in PBC phase 1
+        m_broad_phase->add_vertex( new_vertex_index, get_position(new_vertex_index), get_position(new_vertex_index), vertex_is_all_solid(new_vertex_index) );
     }
     
     return new_vertex_index;
@@ -616,8 +616,8 @@ bool SurfTrack::triangle_with_bad_angle(size_t i)
    assert(tri[0] != tri[1] && tri[1] != tri[2] && tri[0] != tri[2]);
 
    Vec3d v0 = get_position(tri[0]);
-   Vec3d v1 = get_position(tri[1]);
-   Vec3d v2 = get_position(tri[2]);
+   Vec3d v1 = get_position(tri[1], tri[0]);
+   Vec3d v2 = get_position(tri[2], tri[0]);
    
    double min_angle = min_triangle_angle(v0,v1,v2);
    double max_angle = max_triangle_angle(v0,v1,v2);
@@ -1243,6 +1243,8 @@ double SurfTrack::get_largest_dihedral(size_t edge) const
 
 bool SurfTrack::vertex_feature_is_smooth_ridge(size_t vertex) const
 {
+    Vec3d ref = get_position(vertex);
+    
     std::vector<size_t> feature_edges;
     for (size_t i = 0; i < m_mesh.m_vertex_to_edge_map[vertex].size(); i++)
         if (edge_is_feature(m_mesh.m_vertex_to_edge_map[vertex][i]))
@@ -1254,9 +1256,9 @@ bool SurfTrack::vertex_feature_is_smooth_ridge(size_t vertex) const
     const Vec2st & e0 = m_mesh.m_edges[feature_edges[0]];
     const Vec2st & e1 = m_mesh.m_edges[feature_edges[1]];
     
-    Vec3d t0 = get_position(e0[0]) - get_position(e0[1]);
+    Vec3d t0 = get_position(e0[0], ref) - get_position(e0[1], ref);
     t0 /= mag(t0);
-    Vec3d t1 = get_position(e1[0]) - get_position(e1[1]);
+    Vec3d t1 = get_position(e1[0], ref) - get_position(e1[1], ref);
     t1 /= mag(t1);
     
     // adjust for orientation
