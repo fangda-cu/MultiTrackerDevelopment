@@ -990,10 +990,8 @@ void DynamicSurface::vertex_continuous_bounds(size_t v, Vec3d &xmin, Vec3d &xmax
     {
         Vec3d ref = get_position(v);
         minmax( get_position(v, ref), get_newposition(v, ref), xmin, xmax);
-        std::cout << "vcb1: " << xmin << " " << xmax << "; " << ref << "; " << get_position(v) << "; " << get_position(v, ref) << "; " << get_newposition(v) << "; " << get_newposition(v, ref) << std::endl;
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
-        std::cout << "vcb2: " << xmin << " " << xmax << std::endl;
     }
 }
 
