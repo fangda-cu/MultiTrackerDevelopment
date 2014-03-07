@@ -62,13 +62,13 @@ bool EdgeSplitter::split_edge_edge_collision( size_t neighbour_index,
     
     if ( neighbour_index == edge_vertex_0 || neighbour_index == edge_vertex_1 )  { return false; }
     
-    const std::vector<Vec3d>& x = m_surf.get_positions();
+    const Vec3d & ref = new_vertex_position;
     
     double t_zero_distance; 
-    check_edge_edge_proximity( new_vertex_position, 
-                              x[ neighbour_index ], 
-                              x[ edge_vertex_0 ], 
-                              x[ edge_vertex_1 ],
+    check_edge_edge_proximity(m_surf.get_position(new_vertex_position, ref),
+                              m_surf.get_position(neighbour_index, ref),
+                              m_surf.get_position(edge_vertex_0, ref),
+                              m_surf.get_position(edge_vertex_1, ref),
                               t_zero_distance );
     
     if ( t_zero_distance < m_surf.m_improve_collision_epsilon )
@@ -78,10 +78,10 @@ bool EdgeSplitter::split_edge_edge_collision( size_t neighbour_index,
     
     if ( edge_vertex_1 < edge_vertex_0 ) { swap( edge_vertex_0, edge_vertex_1 ); }
     
-    if ( segment_segment_collision(x[ neighbour_index ], x[ neighbour_index ], neighbour_index,
-                                   new_vertex_position, new_vertex_smooth_position, dummy_index,
-                                   x[ edge_vertex_0 ], x[ edge_vertex_0 ], edge_vertex_0,
-                                   x[ edge_vertex_1 ], x[ edge_vertex_1 ], edge_vertex_1 ) )    // FD 20130113: Why don't use get_newpositions() for the edge? Is it okay to assume the edge vertices don't move? If operations like collapsing has been performed around this edge, its vertices may have moved (newposition != position).
+    if ( segment_segment_collision(m_surf.get_position(neighbour_index, ref),       m_surf.get_position(neighbour_index, ref), neighbour_index,
+                                   m_surf.get_position(new_vertex_position, ref),   m_surf.get_position(new_vertex_smooth_position, ref), dummy_index,
+                                   m_surf.get_position(edge_vertex_0, ref),         m_surf.get_position(edge_vertex_0, ref), edge_vertex_0,
+                                   m_surf.get_position(edge_vertex_1, ref),         m_surf.get_position(edge_vertex_1, ref), edge_vertex_1 ) )
         
     {      
         return true;
@@ -110,6 +110,8 @@ bool EdgeSplitter::split_triangle_vertex_collision( const Vec3st& triangle_indic
         return false;
     }
     
+    const Vec3d & ref = new_vertex_position;
+
     Vec3st sorted_triangle = sort_triangle( triangle_indices );
     
     Vec3d tri_positions[3];
@@ -124,8 +126,8 @@ bool EdgeSplitter::split_triangle_vertex_collision( const Vec3st& triangle_indic
         }
         else
         {
-            tri_positions[i] = m_surf.get_position( sorted_triangle[i] );
-            tri_smooth_positions[i] = m_surf.get_position( sorted_triangle[i] );
+            tri_positions[i] = m_surf.get_position( sorted_triangle[i], ref );
+            tri_smooth_positions[i] = m_surf.get_position( sorted_triangle[i], ref );
         }
     }
     
@@ -173,7 +175,8 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 {
 
   NonDestructiveTriMesh& m_mesh = m_surf.m_mesh;
-
+  const Vec3d & ref = new_vertex_position;
+    
   if ( !m_surf.m_collision_safety)
   {
     return false;
@@ -186,7 +189,7 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
   {
 
     Vec3d aabb_low, aabb_high;
-    minmax( new_vertex_position, new_vertex_smooth_position, aabb_low, aabb_high );
+    minmax( m_surf.get_position(new_vertex_position, ref), m_surf.get_position(new_vertex_smooth_position, ref), aabb_low, aabb_high );
 
     aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
     aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -215,11 +218,11 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 
       double t_zero_distance;
 
-      check_point_triangle_proximity( new_vertex_position, 
-        m_surf.get_position( triangle_vertex_0 ),
-        m_surf.get_position( triangle_vertex_1 ),
-        m_surf.get_position( triangle_vertex_2 ),
-        t_zero_distance );
+      check_point_triangle_proximity(   m_surf.get_position(new_vertex_position, ref),
+                                        m_surf.get_position( triangle_vertex_0, ref ),
+                                        m_surf.get_position( triangle_vertex_1, ref ),
+                                        m_surf.get_position( triangle_vertex_2, ref ),
+                                        t_zero_distance );
 
       size_t dummy_index = m_surf.get_num_vertices();
 
@@ -231,10 +234,10 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
       Vec3st sorted_triangle = sort_triangle( Vec3st( triangle_vertex_0, triangle_vertex_1, triangle_vertex_2 ) );
 
 
-      if ( point_triangle_collision(  new_vertex_position, new_vertex_smooth_position, dummy_index,
-        m_surf.get_position( sorted_triangle[0] ), m_surf.get_position( sorted_triangle[0] ), sorted_triangle[0],
-        m_surf.get_position( sorted_triangle[1] ), m_surf.get_position( sorted_triangle[1] ), sorted_triangle[1],
-        m_surf.get_position( sorted_triangle[2] ), m_surf.get_position( sorted_triangle[2] ), sorted_triangle[2] ) )
+      if ( point_triangle_collision(    m_surf.get_position(new_vertex_position, ref),  m_surf.get_position(new_vertex_smooth_position, ref), dummy_index,
+                                        m_surf.get_position( sorted_triangle[0], ref ), m_surf.get_position( sorted_triangle[0], ref ), sorted_triangle[0],
+                                        m_surf.get_position( sorted_triangle[1], ref ), m_surf.get_position( sorted_triangle[1], ref ), sorted_triangle[1],
+                                        m_surf.get_position( sorted_triangle[2], ref ), m_surf.get_position( sorted_triangle[2], ref ), sorted_triangle[2] ) )
 
       {
         return true;
@@ -252,11 +255,11 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
     Vec3d edge_aabb_low, edge_aabb_high;
 
     // do one big query into the broad phase for all new edges
-    minmax( new_vertex_position, new_vertex_smooth_position, 
-      m_surf.get_position( vertex_a ), m_surf.get_position( vertex_b ),
+    minmax( m_surf.get_position(new_vertex_position, ref), m_surf.get_position(new_vertex_smooth_position, ref),
+      m_surf.get_position( vertex_a, ref ), m_surf.get_position( vertex_b, ref ),
       edge_aabb_low, edge_aabb_high );
     for(size_t i = 0; i < verts.size(); ++i)
-      update_minmax(m_surf.get_position(verts[i]), edge_aabb_low, edge_aabb_high);
+      update_minmax(m_surf.get_position(verts[i], ref), edge_aabb_low, edge_aabb_high);
 
     edge_aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
     edge_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -277,8 +280,8 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
       for ( size_t v = 0; v < vertex_neighbourhood.size(); ++v )
       {
         bool collision = split_edge_edge_collision( vertex_neighbourhood[v], 
-          new_vertex_position, 
-          new_vertex_smooth_position, 
+          m_surf.get_position(new_vertex_position, ref),
+          m_surf.get_position(new_vertex_smooth_position, ref),
           m_mesh.m_edges[overlapping_edges[i]] );
 
         if ( collision ) { return true; }
@@ -294,11 +297,11 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
     Vec3d triangle_aabb_low, triangle_aabb_high;
 
     // do one big query into the broad phase for all new triangles
-    minmax( new_vertex_position, new_vertex_smooth_position, 
-      m_surf.get_position( vertex_a ), m_surf.get_position( vertex_b ),
+    minmax( m_surf.get_position(new_vertex_position, ref), m_surf.get_position(new_vertex_smooth_position, ref),
+      m_surf.get_position( vertex_a, ref ), m_surf.get_position( vertex_b, ref ),
       triangle_aabb_low, triangle_aabb_high );
     for(size_t i = 0; i < verts.size(); ++i)
-      update_minmax(m_surf.get_position(verts[i]), triangle_aabb_low, triangle_aabb_high);
+      update_minmax(m_surf.get_position(verts[i], ref), triangle_aabb_low, triangle_aabb_high);
 
     triangle_aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
     triangle_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -323,13 +326,13 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
       }
 
       size_t overlapping_vert_index = overlapping_vertices[i];
-      const Vec3d& vert = m_surf.get_position(overlapping_vert_index);
+      const Vec3d& vert = m_surf.get_position(overlapping_vert_index, ref);
 
       for ( size_t j = 0; j < triangle_indices.size(); ++j )
       {
         bool collision = split_triangle_vertex_collision( triangle_indices[j], 
-          new_vertex_position, 
-          new_vertex_smooth_position, 
+          m_surf.get_position(new_vertex_position, ref),
+          m_surf.get_position(new_vertex_smooth_position, ref),
           overlapping_vert_index, 
           vert );
 
