@@ -766,7 +766,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area, min_area_triangle = incident_triangles[i];
         }
-//        std::cout << "pre collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        std::cout << "pre collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
         assert(min_triangle_area > 1e-12);
 
         min_triangle_area = -1;
@@ -779,14 +779,14 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area, min_area_triangle = i;
         }
-//        std::cout << "pre collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        std::cout << "pre collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
         assert(min_triangle_area > 1e-12);
     }
   
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
   bool edge_is_boundary = m_surf.m_mesh.m_is_boundary_edge[edge];
-  
+    std::cout << "1" << std::endl;
   //either we're allowing remeshing of boundary edges, or this edge is not on the boundary.
   assert(m_remesh_boundaries || !edge_is_boundary);
   
@@ -911,6 +911,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
 
   }
+    std::cout << "2" << std::endl;
 
 
   // --------------
@@ -946,6 +947,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // --------------
   // decide on new vertex position
+    std::cout << "3" << std::endl;
 
   //Choose the vertex to keep and its new position.
   Vec3d vertex_new_position;
@@ -1032,6 +1034,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       return false;
     }
   }
+    std::cout << "4" << std::endl;
 
 //    std::cout << "keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") -> (" << vertex_new_position << ") delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
     
@@ -1080,9 +1083,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Find anything pointing to the doomed vertex and change it
 
+    std::cout << "5" << std::endl;
   // copy the list of triangles, don't take a reference to it
   std::vector< size_t > triangles_incident_to_vertex = m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete];    
 
+    std::cout << "5.1" << std::endl;
   for ( size_t i=0; i < triangles_incident_to_vertex.size(); ++i )
   {
     for(size_t local_ind = 0; local_ind < triangles_incident_to_edge.size(); ++local_ind) {
@@ -1113,6 +1118,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     m_surf.m_dirty_triangles.push_back( new_triangle_index );
   }
 
+    std::cout << "5.2" << std::endl;
+    
   for ( size_t i=0; i < triangles_incident_to_vertex.size(); ++i )
   {  
     if ( m_surf.m_verbose )
@@ -1123,14 +1130,20 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     m_surf.remove_triangle( triangles_incident_to_vertex[i] );
     collapse.m_deleted_tris.push_back(triangles_incident_to_vertex[i]);
   }
+    std::cout << "5.3" << std::endl;
 
   // Delete vertex
   assert( m_surf.m_mesh.m_vertex_to_triangle_map[vertex_to_delete].empty() );
+    std::cout << "5.3.1" << std::endl;
   m_surf.remove_vertex( vertex_to_delete );
+    std::cout << "5.3.2" << std::endl;
   collapse.m_deleted_verts.push_back( vertex_to_delete );
 
+    std::cout << "5.3.3" << std::endl;
   m_surf.m_mesh.update_is_boundary_vertex( vertex_to_keep );
+    std::cout << "5.3.4" << std::endl;
 
+    std::cout << "5.4" << std::endl;
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
   
@@ -1168,7 +1181,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 //
 ////        std::cout << "positions: 5074: " << m_surf.get_position(5074) << " 1489: " << m_surf.get_position(1489, 5074) << std::endl;
 //    }
-    
+    std::cout << "6" << std::endl;
+
     if (m_surf.m_aggressive_mode)
     {
         std::vector<size_t> incident_triangles;
@@ -1186,7 +1200,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area, min_area_triangle = incident_triangles[i];
         }
-//        std::cout << "post collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        std::cout << "post collapse local min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
         assert(min_triangle_area > 1e-12);
         
         min_triangle_area = -1;
@@ -1199,9 +1213,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             if (min_triangle_area < 0 || area < min_triangle_area)
                 min_triangle_area = area, min_area_triangle = i;
         }
-//        std::cout << "post collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
+        std::cout << "post collapse global min area = " << min_triangle_area << " triangle = " << min_area_triangle << std::endl;
         assert(min_triangle_area > 1e-12);
     }
+    std::cout << "7" << std::endl;
 
 
   return true;
