@@ -752,9 +752,6 @@ public:
     ////
     void check();
     
-    ////
-    void savePartOfMeshToOBJ(size_t vertex, int nrings, const std::string & filename = "mesh.obj");
-    
 };
 
 // ---------------------------------------------------------

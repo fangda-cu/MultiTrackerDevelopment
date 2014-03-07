@@ -492,6 +492,16 @@ public:
     ///
     std::vector<Vec3d> m_velocities;
     
+    
+
+    ////
+    void saveVertexNeighborhoodToOBJ(size_t vertex, int nrings, const std::string & filename = "mesh.obj");
+    void saveFaceNeighborhoodToOBJ(size_t face, int nrings, const std::string & filename = "mesh.obj");
+
+    void saveVerticesNeighborhoodToOBJ(const std::vector<size_t> & vertices, int nrings, const std::string & filename = "mesh.obj");
+    void saveFacesNeighborhoodToOBJ(const std::vector<size_t> & faces, int nrings, const std::string & filename = "mesh.obj");
+
+
 };
 
 
