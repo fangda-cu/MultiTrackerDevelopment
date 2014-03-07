@@ -256,7 +256,6 @@ void AccelerationGrid::remove_element(size_t idx)
     for(size_t c = 0; c < m_elementidxs[idx].size(); c++)
     {
         Vec3st cellcoords = m_elementidxs[idx][c];
-        std::cout << cellcoords << "; " << m_cells.ni << " " << m_cells.nj << " " << m_cells.nk << std::endl;
         std::vector<size_t>* cell = m_cells(cellcoords[0], cellcoords[1], cellcoords[2]);
         
         std::vector<size_t>::iterator it = cell->begin();

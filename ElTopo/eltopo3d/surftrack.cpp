@@ -394,9 +394,7 @@ void SurfTrack::remove_vertex( size_t vertex_index )
     
     if ( m_collision_safety )
     {
-        std::cout << "5.3.1.1" << std::endl;
         m_broad_phase->remove_vertex( vertex_index );
-        std::cout << "5.3.1.2" << std::endl;
     }
     
     m_vertex_change_history.push_back( VertexUpdateEvent( VertexUpdateEvent::VERTEX_REMOVE, vertex_index, Vec2st(0,0) ) );
