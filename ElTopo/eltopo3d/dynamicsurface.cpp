@@ -1682,8 +1682,6 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     //#pragma omp parallel for schedule(guided)
     for ( int i = 0; i < (int)m_mesh.num_triangles(); ++i )
     {
-        bool toi = m_mesh.triangle_has_these_verts(m_mesh.m_tris[i], Vec3st(1902, 5074, 4868));
-        
         Vec3d ref = get_position(m_mesh.m_tris[i][0]);
         
        std::vector<size_t> edge_candidates(50);
@@ -1692,15 +1690,7 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
         edge_candidates.clear();
         Vec3d low, high;
         triangle_static_bounds( i, low, high );
-        if (toi)
-            std::cout << "edges begin:" << std::endl;
-        m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );
-        if (toi)
-        {
-            std::cout << "n edge = " << edge_candidates.size() << std::endl;
-            assert(edge_candidates.size() > 0);
-        }
-        
+        m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );        
         
         const Vec3st& triangle = m_mesh.get_triangle(i);
         
