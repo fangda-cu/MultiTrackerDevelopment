@@ -493,8 +493,6 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
     
     Vec3i xmini, xmaxi;
     boundstoindices(xmin, xmax, xmini, xmaxi);
-    std::cout << "dim = " << m_cells.ni << " " << m_cells.nj << " " << m_cells.nk << ". " << xmin << "; " << xmax << " -> " << xmini << "; " << xmaxi << std::endl;
-    bool toi = (std::abs(xmin[0] - 0.860676) < 1e-5 && std::abs(xmin[1] - 0.503575) < 1e-5 && std::abs(xmin[2] - 0.328785) < 1e-5);
     for(int k = xmini[2]; k <= xmaxi[2]; ++k)
     {
       for(int j = xmini[1]; j <= xmaxi[1]; ++j)
@@ -503,14 +501,12 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
          {
                 std::vector<size_t>* cell = m_cells((i + m_cells.ni * 2) % m_cells.ni, (j + m_cells.nj * 2) % m_cells.nj, (k + m_cells.nk * 2) % m_cells.nk);
                 
-             std::cout << i << " " << j << " " << k << " " << cell << std::endl;
                 if(cell)
                 {
                     for( std::vector<size_t>::const_iterator citer = cell->begin(); citer != cell->end(); ++citer)
                     {
                         size_t oidx = *citer;
                         
-                        std::cout << "obj " << oidx << " " << std::endl;
                         // Check if the object has already been found during this query
                         
                         if(m_elementquery[oidx] < m_lastquery)
