@@ -214,7 +214,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
         m_elementquery.resize(idx+1);
         m_elementcount = idx+1;
     }
-    
+
     m_elementxmins[idx] = xmin;
     m_elementxmaxs[idx] = xmax;
     m_elementquery[idx] = 0;

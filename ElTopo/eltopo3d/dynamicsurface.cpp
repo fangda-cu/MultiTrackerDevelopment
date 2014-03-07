@@ -943,7 +943,8 @@ void DynamicSurface::edge_static_bounds(size_t e, Vec3d &xmin, Vec3d &xmax) cons
     }
     else
     {            
-        minmax( get_position(edge[0]), get_position(edge[1], edge[0]), xmin, xmax);
+        Vec3d ref = get_position(edge[0]);
+        minmax( get_position(edge[0], ref), get_position(edge[1], ref), xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
     }
@@ -965,7 +966,8 @@ void DynamicSurface::triangle_static_bounds(size_t t, Vec3d &xmin, Vec3d &xmax) 
     }
     else
     {      
-        minmax(get_position(tri[0]), get_position(tri[1], tri[0]), get_position(tri[2], tri[0]), xmin, xmax);
+        Vec3d ref = get_position(tri[0]);
+        minmax(get_position(tri[0], ref), get_position(tri[1], ref), get_position(tri[2], ref), xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
     }
@@ -986,7 +988,8 @@ void DynamicSurface::vertex_continuous_bounds(size_t v, Vec3d &xmin, Vec3d &xmax
     }
     else
     {
-        minmax( get_position(v), get_newposition(v), xmin, xmax);
+        Vec3d ref = get_position(v);
+        minmax( get_position(v, ref), get_newposition(v, ref), xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
     }
@@ -1008,8 +1011,9 @@ void DynamicSurface::edge_continuous_bounds(size_t e, Vec3d &xmin, Vec3d &xmax) 
     }
     else
     {      
-        minmax(get_position(edge[0]),          get_newposition(edge[0]),
-               get_position(edge[1], edge[0]), get_newposition(edge[1], edge[0]),
+        Vec3d ref = get_position(edge[0]);
+        minmax(get_position(edge[0], ref), get_newposition(edge[0], ref),
+               get_position(edge[1], ref), get_newposition(edge[1], ref),
                xmin, xmax);
         xmin -= Vec3d(m_aabb_padding);
         xmax += Vec3d(m_aabb_padding);
@@ -1032,9 +1036,10 @@ void DynamicSurface::triangle_continuous_bounds(size_t t, Vec3d &xmin, Vec3d &xm
     }
     else
     {
-        minmax(get_position(tri[0]),         get_newposition(tri[0]),
-               get_position(tri[1], tri[0]), get_newposition(tri[1], tri[0]),
-               get_position(tri[2], tri[0]), get_newposition(tri[2], tri[0]),
+        Vec3d ref = get_position(tri[0]);
+        minmax(get_position(tri[0], ref), get_newposition(tri[0], ref),
+               get_position(tri[1], ref), get_newposition(tri[1], ref),
+               get_position(tri[2], ref), get_newposition(tri[2], ref),
                xmin, xmax);
         
         xmin -= Vec3d(m_aabb_padding);
