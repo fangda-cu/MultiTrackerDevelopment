@@ -191,6 +191,7 @@ inline void BroadPhaseGrid::add_vertex( size_t index, const Vec3d& aabb_low, con
     }
     else
     {
+        std::cout << "add_vertex " << aabb_low << " " << aabb_high << std::endl;
         m_dynamic_vertex_grid.add_element( index, aabb_low, aabb_high );
     }
 }
@@ -209,6 +210,7 @@ inline void BroadPhaseGrid::add_edge( size_t index, const Vec3d& aabb_low, const
     }
     else
     {
+        std::cout << "add_edge " << aabb_low << " " << aabb_high << std::endl;
         m_dynamic_edge_grid.add_element( index, aabb_low, aabb_high );
     }
 }
@@ -227,6 +229,7 @@ inline void BroadPhaseGrid::add_triangle( size_t index, const Vec3d& aabb_low, c
     }
     else
     {
+        std::cout << "add_truabgke " << aabb_low << " " << aabb_high << std::endl;
         m_dynamic_triangle_grid.add_element( index, aabb_low, aabb_high );
     }
 }

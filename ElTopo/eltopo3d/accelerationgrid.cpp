@@ -215,6 +215,7 @@ void AccelerationGrid::add_element(size_t idx, const Vec3d& xmin, const Vec3d& x
         m_elementcount = idx+1;
     }
 
+    std::cout << "add element " << xmin << "; " << xmax << std::endl;
     m_elementxmins[idx] = xmin;
     m_elementxmaxs[idx] = xmax;
     m_elementquery[idx] = 0;
@@ -318,6 +319,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
       boundstoindices(xmin_old, xmax_old, xmini_old, xmaxi_old);
    }
 
+    std::cout << "update element " << xmin << "; " << xmax << std::endl;
    //set the new bounds and query data.
    m_elementxmins[idx] = xmin;
    m_elementxmaxs[idx] = xmax;

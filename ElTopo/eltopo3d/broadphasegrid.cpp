@@ -89,6 +89,7 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
     {
         // don't add inside-out AABBs
         if ( xmins[i][0] > xmaxs[i][0] )  { continue; }
+        std::cout << "bad: " << xmins[i] << " " << xmaxs[i] << std::endl;
         grid.add_element( indices[i], xmins[i], xmaxs[i]);
     }
 }
