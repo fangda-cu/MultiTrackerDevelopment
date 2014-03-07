@@ -1686,10 +1686,16 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
         bool get_solid_edges = !triangle_is_all_solid(i);
         edge_candidates.clear();
         Vec3d low, high;
-        triangle_static_bounds( i, low, high );       
+        triangle_static_bounds( i, low, high );
+        if (toi)
+            std::cout << "edges begin:" << std::endl;
         m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );
         if (toi)
+        {
             std::cout << "n edge = " << edge_candidates.size() << std::endl;
+            assert(edge_candidates.size() > 0);
+        }
+        
         
         const Vec3st& triangle = m_mesh.get_triangle(i);
         
