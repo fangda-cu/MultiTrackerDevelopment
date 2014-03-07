@@ -242,6 +242,8 @@ bool T1Transition::t1_pass()
     for ( ; candidates.size() > 0; candidates.pop_back())
     {
         size_t xj = candidates.back().vertex;
+        Vec3d ref = m_surf.get_position(xj);
+        
         int A = candidates.back().regions[0];
         int B = candidates.back().regions[1];
         Vec3d pull_apart_direction = candidates.back().direction;
@@ -280,7 +282,7 @@ bool T1Transition::t1_pass()
         
         // compute the desired destination positions, enforcing constraints
         Vec3c original_solid = m_surf.vertex_is_solid_3(xj);
-        Vec3d original_position = m_surf.get_position(xj);
+        Vec3d original_position = m_surf.get_position(xj, ref);
         
         double mean_edge_length = 0;
         int edge_count = 0;
@@ -288,7 +290,7 @@ bool T1Transition::t1_pass()
         {
             size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
             size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
-            mean_edge_length += mag(m_surf.get_position(v1,xj) - m_surf.get_position(v0,xj));
+            mean_edge_length += mag(m_surf.get_position(v1, ref) - m_surf.get_position(v0, ref));
             edge_count++;
         }
         assert(edge_count > 0);
@@ -357,7 +359,6 @@ bool T1Transition::t1_pass()
         }
         
         // check intersection in the final configuration
-        const std::vector<Vec3d> & x = m_surf.get_positions();
         bool collision = false;
         
         // point-tet
@@ -366,7 +367,7 @@ bool T1Transition::t1_pass()
             Vec3st t = mesh.get_triangle(A_faces[j]);
             
             Vec3d low, high;
-            minmax(x[t[0]], x[t[1]], x[t[2]], a_desired_position, low, high);
+            minmax(m_surf.get_position(t[0], ref), m_surf.get_position(t[1], ref), m_surf.get_position(t[2], ref), a_desired_position, low, high);
             
             std::vector<size_t> overlapping_vertices;
             m_surf.m_broad_phase->get_potential_vertex_collisions(low, high, true, true, overlapping_vertices);
@@ -379,7 +380,7 @@ bool T1Transition::t1_pass()
                 if (ov == t[0] || ov == t[2] || ov == t[1])
                     continue;
                 
-                if (point_tetrahedron_intersection(x[ov], ov, x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv()))
+                if (point_tetrahedron_intersection(m_surf.get_position(ov, ref), ov, m_surf.get_position(t[0], ref), t[0], m_surf.get_position(t[1], ref), t[1], m_surf.get_position(t[2], ref), t[2], a_desired_position, mesh.nv()))
                     collision = true;
             }
         }
@@ -392,7 +393,7 @@ bool T1Transition::t1_pass()
             if (t[2] == xj) std::swap(t[0], t[2]);
             
             Vec3d low, high;
-            minmax(x[t[1]], x[t[2]], a_desired_position, low, high);
+            minmax(m_surf.get_position(t[1], ref), m_surf.get_position(t[2], ref), a_desired_position, low, high);
             
             std::vector<size_t> overlapping_edges;
             m_surf.m_broad_phase->get_potential_edge_collisions(low, high, true, true, overlapping_edges);
@@ -415,7 +416,7 @@ bool T1Transition::t1_pass()
                 if (incident)
                     continue;
                 
-                if (segment_triangle_intersection(x[e[0]], e[0], x[e[1]], e[1], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv(), true))
+                if (segment_triangle_intersection(m_surf.get_position(e[0], ref), e[0], m_surf.get_position(e[1], ref), e[1], m_surf.get_position(t[1], ref), t[1], m_surf.get_position(t[2], ref), t[2], a_desired_position, mesh.nv(), true))
                     collision = true;
             }
         }
@@ -427,7 +428,7 @@ bool T1Transition::t1_pass()
             if (e[1] == xj) std::swap(e[0], e[1]);
             
             Vec3d low, high;
-            minmax(x[e[1]], a_desired_position, low, high);
+            minmax(m_surf.get_position(e[1], ref), a_desired_position, low, high);
             
             std::vector<size_t> overlapping_triangles;
             m_surf.m_broad_phase->get_potential_triangle_collisions(low, high, true, true, overlapping_triangles);
@@ -450,7 +451,7 @@ bool T1Transition::t1_pass()
                 if (incident)
                     continue;
                 
-                if (segment_triangle_intersection(x[e[1]], e[1], a_desired_position, mesh.nv(), x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], true))
+                if (segment_triangle_intersection(m_surf.get_position(e[1], ref), e[1], a_desired_position, mesh.nv(), m_surf.get_position(t[0], ref), t[0], m_surf.get_position(t[1], ref), t[1], m_surf.get_position(t[2], ref), t[2], true))
                     collision = true;
             }
         }
@@ -898,11 +899,11 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
     
     NonDestructiveTriMesh & m_mesh = m_surf.m_mesh;
     
-    const std::vector<Vec3d> & x = m_surf.get_positions();
-    
     std::vector<size_t> & tris = m_surf.m_mesh.m_vertex_to_triangle_map[v];
     std::vector<size_t> & edges = m_surf.m_mesh.m_vertex_to_edge_map[v];
     std::vector<size_t> edge_other_endpoints(edges.size());
+    
+    Vec3d ref = oldpos;
     
     for (size_t i = 0; i < edges.size(); i++)
         edge_other_endpoints[i] = (m_mesh.m_edges[edges[i]][0] == v ? m_mesh.m_edges[edges[i]][1] : m_mesh.m_edges[edges[i]][0]);
@@ -911,7 +912,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
     {
         
         Vec3d aabb_low, aabb_high;
-        minmax(oldpos, newpos, aabb_low, aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), aabb_low, aabb_high);
         
         aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
         aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -933,11 +934,11 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             size_t c = sorted_triangle[2];
             
             double t_zero_distance;
-            check_point_triangle_proximity(oldpos, x[a], x[b], x[c], t_zero_distance);
+            check_point_triangle_proximity(m_surf.get_position(oldpos, ref), m_surf.get_position(a, ref), m_surf.get_position(b, ref), m_surf.get_position(c, ref), t_zero_distance);
             if (t_zero_distance < m_surf.m_improve_collision_epsilon)
                 return true;
             
-            if (point_triangle_collision(oldpos, newpos, v, x[a], x[a], a, x[b], x[b], b, x[c], x[c], c))
+            if (point_triangle_collision(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(a, ref), m_surf.get_position(a, ref), a, m_surf.get_position(b, ref), m_surf.get_position(b, ref), b, m_surf.get_position(c, ref), m_surf.get_position(c, ref), c))
             {
 //                if (m_surf.m_verbose)
                     std::cout << "Popping collision: point triangle: with triangle " << overlapping_triangles[i] << std::endl;
@@ -952,9 +953,9 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         Vec3d edge_aabb_low, edge_aabb_high;
         
         // do one big query into the broad phase for all new edges
-        minmax(oldpos, newpos, edge_aabb_low, edge_aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), edge_aabb_low, edge_aabb_high);
         for (size_t i = 0; i < edge_other_endpoints.size(); ++i)
-            update_minmax(m_surf.get_position(edge_other_endpoints[i]), edge_aabb_low, edge_aabb_high);
+            update_minmax(m_surf.get_position(edge_other_endpoints[i], ref), edge_aabb_low, edge_aabb_high);
         
         edge_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
         edge_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -980,13 +981,13 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                     std::swap(e0, e1);
                 
                 double t_zero_distance;
-                check_edge_edge_proximity(oldpos, x[n], x[e0], x[e1], t_zero_distance);
+                check_edge_edge_proximity(m_surf.get_position(oldpos, ref), m_surf.get_position(n, ref), m_surf.get_position(e0, ref), m_surf.get_position(e1, ref), t_zero_distance);
                 if (t_zero_distance < m_surf.m_improve_collision_epsilon)
                     return true;
 
                 bool collision = (n < v ?
-                                  segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1) :
-                                  segment_segment_collision(oldpos, newpos, v, x[n], x[n], n, x[e0], x[e0], e0, x[e1], x[e1], e1));
+                                  segment_segment_collision(m_surf.get_position(n, ref), m_surf.get_position(n, ref), n, m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(e0, ref), m_surf.get_position(e0, ref), e0, m_surf.get_position(e1, ref), m_surf.get_position(e1, ref), e1) :
+                                  segment_segment_collision(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(n, ref), m_surf.get_position(n, ref), n, m_surf.get_position(e0, ref), m_surf.get_position(e0, ref), e0, m_surf.get_position(e1, ref), m_surf.get_position(e1, ref), e1));
                 
                 if (collision)
                 {
@@ -1003,9 +1004,9 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         Vec3d triangle_aabb_low, triangle_aabb_high;
         
         // do one big query into the broad phase for all new triangles
-        minmax(oldpos, newpos, triangle_aabb_low, triangle_aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), triangle_aabb_low, triangle_aabb_high);
         for (size_t i = 0; i < edge_other_endpoints.size(); ++i)
-            update_minmax(m_surf.get_position(edge_other_endpoints[i]), triangle_aabb_low, triangle_aabb_high);
+            update_minmax(m_surf.get_position(edge_other_endpoints[i], ref), triangle_aabb_low, triangle_aabb_high);
         
         triangle_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
         triangle_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -1018,7 +1019,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             if (m_mesh.m_vertex_to_triangle_map[overlapping_vertices[i]].empty()) 
                 continue; 
             
-            const Vec3d & vert = m_surf.get_position(overlapping_vertices[i]);
+            const Vec3d & vert = m_surf.get_position(overlapping_vertices[i], ref);
             
             for (size_t j = 0; j < tris.size(); j++)
             {
@@ -1033,12 +1034,12 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 size_t b = sorted_triangle[1];
                 size_t c = sorted_triangle[2];                
                 
-                Vec3d oldxa = (a == v ? oldpos : x[a]);
-                Vec3d newxa = (a == v ? newpos : x[a]);
-                Vec3d oldxb = (b == v ? oldpos : x[b]);
-                Vec3d newxb = (b == v ? newpos : x[b]);
-                Vec3d oldxc = (c == v ? oldpos : x[c]);
-                Vec3d newxc = (c == v ? newpos : x[c]);
+                Vec3d oldxa = (a == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(a, ref));
+                Vec3d newxa = (a == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(a, ref));
+                Vec3d oldxb = (b == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(b, ref));
+                Vec3d newxb = (b == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(b, ref));
+                Vec3d oldxc = (c == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(c, ref));
+                Vec3d newxc = (c == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(c, ref));
                 
                 double t_zero_distance;
                 check_point_triangle_proximity(vert, oldxa, oldxb, oldxc, t_zero_distance);
@@ -1062,7 +1063,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
 {
     NonDestructiveTriMesh & mesh = m_surf.m_mesh;
     
-    const std::vector<Vec3d> & x = m_surf.get_positions();
+    const Vec3d & ref = oldpos;
     
     // sanity check: all tris triangles and all edges edges are actually incident to v
     for (size_t i = 0; i < tris.size(); i++)
@@ -1080,7 +1081,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
     // new point vs all triangles
     {
         Vec3d aabb_low, aabb_high;
-        minmax(oldpos, newpos, aabb_low, aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), aabb_low, aabb_high);
         
         aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
         aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -1102,11 +1103,11 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             size_t c = sorted_triangle[2];
             
             double t_zero_distance;
-            check_point_triangle_proximity(oldpos, x[a], x[b], x[c], t_zero_distance);
+            check_point_triangle_proximity(m_surf.get_position(oldpos, ref), m_surf.get_position(a, ref), m_surf.get_position(b, ref), m_surf.get_position(c, ref), t_zero_distance);
             if (t_zero_distance < m_surf.m_improve_collision_epsilon)
                 return true;
             
-            if (point_triangle_collision(oldpos, newpos, v, x[a], x[a], a, x[b], x[b], b, x[c], x[c], c))
+            if (point_triangle_collision(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(a, ref), m_surf.get_position(a, ref), a, m_surf.get_position(b, ref), m_surf.get_position(b, ref), b, m_surf.get_position(c, ref), m_surf.get_position(c, ref), c))
             {
 //                if (m_surf.m_verbose)
                     std::cout << "Popping collision: point triangle: with triangle " << overlapping_triangles[i] << std::endl;
@@ -1121,11 +1122,11 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         Vec3d edge_aabb_low, edge_aabb_high;
         
         // do one big query into the broad phase for all new edges
-        minmax(oldpos, newpos, edge_aabb_low, edge_aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), edge_aabb_low, edge_aabb_high);
         for (size_t i = 0; i < edges.size(); ++i)
         {
             size_t other_endpoint = (mesh.m_edges[edges[i]][0] == v ? mesh.m_edges[edges[i]][1] : mesh.m_edges[edges[i]][0]);
-            update_minmax(m_surf.get_position(other_endpoint), edge_aabb_low, edge_aabb_high);
+            update_minmax(m_surf.get_position(other_endpoint, ref), edge_aabb_low, edge_aabb_high);
         }
         
         edge_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -1154,13 +1155,13 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                     std::swap(e0, e1);
                 
                 double t_zero_distance;
-                check_edge_edge_proximity(oldpos, x[n], x[e0], x[e1], t_zero_distance);
+                check_edge_edge_proximity(m_surf.get_position(oldpos, ref), m_surf.get_position(n, ref), m_surf.get_position(e0, ref), m_surf.get_position(e1, ref), t_zero_distance);
                 if (t_zero_distance < m_surf.m_improve_collision_epsilon)
                     return true;
                 
                 bool collision = (n < v ?
-                                  segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1) :
-                                  segment_segment_collision(oldpos, newpos, v, x[n], x[n], n, x[e0], x[e0], e0, x[e1], x[e1], e1));
+                                  segment_segment_collision(m_surf.get_position(n, ref), m_surf.get_position(n, ref), n, m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(e0, ref), m_surf.get_position(e0, ref), e0, m_surf.get_position(e1, ref), m_surf.get_position(e1, ref), e1) :
+                                  segment_segment_collision(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), v, m_surf.get_position(n, ref), m_surf.get_position(n, ref), n, m_surf.get_position(e0, ref), m_surf.get_position(e0, ref), e0, m_surf.get_position(e1, ref), m_surf.get_position(e1, ref), e1));
                 
                 if (collision)
                 {
@@ -1177,7 +1178,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         Vec3d triangle_aabb_low, triangle_aabb_high;
         
         // do one big query into the broad phase for all new triangles
-        minmax(oldpos, newpos, triangle_aabb_low, triangle_aabb_high);
+        minmax(m_surf.get_position(oldpos, ref), m_surf.get_position(newpos, ref), triangle_aabb_low, triangle_aabb_high);
         for (size_t i = 0; i < tris.size(); ++i)
         {
             const Vec3st & t = mesh.get_triangle(tris[i]);
@@ -1190,8 +1191,8 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 other_vertices = Vec2st(t[0], t[1]);
             else
                 assert(!"triangle in tris does not contain vertex v");
-            update_minmax(m_surf.get_position(other_vertices[0]), triangle_aabb_low, triangle_aabb_high);
-            update_minmax(m_surf.get_position(other_vertices[1]), triangle_aabb_low, triangle_aabb_high);
+            update_minmax(m_surf.get_position(other_vertices[0], ref), triangle_aabb_low, triangle_aabb_high);
+            update_minmax(m_surf.get_position(other_vertices[1], ref), triangle_aabb_low, triangle_aabb_high);
         }
         
         triangle_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
@@ -1207,7 +1208,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             if (mesh.m_vertex_to_triangle_map[ov].empty()) 
                 continue; 
             
-            const Vec3d & vert = m_surf.get_position(ov);
+            const Vec3d & vert = m_surf.get_position(ov, ref);
             
             for (size_t j = 0; j < tris.size(); j++)
             {
@@ -1222,12 +1223,12 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 size_t b = sorted_triangle[1];
                 size_t c = sorted_triangle[2];
                 
-                Vec3d oldxa = (a == v ? oldpos : x[a]);
-                Vec3d newxa = (a == v ? newpos : x[a]);
-                Vec3d oldxb = (b == v ? oldpos : x[b]);
-                Vec3d newxb = (b == v ? newpos : x[b]);
-                Vec3d oldxc = (c == v ? oldpos : x[c]);
-                Vec3d newxc = (c == v ? newpos : x[c]);
+                Vec3d oldxa = (a == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(a, ref));
+                Vec3d newxa = (a == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(a, ref));
+                Vec3d oldxb = (b == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(b, ref));
+                Vec3d newxb = (b == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(b, ref));
+                Vec3d oldxc = (c == v ? m_surf.get_position(oldpos, ref) : m_surf.get_position(c, ref));
+                Vec3d newxc = (c == v ? m_surf.get_position(newpos, ref) : m_surf.get_position(c, ref));
                 
                 double t_zero_distance;
                 check_point_triangle_proximity(vert, oldxa, oldxb, oldxc, t_zero_distance);
