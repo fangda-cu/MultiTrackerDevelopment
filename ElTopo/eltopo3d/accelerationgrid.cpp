@@ -364,7 +364,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                      }
 
                      cell->push_back(idx);
-                     m_elementidxs[idx].push_back(Vec3st(cur_index));
+                     m_elementidxs[idx].push_back(Vec3st((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk));
                   }
                   //else: in both new and old, so we don't need to change anything!
                }
@@ -379,7 +379,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
 
                   //erase the index of the *cell* in the *element* -> is this pricy?
                   std::vector<Vec3st>::iterator it2 = m_elementidxs[idx].begin();
-                  while(*it2 != Vec3st(cur_index)) 
+                  while(*it2 != Vec3st((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk))
                      it2++;
                   m_elementidxs[idx].erase(it2);
 
@@ -429,7 +429,7 @@ void AccelerationGrid::update_element(size_t idx, const Vec3d& xmin, const Vec3d
                }
 
                cell->push_back(idx);
-               m_elementidxs[idx].push_back(Vec3st(cur_index));
+               m_elementidxs[idx].push_back(Vec3st((cur_index[0] + m_cells.ni * 2) % m_cells.ni, (cur_index[1] + m_cells.nj * 2) % m_cells.nj, (cur_index[2] + m_cells.nk * 2) % m_cells.nk));
             }
          }
       }
