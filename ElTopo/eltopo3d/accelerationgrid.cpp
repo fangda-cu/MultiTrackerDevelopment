@@ -510,6 +510,7 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
                     {
                         size_t oidx = *citer;
                         
+                        std::cout << "obj " << oidx << " " << std::endl;
                         // Check if the object has already been found during this query
                         
                         if(m_elementquery[oidx] < m_lastquery)
@@ -530,7 +531,6 @@ void AccelerationGrid::find_overlapping_elements( const Vec3d& xmin, const Vec3d
                                         if((xmin[0] <= oxmax[0] + dx * PBC_DOMAIN_SIZE_X && xmin[1] <= oxmax[1] + dy * PBC_DOMAIN_SIZE_Y && xmin[2] <= oxmax[2] + dz * PBC_DOMAIN_SIZE_Z) &&
                                            (xmax[0] >= oxmin[0] + dx * PBC_DOMAIN_SIZE_X && xmax[1] >= oxmin[1] + dy * PBC_DOMAIN_SIZE_Y && xmax[2] >= oxmin[2] + dz * PBC_DOMAIN_SIZE_Z) )
                                         {
-                                            std::cout << dx << " " << dy << " " << dz << "; " << xmin << "; " << xmax << "; " << oxmin << "; " << oxmax << std::endl;
                                             assert(!overlap);
                                             overlap = true;
                                         }
